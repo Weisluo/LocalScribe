@@ -10,12 +10,12 @@ ENV/
 dist/
 build/
 
-# 数据库
+# Database
 *.db
 *.sqlite3
 /data/
 
-# 前端
+# Frontend
 node_modules/
 /dist/
 /.vite/
@@ -27,3 +27,10 @@ node_modules/
 .idea/
 *.swp
 *.swo
+
+# Testing (新增)
+.pytest_cache/
+.coverage
+htmlcov/
+.bin
+deps

@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# 导入 API 路由
+from app.api import router as api_router
+
 # 创建 FastAPI 应用实例
 app = FastAPI(
     title="LocalScribe API",
@@ -20,6 +23,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- 注册 API 路由 ---
+# 将 api 路由挂载到 /api 路径下
+# 最终接口路径格式为：/api/v1/projects
+app.include_router(api_router, prefix="/api")
 
 # 健康检查路由
 @app.get("/")

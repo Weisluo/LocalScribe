@@ -7,6 +7,12 @@ uvicorn[standard]>=0.24.0
 # SQLAlchemy ORM（同步版）
 sqlalchemy>=2.0.0
 
+# 数据库迁移工具
+alembic>=1.13.0
+
+# 网络工具
+httpx
+
 # Pydantic 数据验证（V2 版本）
 pydantic>=2.0.0
 pydantic-settings>=2.0.0      # 用于配置管理

@@ -1,20 +1,20 @@
+# backend/app/core/config.py
+import os
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
 
+# 获取 backend 目录的绝对路径
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = os.path.join(BASE_DIR, "data", "local_scribe.db")
 
 class Settings(BaseSettings):
-    """应用配置类，从环境变量或.env文件加载配置"""
+    # 数据库配置
+    DATABASE_URL: str = f"sqlite:///{DB_PATH}"
+    
+    # Ollama 配置
+    OLLAMA_BASE_URL: str = "http://localhost:11434" # Ollama 默认地址
+    OLLAMA_MODEL: str = "qwen3.5:9b" # 默认模型，你可以改成你本地有的模型，如 llama3, mistral 等
 
-    # 数据库连接URL，默认使用SQLite
-    DATABASE_URL: str = "sqlite:///./data/writing_assistant.db"
+    class Config:
+        env_file = ".env"
 
-    # 配置从.env文件加载
-    model_config = ConfigDict(
-        env_file=".env",          # 指定.env文件
-        env_file_encoding="utf-8",
-        case_sensitive=False      # 环境变量大小写不敏感
-    )
-
-
-# 创建全局配置实例
 settings = Settings()
