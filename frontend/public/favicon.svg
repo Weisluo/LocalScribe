@@ -1,0 +1,41 @@
+<svg width="200" height="200" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 定义渐变和阴影滤镜 -->
+  <defs>
+    <filter id="bookShadow" x="-2" y="-2" width="68" height="68" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="1.5" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bookCoverGradient" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2D3748"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+    <linearGradient id="bookSpineGradient" x1="8" y1="8" x2="16" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A202C"/>
+      <stop offset="100%" stop-color="#2D3748"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. 书脊（居左） - 明确的书脊设计，带阴影 -->
+  <path d="M8 10C8 8.89543 8.89543 8 10 8H16V56H10C8.89543 56 8 55.1046 8 54V10Z" fill="url(#bookSpineGradient)" filter="url(#bookShadow)"/>
+  
+  <!-- 书脊装饰线 -->
+  <path d="M11 12V52" stroke="#718096" stroke-width="0.8" stroke-linecap="round"/>
+  <path d="M13 12V52" stroke="#4A5568" stroke-width="0.8" stroke-linecap="round"/>
+
+  <!-- 2. 书本主体/封面 - 非常直观的书本造型，带阴影 -->
+  <path d="M14 8C12.8954 8 12 8.89543 12 10V54C12 55.1046 12.8954 56 14 56H52C53.1046 56 54 55.1046 54 54V10C54 8.89543 53.1046 8 52 8H14Z" fill="url(#bookCoverGradient)" filter="url(#bookShadow)"/>
+  
+  <!-- 3. 书页部分 - 增加厚度感和真实感 -->
+  <path d="M16 10H52V52H16V10Z" fill="#F7FAFC" fill-opacity="0.9"/>
+  
+  <!-- 书页内页层次感 -->
+  <path d="M18 12H48V50H18V12Z" fill="#EDF2F7" fill-opacity="0.7"/>
+  
+  <!-- 4. 封面装饰/标题区 - 增加多行文本来强化书本感 -->
+  <rect x="20" y="16" width="26" height="3" rx="1.5" fill="#A0AEC0"/>
+  <rect x="20" y="22" width="20" height="2" rx="1" fill="#CBD5E0"/>
+  <rect x="20" y="26" width="24" height="2" rx="1" fill="#CBD5E0"/>
+  <rect x="20" y="30" width="18" height="2" rx="1" fill="#CBD5E0"/>
+  <rect x="20" y="34" width="22" height="2" rx="1" fill="#CBD5E0"/>
+  <rect x="20" y="38" width="20" height="2" rx="1" fill="#CBD5E0"/>
+
+</svg>

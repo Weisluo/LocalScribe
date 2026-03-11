@@ -1,0 +1,21 @@
+# FastAPI 框架
+fastapi>=0.104.0
+
+# ASGI 服务器，[standard] 包含性能优化和 WebSocket 支持
+uvicorn[standard]>=0.24.0
+
+# SQLAlchemy ORM（同步版）
+sqlalchemy>=2.0.0
+
+# Pydantic 数据验证（V2 版本）
+pydantic>=2.0.0
+pydantic-settings>=2.0.0      # 用于配置管理
+
+# 环境变量加载
+python-dotenv>=1.0.0
+
+# 中文分词（用于文本分析）
+jieba>=0.42.1
+
+# 支持表单数据解析（用于文件上传等）
+python-multipart>=0.0.6
