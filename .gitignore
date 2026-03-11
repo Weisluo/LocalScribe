@@ -15,6 +15,9 @@ build/
 *.sqlite3
 /data/
 
+# Environment Variables
+.env
+
 # Frontend
 node_modules/
 /dist/
