@@ -44,6 +44,15 @@ def get_note(note_id: str, db: Session = Depends(get_db)):
 @router.post("/", response_model=NoteResponse, status_code=201)
 def create_note(note_in: NoteCreate, db: Session = Depends(get_db)):
     """创建笔记"""
+    
+    # --- 自动排序逻辑 ---
+    # 如果前端没有传 order，或者传了 0 (Schema 默认值)，则自动计算
+    if note_in.order is None or note_in.order == 0:
+        # 统计当前文件夹下的笔记数量
+        count = db.query(Note).filter(Note.folder_id == note_in.folder_id).count()
+        note_in.order = count + 1
+    # ------------------------
+
     db_note = Note(**note_in.model_dump())
     db.add(db_note)
     db.commit()

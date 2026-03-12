@@ -1,23 +1,32 @@
+// frontend/vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173, // 前端开发服务器端口
+    port: 5173,
     proxy: {
-      // 将以 /api 开头的请求代理到后端
       '/api': {
-        target: 'http://localhost:8000', // 后端服务地址（FastAPI 默认端口）
+        target: 'http://localhost:8000',
         changeOrigin: true,
       }
     }
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'), // 常用别名，方便引入
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss,
+        autoprefixer,
+      ],
     },
   },
 })
