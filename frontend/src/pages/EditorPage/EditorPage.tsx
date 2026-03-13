@@ -6,10 +6,11 @@ import type { components } from '@/types/api';
 import { DirectoryTree } from '@/components/DirectoryTree';
 import { Editor } from '@/components/Editor';
 import { AIChat } from '@/components/AIChat';
-import { useNote, useUpdateNote } from '@/hooks/useNote';
+import { useNote, useUpdateNote, useCreateNote } from '@/hooks/useNote';
 import { useProjectStore } from '@/stores/projectStore';
 import { useUIStore } from '@/stores/uiStore';
 import { CreateItemModal } from '@/components/Modals';
+import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { Loader2, Save, Settings, PlusCircle } from 'lucide-react';
 
@@ -19,7 +20,7 @@ type NoteNode = components['schemas']['NoteNode'];
 type ProjectResponse = components['schemas']['ProjectResponse'];
 
 export const EditorPage = () => {
-  const { currentProjectId } = useProjectStore();
+  const { currentProjectId, setCurrentProjectId } = useProjectStore();
   const { openModal } = useUIStore();
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
@@ -30,6 +31,13 @@ export const EditorPage = () => {
 
   const lastSaveTimeRef = useRef<number>(0);
   const treeRef = useRef<HTMLDivElement>(null); // 用于滚动
+  const hasAutoCreatedRef = useRef(false); // 标记是否已自动创建笔记
+
+  // 获取所有项目列表（用于切换）
+  const { data: projects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => api.get<ProjectResponse[]>('/projects'),
+  });
 
   const { data: project } = useQuery({
     queryKey: ['project', currentProjectId],
@@ -39,6 +47,7 @@ export const EditorPage = () => {
 
   const { data: currentNote, isLoading: isLoadingNote } = useNote(selectedNoteId);
   const updateNoteMutation = useUpdateNote(currentProjectId || '');
+  const createNoteMutation = useCreateNote(currentProjectId || '');
 
   // 获取目录树数据
   const { data: tree } = useQuery({
@@ -46,6 +55,49 @@ export const EditorPage = () => {
     queryFn: () => api.get<VolumeNode[]>(`/projects/${currentProjectId}/tree`),
     enabled: !!currentProjectId,
   });
+
+  // 辅助函数：查找第一个幕
+  const findFirstAct = (nodes: (VolumeNode | ActNode | NoteNode)[]): ActNode | null => {
+    for (const node of nodes) {
+      if (node.type === 'act') {
+        return node as ActNode;
+      }
+      if ('children' in node && node.children.length > 0) {
+        const found = findFirstAct(node.children as any);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // 辅助函数：检查是否有任何笔记
+  const hasAnyNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): boolean => {
+    for (const node of nodes) {
+      if (node.type === 'note') return true;
+      if ('children' in node && node.children.length > 0) {
+        if (hasAnyNotes(node.children as any)) return true;
+      }
+    }
+    return false;
+  };
+
+  // 辅助函数：查找节点的所有祖先 ID
+  const findAncestors = (
+    nodes: (VolumeNode | ActNode | NoteNode)[],
+    targetId: string,
+    ancestors: string[] = []
+  ): string[] | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) {
+        return ancestors;
+      }
+      if ('children' in node && node.children.length > 0) {
+        const result = findAncestors(node.children as any, targetId, [...ancestors, node.id]);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
 
   // 自动选中最新笔记（当 tree 加载完成且没有选中笔记时）
   useEffect(() => {
@@ -77,26 +129,72 @@ export const EditorPage = () => {
     setNoteTitle(latestNote.title);
 
     // 展开路径：找到该笔记的所有祖先节点
-    const findAncestors = (
-      nodes: (VolumeNode | ActNode | NoteNode)[],
-      targetId: string,
-      ancestors: string[] = []
-    ): string[] | null => {
-      for (const node of nodes) {
-        if (node.id === targetId) {
-          return ancestors;
-        }
-        if ('children' in node && node.children.length > 0) {
-          const result = findAncestors(node.children as any, targetId, [...ancestors, node.id]);
-          if (result) return result;
-        }
-      }
-      return null;
-    };
-
     const ancestors = findAncestors(tree, latestNote.id);
     if (ancestors) {
       setExpandedIds(new Set(ancestors));
+    }
+  }, [tree, selectedNoteId]);
+
+  // 监听 projectId 变化，重置自动创建标记
+  useEffect(() => {
+    hasAutoCreatedRef.current = false;
+  }, [currentProjectId]);
+
+  // 自动创建第一个笔记（当项目没有任何笔记时）
+  useEffect(() => {
+    if (!tree || tree.length === 0) return;
+    if (hasAutoCreatedRef.current) return;
+    if (hasAnyNotes(tree)) return;
+
+    const firstAct = findFirstAct(tree);
+    if (!firstAct) return; // 没有幕（理论上不会发生，因为后端已创建默认幕）
+
+    hasAutoCreatedRef.current = true;
+
+    createNoteMutation.mutate(
+      {
+        folder_id: firstAct.id,
+        title: '', // 改为空字符串，让标题留空显示 placeholder
+      },
+      {
+        onSuccess: (newNote) => {
+          setSelectedNoteId(newNote.id);
+          setNoteTitle(newNote.title); // 后端返回的 title 为空字符串，输入框显示 placeholder
+          setNoteContent('');
+
+          // 展开新笔记所在的幕及其祖先
+          setExpandedIds((prev) => {
+            const next = new Set(prev);
+            const ancestors = findAncestors(tree, newNote.folder_id);
+            if (ancestors) {
+              ancestors.forEach((id) => next.add(id));
+            }
+            return next;
+          });
+
+          // 滚动到新笔记
+          setTimeout(() => {
+            const element = document.getElementById(`note-${newNote.id}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        },
+      }
+    );
+  }, [tree, createNoteMutation, currentProjectId]);
+
+  // 每次目录树更新后，确保当前选中的笔记祖先节点保持展开
+  useEffect(() => {
+    if (!tree || !selectedNoteId) return;
+    
+    const ancestors = findAncestors(tree, selectedNoteId);
+    if (ancestors) {
+      setExpandedIds(prev => {
+        const next = new Set(prev);
+        ancestors.forEach(id => next.add(id));
+        return next;
+      });
     }
   }, [tree, selectedNoteId]);
 
@@ -189,14 +287,18 @@ export const EditorPage = () => {
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* 左侧栏 */}
-      <aside className="w-52 border-r border-border flex flex-col bg-muted/20 flex-shrink-0">
-        <div className="h-14 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
-          <h1 className="text-lg font-semibold truncate">
-            {project?.title || '我的小说'}
-          </h1>
+      <aside className="w-64 border-r border-border flex flex-col bg-muted/20 flex-shrink-0">
+        <div className="h-16 border-b border-border flex items-center justify-between pl-6 pr-4 flex-shrink-0 bg-muted/10">
+          {projects && projects.length > 0 ? (
+            <div className="relative flex-1 mr-2">
+              <ProjectSwitcher />
+            </div>
+          ) : (
+            <h1 className="text-lg font-semibold truncate">{project?.title || '我的小说'}</h1>
+          )}
           <button
             onClick={() => openModal('volume', currentProjectId)}
-            className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+            className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground flex-shrink-0"
             title="新建卷"
           >
             <PlusCircle className="h-4 w-4" />
@@ -226,7 +328,7 @@ export const EditorPage = () => {
               onClick={() => openModal('project')}
               className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded"
             >
-              <PlusCircle className="h-4 w-4" /> 切换/新建项目
+              <PlusCircle className="h-4 w-4" /> 新建项目
             </button>
           </div>
         </div>

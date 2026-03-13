@@ -13,7 +13,7 @@ command -v npm >/dev/null 2>&1 || { echo "需要 npm 但未安装，请先安装
 
 # 后端依赖安装
 echo ""
-echo "[1/3] 设置 Python 虚拟环境并安装后端依赖..."
+echo "[1/4] 设置 Python 虚拟环境并安装后端依赖..."
 cd backend
 
 # 检查是否安装了 python3-venv（用于创建虚拟环境）
@@ -42,7 +42,7 @@ cd ..
 
 # 前端依赖安装
 echo ""
-echo "[2/3] 安装前端 Node.js 依赖..."
+echo "[2/4] 安装前端 Node.js 依赖..."
 cd frontend
 
 if [ ! -f "package.json" ]; then
@@ -55,8 +55,15 @@ npm install
 cd ..
 
 echo ""
-echo "[3/3] 创建必要的目录..."
+echo "[3/4] 创建必要的目录..."
 mkdir -p backend/data
+
+# --- 数据库迁移 ---
+echo ""
+echo "[4/4] 初始化数据库..."
+cd backend
+venv/bin/alembic upgrade head
+cd ..
 
 echo ""
 echo "========================================"

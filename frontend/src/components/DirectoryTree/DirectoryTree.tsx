@@ -161,7 +161,7 @@ export const DirectoryTree = ({
       <div className="p-4 text-sm text-muted-foreground text-center">
         暂无内容
         <br />
-        <span className="text-xs">右键或使用按钮添加卷</span>
+        <span className="text-xs">使用按钮添加卷</span>
       </div>
     );
   }

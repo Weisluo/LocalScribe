@@ -39,3 +39,20 @@ export const useMoveNote = (projectId: string) => {
     },
   });
 };
+
+export const useCreateNote = (projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { folder_id: string; title: string }) =>
+      api.post<NoteResponse>('/notes', {
+        ...data,
+        project_id: projectId,
+        order: 0, // 后端会自动处理排序
+      }),
+    onSuccess: () => {
+      // 创建成功后刷新目录树缓存
+      queryClient.invalidateQueries({ queryKey: ['directory', projectId] });
+    },
+  });
+};

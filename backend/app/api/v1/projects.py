@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 # 导入模型、Schema 和依赖
-from app.models import Project
+from app.models import Project, Folder
+from app.models.folder import FolderType
 from app.schemas import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas import DirectoryTree 
 from app.core.dependencies import get_db
@@ -18,12 +19,36 @@ router = APIRouter()
 def get_projects(db: Session = Depends(get_db)):
     return db.query(Project).all()
 
-# --- 创建新项目 ---
+# --- 创建新项目（自动创建默认卷和幕） ---
 @router.post("/", response_model=ProjectResponse, status_code=201)
 def create_project(project_in: ProjectCreate, db: Session = Depends(get_db)):
-    # 创建数据库对象
+    # 创建项目对象
     db_project = Project(**project_in.model_dump())
     db.add(db_project)
+    db.flush()  # 获取项目 ID，但尚未提交
+
+    # 创建默认卷（volume）
+    volume = Folder(
+        name="第一卷",
+        type=FolderType.volume,
+        project_id=db_project.id,
+        order=1,
+        parent_id=None
+    )
+    db.add(volume)
+    db.flush()  # 获取卷 ID
+
+    # 创建默认幕（act）
+    act = Folder(
+        name="第一幕",
+        type=FolderType.act,
+        project_id=db_project.id,
+        order=1,
+        parent_id=volume.id
+    )
+    db.add(act)
+
+    # 提交事务
     db.commit()
     db.refresh(db_project)
     return db_project
