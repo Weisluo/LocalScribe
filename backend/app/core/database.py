@@ -8,7 +8,9 @@ from app.core.config import settings
 # 创建数据库引擎
 # check_same_thread=False 仅用于 SQLite，允许多线程访问
 engine = create_engine(
-    settings.DATABASE_URL, connect_args={"check_same_thread": False}
+    settings.DATABASE_URL, 
+    connect_args={"check_same_thread": False},
+    echo=True  # 添加这一行
 )
 
 # 创建会话工厂

@@ -11,22 +11,26 @@ interface AutoSaveOptions {
 }
 
 export const useAutoSave = ({ data, onSave, delay = 800 }: AutoSaveOptions) => {
-  // 1. 对数据进行防抖
   const debouncedData = useDebounce(data, delay);
-  
-  // 2. 记录是否是第一次渲染（避免初始化时就触发保存）
   const isFirstRun = useRef(true);
+  const lastSavedDataRef = useRef(data);
 
   useEffect(() => {
     if (isFirstRun.current) {
       isFirstRun.current = false;
+      lastSavedDataRef.current = data;
       return;
     }
 
-    // 3. 防抖数据变化后，触发保存
-    // 只有当标题或内容确实存在时才保存（避免空数据覆盖）
-    if (debouncedData.title || debouncedData.content) {
-      onSave(debouncedData);
+    // 只有当防抖后的数据与上次真正保存的数据不同时，才触发保存
+    if (
+      debouncedData.title !== lastSavedDataRef.current.title ||
+      debouncedData.content !== lastSavedDataRef.current.content
+    ) {
+      if (debouncedData.title || debouncedData.content) {
+        onSave(debouncedData);
+        lastSavedDataRef.current = debouncedData;
+      }
     }
   }, [debouncedData, onSave]);
 };

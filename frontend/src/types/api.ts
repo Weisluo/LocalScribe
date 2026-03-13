@@ -477,6 +477,11 @@ export interface components {
             title: string;
             /** Order */
             order: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** NoteResponse */
         NoteResponse: {

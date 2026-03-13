@@ -1,78 +1,109 @@
+// frontend/src/components/Modals/CreateItemModal.tsx
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { useUIStore } from '@/stores/uiStore';
-import { useProjectStore } from '@/stores/projectStore'; // 引入 projectStore 获取当前项目ID
+import { useProjectStore } from '@/stores/projectStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/utils/request';
 import { Loader2 } from 'lucide-react';
 
 export const CreateItemModal = () => {
-  const { 
-    isCreateVolumeModalOpen, 
-    isCreateChapterModalOpen, 
-    parentId, // 新建卷时这里是 projectId，新建章节时这里是 folderId (volumeId)
-    closeModal 
-  } = useUIStore();
-  
-  // 获取当前项目 ID，用于给后端传 project_id
-  const { currentProjectId } = useProjectStore();
-  
+  const { modalType, modalParentId, closeModal } = useUIStore();
+  const { currentProjectId, setCurrentProjectId } = useProjectStore();
   const [title, setTitle] = useState('');
   const queryClient = useQueryClient();
 
-  // 判断当前模式
-  const isOpen = isCreateVolumeModalOpen || isCreateChapterModalOpen;
-  const isVolume = isCreateVolumeModalOpen;
-  const modalTitle = isVolume ? '新建卷' : '新建章节';
+  // 默认的 mutationFn，防止为 undefined 导致 Hooks 行为变化
+  let mutationFn: (data: { title: string }) => Promise<any> = async () => {
+    throw new Error('未知的弹窗类型');
+  };
+
+  let modalTitle = '';
+  let placeholder = '';
+
+  if (modalType === 'project') {
+    modalTitle = '新建项目';
+    placeholder = '项目名称';
+    mutationFn = (data) => api.post('/projects', { title: data.title });
+  } else if (modalType === 'volume') {
+    modalTitle = '新建卷';
+    placeholder = '第一卷：初入江湖';
+    mutationFn = (data) =>
+      api.post('/folders', {
+        name: data.title,
+        project_id: currentProjectId,
+        type: 'volume',
+        parent_id: null,
+        order: 0,
+      });
+  } else if (modalType === 'act') {
+    modalTitle = '新建幕';
+    placeholder = '第一幕：风起';
+    mutationFn = (data) =>
+      api.post('/folders', {
+        name: data.title,
+        project_id: currentProjectId,
+        type: 'act',
+        parent_id: modalParentId,
+        order: 0,
+      });
+  } else if (modalType === 'note') {
+    modalTitle = '新建笔记';
+    placeholder = '第一章：启程';
+    mutationFn = (data) =>
+      api.post('/notes', {
+        title: data.title,
+        project_id: currentProjectId,
+        folder_id: modalParentId,
+        order: 0,
+      });
+  }
+  // 如果 modalType 为 null，以上条件都不满足，modalTitle 和 placeholder 为空，mutationFn 保持默认
 
   const mutation = useMutation({
-    mutationFn: (data: object) => {
-      // 根据模式构建不同的请求体
-      if (isVolume) {
-        // POST /api/v1/folders/
-        // 后端 FolderCreate 需要: name, project_id, type, parent_id(可选)
-        const payload = {
-          name: title,
-          project_id: currentProjectId, // 当前项目 ID
-          type: 'volume',               // 类型为卷
-          parent_id: null,              // 卷通常在根目录
-          order: 0                      // 传 0 触发后端自动排序
-        };
-        return api.post('/folders', payload);
-      } else {
-        // POST /api/v1/notes/
-        // 后端 NoteCreate 需要: title, project_id, folder_id, order
-        const payload = {
-          title: title,
-          project_id: currentProjectId, // 当前项目 ID
-          folder_id: parentId,          // 父级文件夹 ID (卷 ID)
-          order: 0                      // 传 0 触发后端自动排序
-        };
-        return api.post('/notes', payload);
-      }
-    },
-    onSuccess: () => {
+    mutationFn,
+    onSuccess: (data) => {
       closeModal();
       setTitle('');
-      // 刷新目录树
-      queryClient.invalidateQueries({ queryKey: ['directory', currentProjectId] });
+
+      // 刷新目录树（所有涉及目录树的类型）
+      if (modalType && modalType !== 'project') {
+        queryClient.invalidateQueries({ queryKey: ['directory', currentProjectId] });
+      }
+
+      // 如果是创建项目，自动切换到新项目
+      if (modalType === 'project' && data?.id) {
+        setCurrentProjectId(data.id);
+      }
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !currentProjectId) return;
-    // 新建章节时必须选中了父级
-    if (!isVolume && !parentId) {
-      alert("请先选择要添加章节的卷");
+    if (!title.trim()) return;
+
+    // 对于幕和笔记，必须存在父级 ID
+    if ((modalType === 'act' || modalType === 'note') && !modalParentId) {
+      alert('请先选择父级');
       return;
     }
-    
-    mutation.mutate({}); // payload 已在 mutationFn 中构建
+
+    // 创建项目时不需要 projectId，其他都需要
+    if (modalType !== 'project' && !currentProjectId) {
+      alert('请先选择或创建项目');
+      return;
+    }
+
+    mutation.mutate({ title });
   };
 
+  // 如果 modalType 为 null，不渲染任何内容（但 Hooks 已经调用完毕）
+  if (!modalType) {
+    return null;
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={closeModal} title={modalTitle}>
+    <Modal isOpen={true} onClose={closeModal} title={modalTitle}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">名称</label>
@@ -81,15 +112,19 @@ export const CreateItemModal = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder={isVolume ? "第一卷：初入江湖" : "第一章：风起"}
+            placeholder={placeholder}
             autoFocus
           />
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={closeModal} className="px-4 py-2 rounded-md text-sm hover:bg-accent transition-colors">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="px-4 py-2 rounded-md text-sm hover:bg-accent transition-colors"
+          >
             取消
           </button>
-          <button 
+          <button
             type="submit"
             disabled={!title.trim() || mutation.isPending}
             className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+// frontend/src/pages/EditorPage/EditorPage.tsx
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/utils/request';
 import type { components } from '@/types/api';
@@ -8,24 +9,28 @@ import { AIChat } from '@/components/AIChat';
 import { useNote, useUpdateNote } from '@/hooks/useNote';
 import { useProjectStore } from '@/stores/projectStore';
 import { useUIStore } from '@/stores/uiStore';
-import { CreateProjectModal, CreateItemModal } from '@/components/Modals';
+import { CreateItemModal } from '@/components/Modals';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { Loader2, Save, Settings, PlusCircle, FolderPlus } from 'lucide-react';
+import { Loader2, Save, Settings, PlusCircle } from 'lucide-react';
 
+type VolumeNode = components['schemas']['VolumeNode'];
+type ActNode = components['schemas']['ActNode'];
+type NoteNode = components['schemas']['NoteNode'];
 type ProjectResponse = components['schemas']['ProjectResponse'];
 
 export const EditorPage = () => {
-  // === Stores ===
   const { currentProjectId } = useProjectStore();
   const { openModal } = useUIStore();
 
-  // === Local State ===
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
   const [noteContent, setNoteContent] = useState<string>('');
   const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set()); // 展开状态
 
-  // === Data Fetching ===
+  const lastSaveTimeRef = useRef<number>(0);
+  const treeRef = useRef<HTMLDivElement>(null); // 用于滚动
+
   const { data: project } = useQuery({
     queryKey: ['project', currentProjectId],
     queryFn: () => api.get<ProjectResponse>(`/projects/${currentProjectId}`),
@@ -33,29 +38,106 @@ export const EditorPage = () => {
   });
 
   const { data: currentNote, isLoading: isLoadingNote } = useNote(selectedNoteId);
-  const updateNoteMutation = useUpdateNote();
+  const updateNoteMutation = useUpdateNote(currentProjectId || '');
 
-  // === Effects ===
-  // 同步笔记数据到本地状态
+  // 获取目录树数据
+  const { data: tree } = useQuery({
+    queryKey: ['directory', currentProjectId],
+    queryFn: () => api.get<VolumeNode[]>(`/projects/${currentProjectId}/tree`),
+    enabled: !!currentProjectId,
+  });
+
+  // 自动选中最新笔记（当 tree 加载完成且没有选中笔记时）
+  useEffect(() => {
+    if (!tree || tree.length === 0 || selectedNoteId) return;
+
+    // 递归查找所有笔记节点
+    const findAllNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): NoteNode[] => {
+      let notes: NoteNode[] = [];
+      for (const node of nodes) {
+        if (node.type === 'note') {
+          notes.push(node as NoteNode);
+        } else if ('children' in node) {
+          notes = notes.concat(findAllNotes(node.children as any));
+        }
+      }
+      return notes;
+    };
+
+    const allNotes = findAllNotes(tree);
+    if (allNotes.length === 0) return;
+
+    // 按 created_at 降序排序，取最新的
+    const sortedNotes = allNotes.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const latestNote = sortedNotes[0];
+    
+    setSelectedNoteId(latestNote.id);
+    setNoteTitle(latestNote.title);
+
+    // 展开路径：找到该笔记的所有祖先节点
+    const findAncestors = (
+      nodes: (VolumeNode | ActNode | NoteNode)[],
+      targetId: string,
+      ancestors: string[] = []
+    ): string[] | null => {
+      for (const node of nodes) {
+        if (node.id === targetId) {
+          return ancestors;
+        }
+        if ('children' in node && node.children.length > 0) {
+          const result = findAncestors(node.children as any, targetId, [...ancestors, node.id]);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
+    const ancestors = findAncestors(tree, latestNote.id);
+    if (ancestors) {
+      setExpandedIds(new Set(ancestors));
+    }
+  }, [tree, selectedNoteId]);
+
+  // 滚动到选中的笔记
+  useEffect(() => {
+    if (selectedNoteId) {
+      // 给一点时间让 DOM 更新
+      setTimeout(() => {
+        const element = document.getElementById(`note-${selectedNoteId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, [selectedNoteId]);
+
+  // 同步笔记数据（仅当切换笔记时）
   useEffect(() => {
     if (currentNote) {
-      setNoteTitle(currentNote.title || '无标题');
-      setNoteContent(currentNote.content || '');
+      if (currentNote.title !== noteTitle) {
+        setNoteTitle(currentNote.title || '无标题');
+      }
+      if (currentNote.content !== noteContent) {
+        setNoteContent(currentNote.content || '');
+      }
     } else if (!selectedNoteId) {
-      // 如果没有选中笔记，清空状态
       setNoteTitle('');
       setNoteContent('');
     }
   }, [currentNote, selectedNoteId]);
 
-  // === 自动保存逻辑 ===
   const noteData = useMemo(() => ({
     title: noteTitle,
     content: noteContent
   }), [noteTitle, noteContent]);
 
   const handleSave = useCallback((data: { title: string; content: string }) => {
-    if (selectedNoteId) {
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 500) return;
+    if (selectedNoteId && !updateNoteMutation.isPending) {
+      lastSaveTimeRef.current = now;
       updateNoteMutation.mutate({
         noteId: selectedNoteId,
         data: data
@@ -63,12 +145,8 @@ export const EditorPage = () => {
     }
   }, [selectedNoteId, updateNoteMutation]);
 
-  useAutoSave({ 
-    data: noteData, 
-    onSave: handleSave 
-  });
+  useAutoSave({ data: noteData, onSave: handleSave });
 
-  // === Handlers ===
   const onEditorChange = (html: string) => {
     setNoteContent(html);
   };
@@ -77,56 +155,64 @@ export const EditorPage = () => {
     setNoteTitle(e.target.value);
   };
 
-  // === Render: 欢迎页 (无项目时) ===
+  const handleSelectNote = (id: string, title: string) => {
+    setSelectedNoteId(id);
+    setNoteTitle(title);
+  };
+
+  const handleToggle = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   if (!currentProjectId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
         <h1 className="text-2xl font-bold">欢迎使用 LocalScribe</h1>
         <p className="text-muted-foreground">开始创作前，请先创建一个项目</p>
-        <button 
+        <button
           onClick={() => openModal('project')}
           className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
         >
           <PlusCircle className="h-5 w-5" />
           新建项目
         </button>
-        <CreateProjectModal />
+        <CreateItemModal />
       </div>
     );
   }
 
-  // === Render: 主编辑界面 ===
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* 左侧栏 - 固定宽度，不滚动 */}
+      {/* 左侧栏 */}
       <aside className="w-52 border-r border-border flex flex-col bg-muted/20 flex-shrink-0">
-        {/* 顶部：项目标题 + 新建卷按钮 */}
         <div className="h-14 border-b border-border flex items-center justify-between px-4 flex-shrink-0">
           <h1 className="text-lg font-semibold truncate">
             {project?.title || '我的小说'}
           </h1>
-          <button 
+          <button
             onClick={() => openModal('volume', currentProjectId)}
             className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
             title="新建卷"
           >
-            <FolderPlus className="h-4 w-4" />
+            <PlusCircle className="h-4 w-4" />
           </button>
         </div>
 
-        {/* 中间：目录树 - 可滚动 */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" ref={treeRef}>
           <DirectoryTree
             projectId={currentProjectId}
             selectedNoteId={selectedNoteId}
-            onSelectNote={(id, title) => {
-              setSelectedNoteId(id);
-              setNoteTitle(title);
-            }}
+            onSelectNote={handleSelectNote}
+            expandedIds={expandedIds}
+            onToggle={handleToggle}
           />
         </div>
 
-        {/* 底部：预留区域 + 切换项目 + 新建章节 - 固定高度 */}
         <div className="h-40 flex flex-col flex-shrink-0 border-t border-border">
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center text-xs px-4">
@@ -136,13 +222,7 @@ export const EditorPage = () => {
             </div>
           </div>
           <div className="p-2">
-            <button 
-              onClick={() => openModal('chapter', currentProjectId)}
-              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded mb-2"
-            >
-              <PlusCircle className="h-4 w-4" /> 新建章节
-            </button>
-            <button 
+            <button
               onClick={() => openModal('project')}
               className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded"
             >
@@ -152,9 +232,7 @@ export const EditorPage = () => {
         </div>
       </aside>
 
-      {/* 中间：主编辑区 - 占据剩余宽度，不滚动 */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* 顶部标题栏 - 固定高度 */}
         <header className="h-14 border-b border-border flex items-center justify-center px-6 bg-background flex-shrink-0">
           <input
             type="text"
@@ -171,7 +249,6 @@ export const EditorPage = () => {
           />
         </header>
 
-        {/* 编辑器区域 - 占据剩余高度，包含可滚动内容和固定底部工具栏 */}
         {isLoadingNote ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -185,9 +262,7 @@ export const EditorPage = () => {
         )}
       </main>
 
-      {/* 右侧栏 - 固定宽度，不滚动 */}
       <aside className="w-1/4 border-l border-border flex flex-col bg-muted/10 flex-shrink-0">
-        {/* 顶部信息栏 - 固定高度 */}
         <div className="h-20 border-b border-border flex flex-col justify-center px-4 flex-shrink-0">
           <div className="flex items-center gap-2 text-sm">
             {updateNoteMutation.isPending ? (
@@ -202,20 +277,16 @@ export const EditorPage = () => {
               </>
             )}
           </div>
-          {/* 字数统计 */}
           <div className="text-xs text-muted-foreground mt-1">
             字数：{noteContent.replace(/<[^>]*>/g, '').length}
           </div>
         </div>
 
-        {/* 下方：AI 对话窗口 - 占据剩余高度，可滚动 */}
         <div className="flex-1 overflow-hidden">
           <AIChat />
         </div>
       </aside>
 
-      {/* 全局弹窗容器 */}
-      <CreateProjectModal />
       <CreateItemModal />
     </div>
   );

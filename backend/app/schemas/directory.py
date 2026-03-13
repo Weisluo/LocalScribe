@@ -1,4 +1,5 @@
 from typing import List, Optional, Literal, Union
+from datetime import datetime
 from pydantic import BaseModel
 
 # 定义树节点的联合类型，使用 Literal 区分类型
@@ -23,6 +24,7 @@ class NoteNode(BaseModel):
     id: str
     title: str # 注意：笔记用 title，文件夹用 name
     order: int
+    created_at: datetime
 
 # 为了支持递归引用，需要更新模型的前向引用
 VolumeNode.model_rebuild()

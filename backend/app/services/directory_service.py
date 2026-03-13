@@ -42,7 +42,12 @@ class DirectoryService:
 
         # 4. 将笔记挂载到对应的 Act 下
         for note in notes:
-            note_node = NoteNode(id=note.id, title=note.title, order=note.order)
+            note_node = NoteNode(
+                id=note.id, 
+                title=note.title, 
+                order=note.order,
+                created_at=note.created_at
+            )
             if note.folder_id in act_map:
                 act_map[note.folder_id].children.append(note_node)
 
