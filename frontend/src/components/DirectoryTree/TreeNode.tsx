@@ -397,6 +397,7 @@ export const TreeNode = ({
                 onToggle={onToggle}
                 onSelect={onSelect}
                 expandedIds={expandedIds}
+                onNoteDeleted={onNoteDeleted}
               />
             ))}
           </div>
