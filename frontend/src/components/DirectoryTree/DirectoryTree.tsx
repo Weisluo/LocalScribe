@@ -1,10 +1,9 @@
-// frontend/src/components/DirectoryTree/DirectoryTree.tsx
 import { useState } from 'react';
 import { useDirectoryTree } from '@/hooks/useDirectory';
 import { useMoveFolder } from '@/hooks/useDirectory';
 import { useMoveNote } from '@/hooks/useNote';
 import { TreeNode } from './TreeNode';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Library, Sparkles } from 'lucide-react';
 import type { components } from '@/types/api';
 import { useNoteStore } from '@/stores/noteStore';
 
@@ -34,8 +33,8 @@ interface DirectoryTreeProps {
   projectId: string;
   selectedNoteId?: string;
   onSelectNote: (noteId: string, noteTitle: string) => void;
-  expandedIds: Set<string>;          // 新增：展开状态由父组件控制
-  onToggle: (id: string) => void;    // 新增：展开/折叠回调
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
 }
 
 export const DirectoryTree = ({ 
@@ -59,7 +58,6 @@ export const DirectoryTree = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // --- 辅助函数：递归查找节点信息 ---
   const findNodeInfo = (
     nodes: TreeNodeType[], 
     targetId: string, 
@@ -145,23 +143,34 @@ export const DirectoryTree = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-20 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        加载目录...
+      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground gap-3">
+        <div className="relative">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <div className="absolute inset-0 blur-md bg-primary/20 rounded-full" />
+        </div>
+        <span className="text-sm">整理书架上...</span>
       </div>
     );
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-destructive">加载目录失败</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-32 p-4 text-destructive gap-2">
+        <Library className="h-8 w-8 opacity-50" />
+        <span className="text-sm">加载目录失败</span>
+      </div>
+    );
   }
 
   if (!tree || tree.length === 0) {
     return (
-      <div className="p-4 text-sm text-muted-foreground text-center">
-        暂无内容
-        <br />
-        <span className="text-xs">使用按钮添加卷</span>
+      <div className="flex flex-col items-center justify-center h-40 p-6 text-muted-foreground">
+        <div className="relative mb-4">
+          <Library className="h-12 w-12 opacity-30" />
+          <Sparkles className="h-4 w-4 absolute -top-1 -right-1 text-accent opacity-60" />
+        </div>
+        <p className="text-sm font-medium mb-1">书架空空如也</p>
+        <p className="text-xs opacity-60">点击上方 + 按钮添加新卷</p>
       </div>
     );
   }
@@ -176,7 +185,7 @@ export const DirectoryTree = ({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={volumeIds} strategy={verticalListSortingStrategy}>
-        <div className="py-2">
+        <div className="py-2 px-1">
           {tree.map((volumeNode) => (
             <TreeNode
               key={volumeNode.id}
@@ -194,8 +203,11 @@ export const DirectoryTree = ({
       
       <DragOverlay>
         {activeId ? (
-          <div className="px-2 py-1 bg-background border shadow-lg rounded text-sm opacity-80">
-            正在移动...
+          <div className="px-4 py-2.5 bg-card border border-border/50 shadow-xl rounded-lg text-sm font-medium opacity-90 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              正在移动...
+            </div>
           </div>
         ) : null}
       </DragOverlay>

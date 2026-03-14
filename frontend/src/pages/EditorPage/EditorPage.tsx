@@ -12,7 +12,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { Loader2, Save, Settings, PlusCircle } from 'lucide-react';
+import { Loader2, Save, Settings, PlusCircle, Feather, BookOpen, Type } from 'lucide-react';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -20,7 +20,7 @@ type NoteNode = components['schemas']['NoteNode'];
 type ProjectResponse = components['schemas']['ProjectResponse'];
 
 export const EditorPage = () => {
-  const { currentProjectId, setCurrentProjectId } = useProjectStore();
+  const { currentProjectId } = useProjectStore();
   const { openModal } = useUIStore();
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
@@ -269,16 +269,30 @@ export const EditorPage = () => {
 
   if (!currentProjectId) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
-        <h1 className="text-2xl font-bold">欢迎使用 LocalScribe</h1>
-        <p className="text-muted-foreground">开始创作前，请先创建一个项目</p>
-        <button
-          onClick={() => openModal('project')}
-          className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
-          <PlusCircle className="h-5 w-5" />
-          新建项目
-        </button>
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-6 relative overflow-hidden">
+        {/* 背景装饰 */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full" />
+            <Feather className="h-16 w-16 text-accent relative" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-3xl font-serif font-bold text-foreground mb-2">LocalScribe</h1>
+            <p className="text-muted-foreground">你的本地写作工坊</p>
+          </div>
+          <button
+            onClick={() => openModal('project')}
+            className="flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/20"
+          >
+            <PlusCircle className="h-5 w-5" />
+            <span className="font-medium">创建第一个项目</span>
+          </button>
+        </div>
         <CreateItemModal />
       </div>
     );
@@ -286,26 +300,31 @@ export const EditorPage = () => {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* 左侧栏 */}
-      <aside className="w-64 border-r border-border flex flex-col bg-muted/20 flex-shrink-0">
-        <div className="h-16 border-b border-border flex items-center justify-between pl-6 pr-4 flex-shrink-0 bg-muted/10">
+      {/* 左侧栏 - 目录树 */}
+      <aside className="w-72 border-r border-border/60 flex flex-col sidebar-bg flex-shrink-0">
+        {/* 项目标题栏 */}
+        <div className="h-16 border-b border-border/60 flex items-center justify-between px-4 flex-shrink-0 bg-card/30 backdrop-blur-sm">
           {projects && projects.length > 0 ? (
             <div className="relative flex-1 mr-2">
               <ProjectSwitcher />
             </div>
           ) : (
-            <h1 className="text-lg font-semibold truncate">{project?.title || '我的小说'}</h1>
+            <div className="flex items-center gap-2 flex-1">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h1 className="text-base font-serif font-semibold truncate">{project?.title || '我的小说'}</h1>
+            </div>
           )}
           <button
             onClick={() => openModal('volume', currentProjectId)}
-            className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground flex-shrink-0"
+            className="p-2 hover:bg-accent/30 rounded-lg text-muted-foreground hover:text-foreground flex-shrink-0 transition-all duration-200 hover:scale-105"
             title="新建卷"
           >
             <PlusCircle className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto" ref={treeRef}>
+        {/* 目录树区域 */}
+        <div className="flex-1 overflow-y-auto py-2" ref={treeRef}>
           <DirectoryTree
             projectId={currentProjectId}
             selectedNoteId={selectedNoteId}
@@ -315,45 +334,52 @@ export const EditorPage = () => {
           />
         </div>
 
-        <div className="h-40 flex flex-col flex-shrink-0 border-t border-border">
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center text-xs px-4">
-              <Settings className="h-6 w-6 mx-auto mb-2 opacity-30" />
-              <p>功能设置</p>
-              <p className="text-[10px] mt-1 opacity-60">开发中...</p>
-            </div>
-          </div>
-          <div className="p-2">
+        {/* 底部操作栏 */}
+        <div className="h-auto flex flex-col flex-shrink-0 border-t border-border/60 bg-card/30 backdrop-blur-sm">
+          <div className="p-3">
             <button
               onClick={() => openModal('project')}
-              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded"
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
             >
-              <PlusCircle className="h-4 w-4" /> 新建项目
+              <PlusCircle className="h-4 w-4" />
+              <span>新建项目</span>
             </button>
           </div>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 border-b border-border flex items-center justify-center px-6 bg-background flex-shrink-0">
+      {/* 中间主编辑区 */}
+      <main className="flex-1 flex flex-col overflow-hidden bg-background">
+        {/* 标题栏 */}
+        <header className="h-16 border-b border-border/60 flex items-center justify-center px-8 bg-card/20 backdrop-blur-sm flex-shrink-0">
           <input
             type="text"
             value={noteTitle}
             onChange={handleTitleChange}
             onFocus={() => setIsTitleFocused(true)}
             onBlur={() => setIsTitleFocused(false)}
-            className={`text-2xl font-bold text-center bg-transparent border-none focus:outline-none w-full transition-all ${
-              !isTitleFocused && noteTitle
-                ? 'border-transparent'
-                : 'border-b border-input'
-            }`}
-            placeholder="输入标题..."
+            className={`
+              text-2xl font-serif font-bold text-center bg-transparent border-b-2 focus:outline-none w-full max-w-2xl transition-all duration-300 py-2
+              ${!isTitleFocused && noteTitle
+                ? 'border-transparent text-foreground'
+                : 'border-accent/50 focus:border-accent text-foreground'
+              }
+              placeholder:text-muted-foreground/50
+            `}
+            placeholder="无标题笔记"
           />
         </header>
 
+        {/* 编辑器区域 */}
         {isLoadingNote ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+              <div className="relative">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="absolute inset-0 blur-lg bg-primary/20 rounded-full" />
+              </div>
+              <span className="text-sm">加载中...</span>
+            </div>
           </div>
         ) : (
           <Editor
@@ -364,26 +390,35 @@ export const EditorPage = () => {
         )}
       </main>
 
-      <aside className="w-1/4 border-l border-border flex flex-col bg-muted/10 flex-shrink-0">
-        <div className="h-20 border-b border-border flex flex-col justify-center px-4 flex-shrink-0">
-          <div className="flex items-center gap-2 text-sm">
+      {/* 右侧栏 - AI 助手 */}
+      <aside className="w-80 border-l border-border/60 flex flex-col bg-card/10 flex-shrink-0">
+        {/* 状态栏 */}
+        <div className="h-14 border-b border-border/60 flex items-center justify-between px-4 flex-shrink-0 bg-card/30 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
             {updateNoteMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span className="text-primary">保存中...</span>
+                <div className="relative">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <div className="absolute inset-0 blur-sm bg-primary/30 rounded-full" />
+                </div>
+                <span className="text-sm text-primary font-medium">保存中...</span>
               </>
             ) : (
               <>
-                <Save className="h-4 w-4 text-green-600" />
-                <span className="text-green-600">已保存</span>
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/15">
+                  <Save className="h-3 w-3 text-green-600" />
+                </div>
+                <span className="text-sm text-green-600 font-medium">已保存</span>
               </>
             )}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            字数：{noteContent.replace(/<[^>]*>/g, '').length}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
+            <Type className="h-3 w-3" />
+            <span>{noteContent.replace(/<[^>]*>/g, '').length.toLocaleString()} 字</span>
           </div>
         </div>
 
+        {/* AI 聊天区域 */}
         <div className="flex-1 overflow-hidden">
           <AIChat />
         </div>
