@@ -23,7 +23,7 @@ export const useUpdateNote = (projectId: string) => {
       api.put<NoteResponse>(`/notes/${noteId}`, data),
     
     onSuccess: () => {
-      // 只刷新目录树，不更新单篇笔记缓存
+      // 只刷新目录树，不更新单篇章节缓存
       queryClient.invalidateQueries({ queryKey: ['directory', projectId] });
     },
   });
@@ -52,6 +52,18 @@ export const useCreateNote = (projectId: string) => {
       }),
     onSuccess: () => {
       // 创建成功后刷新目录树缓存
+      queryClient.invalidateQueries({ queryKey: ['directory', projectId] });
+    },
+  });
+};
+
+export const useDeleteNote = (projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (noteId: string) =>
+      api.delete(`/notes/${noteId}`),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['directory', projectId] });
     },
   });

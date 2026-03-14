@@ -35,7 +35,7 @@ class Folder(Base):
     # 自引用关联：一个文件夹(卷)下可以有多个子文件夹(幕)
     children: Mapped[List["Folder"]] = relationship(back_populates="parent", remote_side=[id])
     parent: Mapped[Optional["Folder"]] = relationship(back_populates="children", remote_side=[parent_id])
-    # 包含的笔记
+    # 包含的章节
     notes: Mapped[List["Note"]] = relationship(back_populates="folder", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:

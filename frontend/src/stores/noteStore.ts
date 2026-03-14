@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface NoteState {
-  // 当前正在编辑的笔记 ID
+  // 当前正在编辑的章节 ID
   currentNoteId: string | null;
   setCurrentNoteId: (id: string | null) => void;
 
@@ -24,7 +24,7 @@ export const useNoteStore = create<NoteState>()(
       // 如果需要本地草稿功能，可以在此扩展
     }),
     {
-      name: 'note-storage', // localStorage key，刷新页面后依然记住上次编辑的笔记
+      name: 'note-storage', // localStorage key，刷新页面后依然记住上次编辑的章节
     }
   )
 );

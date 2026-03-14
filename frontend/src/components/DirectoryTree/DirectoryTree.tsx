@@ -32,7 +32,7 @@ type TreeNodeType = VolumeNode | ActNode | NoteNode;
 interface DirectoryTreeProps {
   projectId: string;
   selectedNoteId?: string;
-  onSelectNote: (noteId: string, noteTitle: string) => void;
+  onSelectNote: (id: string, title: string) => void;
   expandedIds: Set<string>;
   onToggle: (id: string) => void;
 }
@@ -84,6 +84,41 @@ export const DirectoryTree = ({
     if (node.type === 'note') {
       setCurrentNoteId(node.id);
       onSelectNote(node.id, node.title);
+    }
+  };
+
+  const handleNoteDeleted = (noteId: string) => {
+    if (selectedNoteId === noteId && tree) {
+      // 如果删除的是当前选中的章节，需要找到上一章
+      
+      // 递归查找所有章节节点
+      const findAllNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): NoteNode[] => {
+        let notes: NoteNode[] = [];
+        for (const node of nodes) {
+          if (node.type === 'note') {
+            notes.push(node as NoteNode);
+          } else if ('children' in node) {
+            notes = notes.concat(findAllNotes(node.children as any));
+          }
+        }
+        return notes;
+      };
+
+      const allNotes = findAllNotes(tree);
+      const deletedIndex = allNotes.findIndex(note => note.id === noteId);
+      
+      if (deletedIndex > 0) {
+        // 存在上一章，切换到上一章
+        const previousNote = allNotes[deletedIndex - 1];
+        onSelectNote(previousNote.id, previousNote.title);
+      } else if (deletedIndex === 0 && allNotes.length > 1) {
+        // 删除的是第一章，但还有其他章节，切换到新的第一章
+        const nextNote = allNotes[1];
+        onSelectNote(nextNote.id, nextNote.title);
+      } else {
+        // 没有其他章节了，清空选中状态
+        onSelectNote('', '');
+      }
     }
   };
 
@@ -196,6 +231,7 @@ export const DirectoryTree = ({
               onToggle={onToggle}
               onSelect={handleSelect}
               expandedIds={expandedIds}
+              onNoteDeleted={handleNoteDeleted}
             />
           ))}
         </div>

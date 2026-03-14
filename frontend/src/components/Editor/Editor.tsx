@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -12,6 +12,7 @@ interface EditorProps {
 
 export const Editor = ({ content, onChange }: EditorProps) => {
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -26,6 +27,28 @@ export const Editor = ({ content, onChange }: EditorProps) => {
     editable: true,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+      
+      // 滚动到光标位置，保持在屏幕 2/3 高度
+      if (scrollContainerRef.current) {
+        const selection = editor.state.selection;
+        const { $head } = selection;
+        
+        // 获取光标位置的坐标
+        const coords = editor.view.coordsAtPos($head.pos);
+        
+        // 计算滚动位置
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const containerHeight = containerRect.height;
+        
+        // 计算目标滚动位置：光标位置 - 容器顶部 - 容器高度的 1/3
+        const targetScrollTop = coords.top - containerRect.top - containerHeight * (1/3);
+        
+        // 平滑滚动
+        scrollContainerRef.current.scrollTo({
+          top: Math.max(0, scrollContainerRef.current.scrollTop + targetScrollTop),
+          behavior: 'smooth'
+        });
+      }
     },
     editorProps: {
       attributes: {
@@ -57,7 +80,7 @@ export const Editor = ({ content, onChange }: EditorProps) => {
   return (
     <div className="flex-1 flex flex-col bg-background overflow-hidden">
       {/* 编辑器主体区域 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
         <div className="max-w-[850px] mx-auto py-10 px-6">
           {/* 纸张效果容器 */}
           <div className="editor-paper bg-card rounded-xl min-h-[600px]">

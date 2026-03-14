@@ -12,7 +12,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { Loader2, Save, Settings, PlusCircle, Feather, BookOpen, Type } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type } from 'lucide-react';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -21,7 +21,7 @@ type ProjectResponse = components['schemas']['ProjectResponse'];
 
 export const EditorPage = () => {
   const { currentProjectId } = useProjectStore();
-  const { openModal } = useUIStore();
+  const { openModal, newlyCreatedNoteId, setNewlyCreatedNoteId } = useUIStore();
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
@@ -31,7 +31,7 @@ export const EditorPage = () => {
 
   const lastSaveTimeRef = useRef<number>(0);
   const treeRef = useRef<HTMLDivElement>(null); // 用于滚动
-  const hasAutoCreatedRef = useRef(false); // 标记是否已自动创建笔记
+  const hasAutoCreatedRef = useRef(false); // 标记是否已自动创建章节
 
   // 获取所有项目列表（用于切换）
   const { data: projects } = useQuery({
@@ -70,12 +70,12 @@ export const EditorPage = () => {
     return null;
   };
 
-  // 辅助函数：检查是否有任何笔记
-  const hasAnyNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): boolean => {
+  // 辅助函数：检查是否有任何章节
+  const hasAnyChapters = (nodes: (VolumeNode | ActNode | NoteNode)[]): boolean => {
     for (const node of nodes) {
       if (node.type === 'note') return true;
       if ('children' in node && node.children.length > 0) {
-        if (hasAnyNotes(node.children as any)) return true;
+        if (hasAnyChapters(node.children as any)) return true;
       }
     }
     return false;
@@ -99,11 +99,11 @@ export const EditorPage = () => {
     return null;
   };
 
-  // 自动选中最新笔记（当 tree 加载完成且没有选中笔记时）
+  // 自动选中最新章节（当 tree 加载完成且没有选中章节时）
   useEffect(() => {
     if (!tree || tree.length === 0 || selectedNoteId) return;
 
-    // 递归查找所有笔记节点
+    // 递归查找所有章节节点
     const findAllNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): NoteNode[] => {
       let notes: NoteNode[] = [];
       for (const node of nodes) {
@@ -128,23 +128,76 @@ export const EditorPage = () => {
     setSelectedNoteId(latestNote.id);
     setNoteTitle(latestNote.title);
 
-    // 展开路径：找到该笔记的所有祖先节点
+    // 展开路径：找到该章节的所有祖先节点
     const ancestors = findAncestors(tree, latestNote.id);
     if (ancestors) {
       setExpandedIds(new Set(ancestors));
     }
   }, [tree, selectedNoteId]);
 
-  // 监听 projectId 变化，重置自动创建标记
+  // 监听 projectId 变化，重置自动创建标记和选中状态
   useEffect(() => {
     hasAutoCreatedRef.current = false;
+    setSelectedNoteId(undefined);
+    setNoteTitle('');
+    setNoteContent('');
+    setExpandedIds(new Set());
   }, [currentProjectId]);
 
-  // 自动创建第一个笔记（当项目没有任何笔记时）
+  // 监听新创建的章节，自动选中
+  useEffect(() => {
+    if (newlyCreatedNoteId && tree) {
+      // 查找新创建的章节的标题
+      const findNoteTitle = (nodes: (VolumeNode | ActNode | NoteNode)[], targetId: string): string | undefined => {
+        for (const node of nodes) {
+          if (node.type === 'note' && node.id === targetId) {
+            return node.title;
+          }
+          if ('children' in node && node.children.length > 0) {
+            const found = findNoteTitle(node.children as any, targetId);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+
+      const title = findNoteTitle(tree, newlyCreatedNoteId);
+      
+      // 如果找到了新章节，才进行后续操作
+      if (title !== undefined) {
+        setSelectedNoteId(newlyCreatedNoteId);
+        setNoteTitle(title || '');
+        setNoteContent('');
+
+        // 展开新章节所在的幕及其祖先
+        setExpandedIds((prev) => {
+          const next = new Set(prev);
+          const ancestors = findAncestors(tree, newlyCreatedNoteId);
+          if (ancestors) {
+            ancestors.forEach((id) => next.add(id));
+          }
+          return next;
+        });
+
+        // 滚动到新章节
+        setTimeout(() => {
+          const element = document.getElementById(`note-${newlyCreatedNoteId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+
+        // 清除新创建章节标记
+        setNewlyCreatedNoteId(null);
+      }
+    }
+  }, [newlyCreatedNoteId, tree, setNewlyCreatedNoteId]);
+
+  // 自动创建第一个章节（当项目没有任何章节时）
   useEffect(() => {
     if (!tree || tree.length === 0) return;
     if (hasAutoCreatedRef.current) return;
-    if (hasAnyNotes(tree)) return;
+    if (hasAnyChapters(tree)) return;
 
     const firstAct = findFirstAct(tree);
     if (!firstAct) return; // 没有幕（理论上不会发生，因为后端已创建默认幕）
@@ -162,7 +215,7 @@ export const EditorPage = () => {
           setNoteTitle(newNote.title); // 后端返回的 title 为空字符串，输入框显示 placeholder
           setNoteContent('');
 
-          // 展开新笔记所在的幕及其祖先
+          // 展开新章节所在的幕及其祖先
           setExpandedIds((prev) => {
             const next = new Set(prev);
             const ancestors = findAncestors(tree, newNote.folder_id);
@@ -172,7 +225,7 @@ export const EditorPage = () => {
             return next;
           });
 
-          // 滚动到新笔记
+          // 滚动到新章节
           setTimeout(() => {
             const element = document.getElementById(`note-${newNote.id}`);
             if (element) {
@@ -184,7 +237,7 @@ export const EditorPage = () => {
     );
   }, [tree, createNoteMutation, currentProjectId]);
 
-  // 每次目录树更新后，确保当前选中的笔记祖先节点保持展开
+  // 每次目录树更新后，确保当前选中的章节祖先节点保持展开
   useEffect(() => {
     if (!tree || !selectedNoteId) return;
     
@@ -198,7 +251,7 @@ export const EditorPage = () => {
     }
   }, [tree, selectedNoteId]);
 
-  // 滚动到选中的笔记
+  // 滚动到选中的章节
   useEffect(() => {
     if (selectedNoteId) {
       // 给一点时间让 DOM 更新
@@ -211,7 +264,7 @@ export const EditorPage = () => {
     }
   }, [selectedNoteId]);
 
-  // 同步笔记数据（仅当切换笔记时）
+  // 同步章节数据（仅当切换章节时）
   useEffect(() => {
     if (currentNote) {
       if (currentNote.title !== noteTitle) {
@@ -351,23 +404,25 @@ export const EditorPage = () => {
       {/* 中间主编辑区 */}
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
         {/* 标题栏 */}
-        <header className="h-16 border-b border-border/60 flex items-center justify-center px-8 bg-card/20 backdrop-blur-sm flex-shrink-0">
-          <input
-            type="text"
-            value={noteTitle}
-            onChange={handleTitleChange}
-            onFocus={() => setIsTitleFocused(true)}
-            onBlur={() => setIsTitleFocused(false)}
-            className={`
-              text-2xl font-serif font-bold text-center bg-transparent border-b-2 focus:outline-none w-full max-w-2xl transition-all duration-300 py-2
-              ${!isTitleFocused && noteTitle
-                ? 'border-transparent text-foreground'
-                : 'border-accent/50 focus:border-accent text-foreground'
-              }
-              placeholder:text-muted-foreground/50
-            `}
-            placeholder="无标题笔记"
-          />
+        <header className="h-16 border-b border-border/60 flex items-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0">
+          <div className="max-w-[850px] w-full mx-auto">
+            <input
+              type="text"
+              value={noteTitle}
+              onChange={handleTitleChange}
+              onFocus={() => setIsTitleFocused(true)}
+              onBlur={() => setIsTitleFocused(false)}
+              className={`
+                text-2xl font-serif font-bold text-center bg-transparent border-b-2 focus:outline-none w-full transition-all duration-300 py-2
+                ${!isTitleFocused && noteTitle
+                  ? 'border-transparent text-foreground'
+                  : 'border-accent/50 focus:border-accent text-foreground'
+                }
+                placeholder:text-muted-foreground/50
+              `}
+              placeholder="无标题章节"
+            />
+          </div>
         </header>
 
         {/* 编辑器区域 */}

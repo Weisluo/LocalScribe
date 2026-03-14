@@ -22,7 +22,7 @@ class ActNode(BaseModel):
 class NoteNode(BaseModel):
     type: Literal["note"] = "note"
     id: str
-    title: str # 注意：笔记用 title，文件夹用 name
+    title: str # 注意：章节用 title，文件夹用 name
     order: int
     created_at: datetime
 

@@ -8,7 +8,7 @@ import { api } from '@/utils/request';
 import { Loader2 } from 'lucide-react';
 
 export const CreateItemModal = () => {
-  const { modalType, modalParentId, closeModal } = useUIStore();
+  const { modalType, modalParentId, closeModal, setNewlyCreatedNoteId } = useUIStore();
   const { currentProjectId, setCurrentProjectId } = useProjectStore();
   const [title, setTitle] = useState('');
   const queryClient = useQueryClient();
@@ -48,7 +48,7 @@ export const CreateItemModal = () => {
         order: 0,
       });
   } else if (modalType === 'note') {
-    modalTitle = '新建笔记';
+    modalTitle = '新建章节';
     placeholder = '第一章：启程';
     mutationFn = (data) =>
       api.post('/notes', {
@@ -62,13 +62,21 @@ export const CreateItemModal = () => {
 
   const mutation = useMutation({
     mutationFn,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       closeModal();
       setTitle('');
 
       // 刷新目录树（所有涉及目录树的类型）
       if (modalType && modalType !== 'project') {
-        queryClient.invalidateQueries({ queryKey: ['directory', currentProjectId] });
+        await queryClient.invalidateQueries({ queryKey: ['directory', currentProjectId] });
+        
+        // 等待目录树刷新完成后再设置新章节 ID
+        if (modalType === 'note' && data?.id) {
+          // 延迟一下确保数据已更新
+          setTimeout(() => {
+            setNewlyCreatedNoteId(data.id);
+          }, 100);
+        }
       }
 
       // 如果是创建项目，自动切换到新项目
@@ -82,7 +90,7 @@ export const CreateItemModal = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    // 对于幕和笔记，必须存在父级 ID
+    // 对于幕和章节，必须存在父级 ID
     if ((modalType === 'act' || modalType === 'note') && !modalParentId) {
       alert('请先选择父级');
       return;

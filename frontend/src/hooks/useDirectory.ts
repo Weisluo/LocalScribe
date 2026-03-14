@@ -30,7 +30,7 @@ export const useCreateFolder = () => {
     mutationFn: (data: FolderCreate) => 
       api.post<FolderResponse>('/folders/', data),
     
-    onSuccess: (newFolder, variables) => {
+    onSuccess: (_, variables) => {
       // 创建成功后，让该项目的目录树缓存失效，触发自动刷新
       queryClient.invalidateQueries({ 
         queryKey: ['directory', variables.project_id] 
@@ -70,6 +70,24 @@ export const useDeleteFolder = () => {
     onSuccess: () => {
       // 简单粗暴：只要删除成功，刷新所有目录树缓存
       // 优化点：如果你知道具体 projectId，可以像 useCreateFolder 那样精确刷新
+      queryClient.invalidateQueries({ queryKey: ['directory'] });
+    },
+  });
+};
+
+/**
+ * 更新文件夹 Hook (重命名)
+ */
+export const useUpdateFolder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ folderId, data }: { folderId: string; data: { name: string } }) =>
+      api.put(`/folders/${folderId}`, data),
+    
+    onSuccess: () => {
+      // 更新成功后刷新目录树缓存
+      // 这里我们无法直接获取 projectId，所以刷新所有目录树
       queryClient.invalidateQueries({ queryKey: ['directory'] });
     },
   });

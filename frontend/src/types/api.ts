@@ -140,13 +140,13 @@ export interface paths {
         };
         /**
          * Get Notes
-         * @description 获取笔记列表，支持按文件夹或项目筛选
+         * @description 获取章节列表，支持按文件夹或项目筛选
          */
         get: operations["get_notes_api_v1_notes__get"];
         put?: never;
         /**
          * Create Note
-         * @description 创建笔记
+         * @description 创建章节
          */
         post: operations["create_note_api_v1_notes__post"];
         delete?: never;
@@ -164,18 +164,18 @@ export interface paths {
         };
         /**
          * Get Note
-         * @description 获取单个笔记详情
+         * @description 获取单个章节详情
          */
         get: operations["get_note_api_v1_notes__note_id__get"];
         /**
          * Update Note
-         * @description 更新笔记内容
+         * @description 更新章节内容
          */
         put: operations["update_note_api_v1_notes__note_id__put"];
         post?: never;
         /**
          * Delete Note
-         * @description 删除单个笔记
+         * @description 删除单个章节
          */
         delete: operations["delete_note_api_v1_notes__note_id__delete"];
         options?: never;
@@ -194,7 +194,7 @@ export interface paths {
         put?: never;
         /**
          * Batch Delete Notes
-         * @description 批量删除笔记
+         * @description 批量删除章节
          */
         post: operations["batch_delete_notes_api_v1_notes_batch_delete_post"];
         delete?: never;
@@ -214,7 +214,7 @@ export interface paths {
         put?: never;
         /**
          * Copy Note
-         * @description 复制笔记
+         * @description 复制章节
          */
         post: operations["copy_note_api_v1_notes__note_id__copy_post"];
         delete?: never;
@@ -233,7 +233,7 @@ export interface paths {
         get?: never;
         /**
          * Move Note
-         * @description 移动笔记到新文件夹或调整顺序（排序）
+         * @description 移动章节到新文件夹或调整顺序（排序）
          */
         put: operations["move_note_api_v1_notes__note_id__move_put"];
         post?: never;

@@ -9,11 +9,15 @@ interface UIState {
 
   // 弹窗状态
   modalType: ModalType;
-  modalParentId: string | null; // 父级 ID：创建卷时为 projectId，创建幕时为 volumeId，创建笔记时为 actId
+  modalParentId: string | null; // 父级 ID：创建卷时为 projectId，创建幕时为 volumeId，创建章节时为 actId
+
+  // 新创建的章节 ID（用于自动选中）
+  newlyCreatedNoteId: string | null;
 
   // Actions
   openModal: (type: Exclude<ModalType, null>, parentId?: string | null) => void;
   closeModal: () => void;
+  setNewlyCreatedNoteId: (noteId: string | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -22,6 +26,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   modalType: null,
   modalParentId: null,
+  newlyCreatedNoteId: null,
 
   openModal: (type, parentId = null) => set({
     modalType: type,
@@ -32,4 +37,6 @@ export const useUIStore = create<UIState>((set) => ({
     modalType: null,
     modalParentId: null,
   }),
+
+  setNewlyCreatedNoteId: (noteId) => set({ newlyCreatedNoteId: noteId }),
 }));

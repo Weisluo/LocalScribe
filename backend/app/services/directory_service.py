@@ -13,7 +13,7 @@ class DirectoryService:
             Folder.project_id == project_id
         ).order_by(Folder.order).all()
 
-        # 2. 获取该项目的所有笔记，按 order 排序
+        # 2. 获取该项目的所有章节，按 order 排序
         notes = db.query(Note).filter(
             Note.project_id == project_id
         ).order_by(Note.order).all()
@@ -40,7 +40,7 @@ class DirectoryService:
                 )
                 act_map[folder.id] = node
 
-        # 4. 将笔记挂载到对应的 Act 下
+        # 4. 将章节挂载到对应的 Act 下
         for note in notes:
             note_node = NoteNode(
                 id=note.id, 

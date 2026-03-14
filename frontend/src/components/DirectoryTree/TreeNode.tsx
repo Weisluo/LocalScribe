@@ -1,9 +1,13 @@
-import { ChevronRight, ChevronDown, FileText, Folder, FolderOpen, Plus, BookOpen, Scroll } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronRight, FileText, Folder, FolderOpen, Plus, BookOpen, Scroll, Edit2, Trash2, Check, X } from 'lucide-react';
 import type { components } from '@/types/api';
 import { useSortable } from '@dnd-kit/sortable';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useUIStore } from '@/stores/uiStore';
+import { useUpdateFolder, useDeleteFolder } from '@/hooks/useDirectory';
+import { useDeleteNote, useUpdateNote } from '@/hooks/useNote';
+import { useProjectStore } from '@/stores/projectStore';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -18,6 +22,8 @@ interface TreeNodeProps {
   onToggle: (id: string) => void;
   onSelect: (node: TreeNodeType) => void;
   expandedIds?: Set<string>;
+  projectId?: string;
+  onNoteDeleted?: (noteId: string) => void;
 }
 
 export const TreeNode = ({
@@ -28,10 +34,21 @@ export const TreeNode = ({
   onToggle,
   onSelect,
   expandedIds,
+  onNoteDeleted,
 }: TreeNodeProps) => {
   
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id });
   const openModal = useUIStore(state => state.openModal);
+  const currentProjectId = useProjectStore(state => state.currentProjectId);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  const updateFolderMutation = useUpdateFolder();
+  const deleteFolderMutation = useDeleteFolder();
+  const deleteNoteMutation = useDeleteNote(currentProjectId || '');
+  const updateNoteMutation = useUpdateNote(currentProjectId || '');
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -97,6 +114,119 @@ export const TreeNode = ({
     openModal('note', actId);
   };
 
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditValue('title' in node ? node.title || '' : node.name);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editValue.trim()) return;
+    if (!currentProjectId) {
+      alert('请先选择项目');
+      setIsEditing(false);
+      return;
+    }
+    
+    if (node.type === 'note') {
+      // 章节重命名
+      updateNoteMutation.mutate({
+        noteId: node.id,
+        data: { title: editValue.trim() }
+      }, {
+        onSuccess: () => {
+          setIsEditing(false);
+          // 更新标题显示
+          onSelect({ ...node, title: editValue.trim() });
+        },
+        onError: (error) => {
+          console.error('重命名章节失败:', error);
+          // 显示错误提示
+          alert('重命名失败，请重试');
+          // 保持编辑状态，允许用户重试或取消
+        }
+      });
+    } else {
+      // 卷/幕重命名
+      updateFolderMutation.mutate({
+        folderId: node.id,
+        data: { name: editValue.trim() }
+      }, {
+        onSuccess: () => {
+          setIsEditing(false);
+        },
+        onError: (error) => {
+          console.error('重命名卷/幕失败:', error);
+          // 显示错误提示
+          alert('重命名失败，请重试');
+          // 保持编辑状态，允许用户重试或取消
+        }
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditValue('');
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!currentProjectId) {
+      alert('请先选择项目');
+      setShowDeleteConfirm(false);
+      return;
+    }
+    
+    if (node.type === 'note') {
+      deleteNoteMutation.mutate(node.id, {
+        onSuccess: () => {
+          setShowDeleteConfirm(false);
+          if (onNoteDeleted) {
+            onNoteDeleted(node.id);
+          }
+        },
+        onError: (error) => {
+          console.error('删除章节失败:', error);
+          // 显示错误提示
+          alert('删除失败，请重试');
+          // 关闭确认对话框
+          setShowDeleteConfirm(false);
+        }
+      });
+    } else {
+      // 删除卷或幕
+      deleteFolderMutation.mutate(node.id, {
+        onSuccess: () => {
+          setShowDeleteConfirm(false);
+        },
+        onError: (error) => {
+          console.error('删除卷/幕失败:', error);
+          // 显示错误提示
+          alert('删除失败，请重试');
+          // 关闭确认对话框
+          setShowDeleteConfirm(false);
+        }
+      });
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
   const nodeId = node.type === 'note' ? `note-${node.id}` : undefined;
 
   return (
@@ -140,42 +270,112 @@ export const TreeNode = ({
 
         {getIcon()}
 
-        <span className={`
-          flex-1 truncate text-sm
-          ${node.type === 'note' ? 'font-serif' : 'font-medium'}
-          ${isSelected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}
-        `}>
-          {'title' in node ? node.title || '无标题' : node.name}
-        </span>
-
-        {node.type === 'volume' && (
-          <button
-            onClick={(e) => handleCreateAct(e, node.id)}
-            className="
-              opacity-0 group-hover:opacity-100
-              p-1 rounded-md hover:bg-accent/40
-              text-muted-foreground hover:text-foreground
-              transition-all duration-200
-            "
-            title="新建幕"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+        {isEditing ? (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleSaveEdit}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 text-sm bg-background border border-accent/50 rounded px-1.5 py-0.5 focus:outline-none focus:border-accent"
+            autoFocus
+          />
+        ) : (
+          <span className={`
+            flex-1 truncate text-sm
+            ${node.type === 'note' ? 'font-serif' : 'font-medium'}
+            ${isSelected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}
+          `}>
+            {'title' in node ? node.title || '无标题' : node.name}
+          </span>
         )}
 
-        {node.type === 'act' && (
-          <button
-            onClick={(e) => handleCreateNote(e, node.id)}
-            className="
-              opacity-0 group-hover:opacity-100
-              p-1 rounded-md hover:bg-accent/40
-              text-muted-foreground hover:text-foreground
-              transition-all duration-200
-            "
-            title="新建笔记"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+        {!isEditing && !showDeleteConfirm && (
+          <>
+            {node.type === 'volume' && (
+              <button
+                onClick={(e) => handleCreateAct(e, node.id)}
+                className="
+                  opacity-0 group-hover:opacity-100
+                  p-1 rounded-md hover:bg-accent/40
+                  text-muted-foreground hover:text-foreground
+                  transition-all duration-200
+                "
+                title="新建幕"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {node.type === 'act' && (
+              <button
+                onClick={(e) => handleCreateNote(e, node.id)}
+                className="
+                  opacity-0 group-hover:opacity-100
+                  p-1 rounded-md hover:bg-accent/40
+                  text-muted-foreground hover:text-foreground
+                  transition-all duration-200
+                "
+                title="新建章节"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            <button
+              onClick={handleStartEdit}
+              className="
+                opacity-0 group-hover:opacity-100
+                p-1 rounded-md hover:bg-accent/40
+                text-muted-foreground hover:text-foreground
+                transition-all duration-200
+              "
+              title="重命名"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              onClick={handleDelete}
+              className="
+                opacity-0 group-hover:opacity-100
+                p-1 rounded-md hover:bg-destructive/20 hover:text-destructive
+                text-muted-foreground
+                transition-all duration-200
+              "
+              title="删除"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </>
+        )}
+
+        {showDeleteConfirm && (
+          <>
+            <button
+              onClick={handleConfirmDelete}
+              className="
+                p-1 rounded-md hover:bg-destructive/20 hover:text-destructive
+                text-destructive
+                transition-all duration-200
+              "
+              title="确认删除"
+            >
+              <Check className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={handleCancelDelete}
+              className="
+                p-1 rounded-md hover:bg-accent/40
+                text-muted-foreground hover:text-foreground
+                transition-all duration-200
+              "
+              title="取消"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </>
         )}
       </div>
 
