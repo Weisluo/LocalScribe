@@ -99,6 +99,26 @@ export const EditorPage = () => {
     return null;
   };
 
+  // 辅助函数：计算项目总字数（使用当前编辑内容的实时字数）
+  const calculateTotalWordCount = (nodes: VolumeNode[], currentNoteId: string | undefined, currentContent: string): number => {
+    let total = 0;
+    const currentContentLength = currentContent.replace(/<[^>]*>/g, '').length;
+    for (const volume of nodes) {
+      for (const act of volume.children) {
+        for (const note of act.children) {
+          const noteNode = note as NoteNode;
+          // 如果是当前编辑的章节，使用当前内容的实时字数
+          if (currentNoteId && noteNode.id === currentNoteId) {
+            total += currentContentLength;
+          } else {
+            total += noteNode.word_count || 0;
+          }
+        }
+      }
+    }
+    return total;
+  };
+
   // 自动选中最新章节（当 tree 加载完成且没有选中章节时）
   useEffect(() => {
     if (!tree || tree.length === 0 || selectedNoteId) return;
@@ -483,9 +503,17 @@ export const EditorPage = () => {
               </>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full">
-            <Type className="h-3 w-3" />
-            <span>{noteContent.replace(/<[^>]*>/g, '').length.toLocaleString()} 字</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full" title="本章字数">
+              <Type className="h-3 w-3" />
+              <span>{noteContent.replace(/<[^>]*>/g, '').length.toLocaleString()} 字</span>
+            </div>
+            {tree && tree.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-accent/30 px-2.5 py-1 rounded-full" title="全文总字数">
+                <BookOpen className="h-3 w-3" />
+                <span>{calculateTotalWordCount(tree, selectedNoteId, noteContent).toLocaleString()} 字</span>
+              </div>
+            )}
           </div>
         </div>
 

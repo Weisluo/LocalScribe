@@ -25,6 +25,7 @@ class NoteNode(BaseModel):
     title: str # 注意：章节用 title，文件夹用 name
     order: int
     created_at: datetime
+    word_count: int = 0
 
 # 为了支持递归引用，需要更新模型的前向引用
 VolumeNode.model_rebuild()

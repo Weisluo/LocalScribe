@@ -14,6 +14,7 @@ interface EditorProps {
 export const Editor = ({ content, onChange }: EditorProps) => {
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticUpdateRef = useRef(false);
   const { lineSpacing, paragraphSpacing, paragraphIndent } = useEditorSettingsStore();
 
   const editor = useEditor({
@@ -30,40 +31,54 @@ export const Editor = ({ content, onChange }: EditorProps) => {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
-    onTransaction: ({ editor }) => {
-      // 只在有选区变化且编辑器聚焦时处理滚动
+    onTransaction: ({ editor, transaction }) => {
+      // 跳过程序化更新
+      if (isProgrammaticUpdateRef.current) return;
+      
+      // 只在编辑器聚焦时处理滚动
       if (!editor.isFocused || !scrollContainerRef.current) return;
       
-      const { selection } = editor.state;
-      const { $head } = selection;
+      // 处理用户输入（文档变化）或选区变化的 transaction
+      const shouldHandleScroll = transaction.docChanged || transaction.selectionSet;
+      if (!shouldHandleScroll) return;
       
-      // 获取光标位置的坐标（相对于视口）
-      const coords = editor.view.coordsAtPos($head.pos);
-      const containerRect = scrollContainerRef.current.getBoundingClientRect();
-      const containerHeight = containerRect.height;
-      
-      // 计算光标相对于容器的位置
-      const cursorRelativeToContainer = coords.top - containerRect.top;
-      
-      // 目标位置：容器高度的 2/3 处
-      const targetPosition = containerHeight * (2 / 3);
-      
-      // 如果光标在目标位置下方，需要向下滚动
-      if (cursorRelativeToContainer > targetPosition) {
-        const scrollDelta = cursorRelativeToContainer - targetPosition;
-        scrollContainerRef.current.scrollBy({
-          top: scrollDelta,
-          behavior: 'smooth'
-        });
-      }
-      // 如果光标在容器顶部上方（被遮挡），向上滚动
-      else if (cursorRelativeToContainer < 50) {
-        const scrollDelta = targetPosition - cursorRelativeToContainer;
-        scrollContainerRef.current.scrollBy({
-          top: -scrollDelta,
-          behavior: 'smooth'
-        });
-      }
+      // 使用 setTimeout 确保 DOM 已更新（特别是输入换行后）
+      setTimeout(() => {
+        if (!scrollContainerRef.current || !editor.isFocused) return;
+        
+        const { selection } = editor.state;
+        const { $head } = selection;
+        
+        // 获取光标位置的坐标（相对于视口）
+        const coords = editor.view.coordsAtPos($head.pos);
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const containerHeight = containerRect.height;
+        const currentScrollTop = scrollContainerRef.current.scrollTop;
+        
+        // 计算光标相对于容器的位置
+        const cursorRelativeToContainer = coords.top - containerRect.top;
+        
+        // 目标位置：容器高度的 3/4 处
+        const targetPosition = containerHeight * (3 / 4);
+        
+        // 如果光标在目标位置下方，将光标定位到 3/4 处
+        if (cursorRelativeToContainer > targetPosition) {
+          // 需要滚动的距离 = 当前滚动位置 + (光标相对位置 - 目标位置)
+          const newScrollTop = currentScrollTop + (cursorRelativeToContainer - targetPosition);
+          scrollContainerRef.current!.scrollTo({
+            top: newScrollTop,
+            behavior: 'smooth'
+          });
+        }
+        // 如果光标在容器顶部上方（被遮挡），向上滚动
+        else if (cursorRelativeToContainer < 50) {
+          const newScrollTop = currentScrollTop + (cursorRelativeToContainer - targetPosition);
+          scrollContainerRef.current!.scrollTo({
+            top: newScrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }, 10);
     },
     editorProps: {
       attributes: {
@@ -75,7 +90,12 @@ export const Editor = ({ content, onChange }: EditorProps) => {
 
   useEffect(() => {
     if (editor && !editor.isFocused && content !== editor.getHTML()) {
+      isProgrammaticUpdateRef.current = true;
       editor.commands.setContent(content, false);
+      // 重置标志
+      setTimeout(() => {
+        isProgrammaticUpdateRef.current = false;
+      }, 0);
     }
   }, [content, editor]);
 
@@ -102,6 +122,8 @@ export const Editor = ({ content, onChange }: EditorProps) => {
           <div className="editor-paper bg-card rounded-xl min-h-[600px]">
             <EditorContent editor={editor} />
           </div>
+          {/* 底部占位区域，让最后一行可以滚动到视口 3/4 位置 */}
+          <div className="h-[50vh]" />
         </div>
       </div>
       

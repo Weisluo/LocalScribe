@@ -65,11 +65,18 @@ def update_note(note_id: str, note_in: NoteUpdate, db: Session = Depends(get_db)
     db_note = db.query(Note).filter(Note.id == note_id).first()
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
-    
+
     update_data = note_in.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_note, key, value)
-    
+
+    # 如果更新了内容，自动计算字数
+    if "content" in update_data and update_data["content"] is not None:
+        import re
+        # 移除 HTML 标签后计算字数
+        text = re.sub(r'<[^>]+>', '', update_data["content"])
+        db_note.word_count = len(text)
+
     db.commit()
     db.refresh(db_note)
     return db_note

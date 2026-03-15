@@ -482,6 +482,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Word Count
+             * @default 0
+             */
+            word_count: number;
         };
         /** NoteResponse */
         NoteResponse: {
