@@ -45,7 +45,7 @@ export const ProjectSwitcher = () => {
               <Select.Item
                 key={project.id}
                 value={project.id}
-                className="relative flex items-center px-6 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer focus:outline-none focus:bg-accent"
+                className="relative flex items-center px-6 py-2 text-sm rounded-md cursor-pointer focus:outline-none transition-all duration-200 hover:bg-primary/5 hover:text-primary data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:font-medium border-l-2 border-transparent data-[state=checked]:border-primary"
               >
                 <Select.ItemText>{project.title}</Select.ItemText>
               </Select.Item>

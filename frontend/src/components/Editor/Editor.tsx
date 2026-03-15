@@ -146,7 +146,7 @@ export const Editor = ({ content, onChange }: EditorProps) => {
         </button>
         
         {/* 工具栏内容 */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isToolbarVisible ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isToolbarVisible ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
           <Toolbar editor={editor} />
         </div>
       </div>

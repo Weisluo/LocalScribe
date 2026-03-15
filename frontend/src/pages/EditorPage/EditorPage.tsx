@@ -13,7 +13,7 @@ import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2 } from 'lucide-react';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -33,6 +33,17 @@ export const EditorPage = () => {
   const lastSaveTimeRef = useRef<number>(0);
   const treeRef = useRef<HTMLDivElement>(null); // 用于滚动
   const hasAutoCreatedRef = useRef(false); // 标记是否已自动创建章节
+  const containerRef = useRef<HTMLDivElement>(null); // 主容器引用
+
+  // 右侧栏宽度状态 - 默认最小 25%
+  const [rightPanelWidth, setRightPanelWidth] = useState<number>(25);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // 拖拽调整大小相关引用
+  const resizingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthPercentRef = useRef(0);
+  const containerWidthRef = useRef(0);
 
   // 获取所有项目列表（用于切换）
   const { data: projects } = useQuery({
@@ -49,6 +60,12 @@ export const EditorPage = () => {
   const { data: currentNote, isLoading: isLoadingNote } = useNote(selectedNoteId);
   const updateNoteMutation = useUpdateNote(currentProjectId || '');
   const createNoteMutation = useCreateNote(currentProjectId || '');
+
+  // 处理删除项目 - 打开确认弹窗
+  const handleDeleteProject = () => {
+    if (!currentProjectId) return;
+    openModal('delete-project');
+  };
 
   // 获取目录树数据
   const { data: tree } = useQuery({
@@ -337,6 +354,59 @@ export const EditorPage = () => {
     });
   };
 
+  // 开始拖拽调整大小
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!containerRef.current) return;
+
+    resizingRef.current = true;
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthPercentRef.current = rightPanelWidth;
+    containerWidthRef.current = containerRef.current.getBoundingClientRect().width;
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [rightPanelWidth]);
+
+  // 拖拽中
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizingRef.current || !containerRef.current) return;
+
+    const containerWidth = containerWidthRef.current;
+    const deltaX = startXRef.current - e.clientX; // 向左拖动减小右侧栏宽度
+    const deltaPercent = (deltaX / containerWidth) * 100;
+    let newWidth = startWidthPercentRef.current + deltaPercent;
+
+    // 限制最小和最大宽度：最小 25%，最大 50%
+    newWidth = Math.max(25, Math.min(50, newWidth));
+
+    setRightPanelWidth(newWidth);
+  }, []);
+
+  // 结束拖拽
+  const handleResizeEnd = useCallback(() => {
+    if (!resizingRef.current) return;
+
+    resizingRef.current = false;
+    setIsResizing(false);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  // 添加/移除全局事件监听
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
   if (!currentProjectId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-background gap-6 relative overflow-hidden">
@@ -369,7 +439,7 @@ export const EditorPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div ref={containerRef} className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* 左侧栏 - 目录树 */}
       <aside className="w-72 border-r border-border/60 flex flex-col sidebar-bg flex-shrink-0">
         {/* 项目标题栏 */}
@@ -406,10 +476,18 @@ export const EditorPage = () => {
 
         {/* 底部操作栏 */}
         <div className="h-auto flex flex-col flex-shrink-0 border-t border-border/60 bg-card/30 backdrop-blur-sm">
-          <div className="p-3">
+          <div className="p-3 flex gap-2">
+            <button
+              onClick={handleDeleteProject}
+              disabled={!currentProjectId}
+              className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200 disabled:opacity-50"
+              title="删除当前项目"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
             <button
               onClick={() => openModal('project')}
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
             >
               <PlusCircle className="h-4 w-4" />
               <span>新建项目</span>
@@ -421,8 +499,8 @@ export const EditorPage = () => {
       {/* 中间主编辑区 */}
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
         {/* 标题栏 */}
-        <header className="h-16 border-b border-border/60 flex items-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0">
-          <div className="max-w-[850px] w-full mx-auto">
+        <header className="h-16 border-b border-border/60 flex items-center bg-card/20 backdrop-blur-sm flex-shrink-0">
+          <div className="max-w-[850px] w-full mx-auto px-6">
             <input
               type="text"
               value={noteTitle}
@@ -462,8 +540,30 @@ export const EditorPage = () => {
         )}
       </main>
 
+      {/* 可拖拽分割线 */}
+      <div
+        className={`
+          w-1 flex-shrink-0 cursor-col-resize flex items-center justify-center
+          transition-colors duration-150 hover:bg-accent/50
+          ${isResizing ? 'bg-accent/70' : 'bg-border/60'}
+        `}
+        onMouseDown={handleResizeStart}
+        title="拖拽调整宽度"
+      >
+        <div className={`
+          flex items-center justify-center w-4 h-8 rounded-md
+          transition-all duration-150
+          ${isResizing ? 'bg-accent/30' : 'hover:bg-accent/20'}
+        `}>
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/60" />
+        </div>
+      </div>
+
       {/* 右侧栏 - AI 助手 */}
-      <aside className="w-80 border-l border-border/60 flex flex-col bg-card/10 flex-shrink-0">
+      <aside
+        className="border-l border-border/60 flex flex-col bg-card/10 flex-shrink-0"
+        style={{ width: `${rightPanelWidth}%` }}
+      >
         {/* 状态栏 - 美化后的信息统计面板 */}
         <div className="border-b border-border/60 flex flex-col flex-shrink-0 bg-gradient-to-br from-card/50 via-card/30 to-accent/5 backdrop-blur-sm">
           {/* 保存状态指示器 */}
@@ -498,60 +598,55 @@ export const EditorPage = () => {
 
             return (
               <div className="px-3 pb-3 space-y-2">
-                {/* 当前章节统计 */}
-                <div className="bg-gradient-to-br from-background/80 to-muted/30 rounded-lg p-2.5 ring-1 ring-border/40 shadow-sm">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <div className="w-1 h-3.5 bg-primary/60 rounded-full" />
-                    <span className="text-xs font-medium text-muted-foreground">当前章节</span>
+                {/* 统计卡片网格 - 当前章节和全书统计并排，占比3:2 */}
+                <div className="grid grid-cols-5 gap-2">
+                  {/* 当前章节统计 - 占3份 */}
+                  <div className="col-span-3 bg-gradient-to-br from-background/80 to-muted/30 rounded-lg p-2 ring-1 ring-border/40 shadow-sm">
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <div className="w-1 h-3 bg-primary/60 rounded-full" />
+                      <span className="text-xs font-medium text-muted-foreground">当前章节</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      <div className="flex flex-col items-center p-1 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="字符总数">
+                        <FileText className="h-3 w-3 text-primary/70 mb-0.5" />
+                        <span className="text-xs font-semibold text-foreground">{formatNumber(currentStats.charCount)}</span>
+                        <span className="text-[9px] text-muted-foreground">字符</span>
+                      </div>
+                      <div className="flex flex-col items-center p-1 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-accent/20 transition-all duration-200" title="中文字符">
+                        <Languages className="h-3 w-3 text-accent/70 mb-0.5" />
+                        <span className="text-xs font-semibold text-foreground">{formatNumber(currentStats.chineseCharCount)}</span>
+                        <span className="text-[9px] text-muted-foreground">中文</span>
+                      </div>
+                      <div className="flex flex-col items-center p-1 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="预计阅读时长">
+                        <Clock className="h-3 w-3 text-primary/70 mb-0.5" />
+                        <span className="text-xs font-semibold text-foreground">{formatReadingTime(currentStats.readingTime)}</span>
+                        <span className="text-[9px] text-muted-foreground">阅读</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className="flex flex-col items-center p-1.5 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="字符总数">
-                      <FileText className="h-3.5 w-3.5 text-primary/70 mb-1" />
-                      <span className="text-sm font-semibold text-foreground">{formatNumber(currentStats.charCount)}</span>
-                      <span className="text-[10px] text-muted-foreground">字符</span>
-                    </div>
-                    <div className="flex flex-col items-center p-1.5 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-accent/20 transition-all duration-200" title="中文字符">
-                      <Languages className="h-3.5 w-3.5 text-accent/70 mb-1" />
-                      <span className="text-sm font-semibold text-foreground">{formatNumber(currentStats.chineseCharCount)}</span>
-                      <span className="text-[10px] text-muted-foreground">中文</span>
-                    </div>
-                    <div className="flex flex-col items-center p-1.5 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="预计阅读时长">
-                      <Clock className="h-3.5 w-3.5 text-primary/70 mb-1" />
-                      <span className="text-sm font-semibold text-foreground">{formatReadingTime(currentStats.readingTime)}</span>
-                      <span className="text-[10px] text-muted-foreground">阅读</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* 全文统计 */}
-                {projectStats && (
-                  <div className="bg-gradient-to-br from-accent/10 via-accent/5 to-background/80 rounded-lg p-2.5 ring-1 ring-accent/20 shadow-sm">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <div className="w-1 h-3.5 bg-accent/60 rounded-full" />
-                      <span className="text-xs font-medium text-accent-foreground/70">全书统计</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-2 p-2 bg-card/70 rounded-md ring-1 ring-border/30">
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15">
-                          <BookOpen className="h-3.5 w-3.5 text-accent" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground">总字符</span>
-                          <span className="text-sm font-semibold text-foreground">{formatNumber(projectStats.charCount)}</span>
-                        </div>
+                  {/* 全文统计 - 占2份 */}
+                  {projectStats && (
+                    <div className="col-span-2 bg-gradient-to-br from-accent/10 via-accent/5 to-background/80 rounded-lg p-2 ring-1 ring-accent/20 shadow-sm">
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <div className="w-1 h-3 bg-accent/60 rounded-full" />
+                        <span className="text-xs font-medium text-accent-foreground/70">全书统计</span>
                       </div>
-                      <div className="flex items-center gap-2 p-2 bg-card/70 rounded-md ring-1 ring-border/30">
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
-                          <Type className="h-3.5 w-3.5 text-primary" />
+                      <div className="grid grid-cols-2 gap-1">
+                        <div className="flex flex-col items-center p-1 bg-card/70 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-accent/20 transition-all duration-200" title="总字符">
+                          <BookOpen className="h-3 w-3 text-accent/70 mb-0.5" />
+                          <span className="text-xs font-semibold text-foreground">{formatNumber(projectStats.charCount)}</span>
+                          <span className="text-[9px] text-muted-foreground">总字符</span>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground">总中文</span>
-                          <span className="text-sm font-semibold text-foreground">{formatNumber(projectStats.chineseCharCount)}</span>
+                        <div className="flex flex-col items-center p-1 bg-card/70 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="总中文">
+                          <Type className="h-3 w-3 text-primary/70 mb-0.5" />
+                          <span className="text-xs font-semibold text-foreground">{formatNumber(projectStats.chineseCharCount)}</span>
+                          <span className="text-[9px] text-muted-foreground">总中文</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })()}

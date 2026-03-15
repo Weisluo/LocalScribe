@@ -1,7 +1,7 @@
 // frontend/src/stores/uiStore.ts
 import { create } from 'zustand';
 
-export type ModalType = 'project' | 'volume' | 'act' | 'note' | null;
+export type ModalType = 'project' | 'volume' | 'act' | 'note' | 'delete-project' | null;
 
 interface UIState {
   isSidebarCollapsed: boolean;
