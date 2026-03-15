@@ -3,20 +3,69 @@ import {
   Bold, Italic, Strikethrough, Code,
   Heading1, Heading2, List, ListOrdered,
   Quote, Undo, Redo,
-  Minus, Plus, Indent, Outdent
+  Minus, Plus, Indent, Outdent,
+  Copy, Check
 } from 'lucide-react';
 import { useEditorSettingsStore } from '../../stores/editorSettingsStore';
+import { useState } from 'react';
 
 interface ToolbarProps {
   editor: Editor | null;
 }
 
 export const Toolbar = ({ editor }: ToolbarProps) => {
+  const [copied, setCopied] = useState(false);
+
   if (!editor) {
     return null;
   }
 
   const { lineSpacing, increaseLineSpacing, decreaseLineSpacing, paragraphSpacing, increaseParagraphSpacing, decreaseParagraphSpacing, paragraphIndent, increaseParagraphIndent, decreaseParagraphIndent, fontSize, increaseFontSize, decreaseFontSize } = useEditorSettingsStore();
+
+  const handleCopyAll = async () => {
+    const text = editor.getText();
+    
+    // 降级方案：使用 document.execCommand('copy') 或创建临时 textarea
+    const fallbackCopy = (textToCopy: string): boolean => {
+      const textArea = document.createElement('textarea');
+      textArea.value = textToCopy;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch (err) {
+        console.error('execCommand copy failed:', err);
+      }
+      
+      document.body.removeChild(textArea);
+      return success;
+    };
+    
+    try {
+      // 优先使用现代 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // 降级到 execCommand
+        const success = fallbackCopy(text);
+        if (!success) {
+          throw new Error('复制失败：浏览器不支持复制功能');
+        }
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('复制失败:', err);
+      // 可以在这里添加用户提示，比如 toast 通知
+      alert('复制失败，请手动复制内容');
+    }
+  };
 
   const btnClass = (isActive: boolean, isDisabled = false) => `
     p-2 rounded-lg transition-all duration-200 ease-out
@@ -263,6 +312,23 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
           title="增大字号"
         >
           <Plus className="h-4 w-4" />
+        </ToolbarButton>
+      </ToolbarGroup>
+
+      <Divider />
+
+      {/* 复制全部内容 */}
+      <ToolbarGroup>
+        <ToolbarButton
+          onClick={handleCopyAll}
+          isActive={copied}
+          title={copied ? '已复制' : '复制全部内容'}
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-green-600" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
         </ToolbarButton>
       </ToolbarGroup>
     </div>

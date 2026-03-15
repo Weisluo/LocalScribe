@@ -12,6 +12,7 @@ import { useUIStore } from '@/stores/uiStore';
 
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
+import { Export } from '@/components/Export';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
 import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore } from 'lucide-react';
@@ -500,16 +501,25 @@ export const EditorPage = () => {
             >
               <Trash2 className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => {
-                setShowTrash(false);
-                openModal('project');
-              }}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
-            >
-              <PlusCircle className="h-4 w-4" />
-              <span>新建项目</span>
-            </button>
+            <div className="flex-1 flex gap-2">
+              <button
+                onClick={() => {
+                  setShowTrash(false);
+                  openModal('project');
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs text-emerald-600/80 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-lg transition-all duration-200"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>新建项目</span>
+              </button>
+              {tree && tree.length > 0 && (
+                <Export
+                  projectId={currentProjectId}
+                  projectTitle={project?.title}
+                  tree={tree}
+                />
+              )}
+            </div>
             <button
               onClick={() => setShowTrash(true)}
               className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
