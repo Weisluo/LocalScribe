@@ -307,6 +307,22 @@ export const EditorPage = () => {
   };
 
   const handleSelectNote = (id: string, title: string) => {
+    const now = Date.now();
+    if (selectedNoteId && selectedNoteId !== id && (noteTitle || noteContent) && now - lastSaveTimeRef.current > 500 && !updateNoteMutation.isPending) {
+      lastSaveTimeRef.current = now;
+      updateNoteMutation.mutate(
+        {
+          noteId: selectedNoteId,
+          data: { title: noteTitle, content: noteContent }
+        },
+        {
+          onError: (error) => {
+            console.error('保存笔记失败:', error);
+            // 这里可以添加更具体的错误处理，例如显示 toast 或通知
+          }
+        }
+      );
+    }
     setSelectedNoteId(id);
     setNoteTitle(title);
   };

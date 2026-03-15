@@ -22,8 +22,8 @@ export const useUpdateNote = (projectId: string) => {
     mutationFn: ({ noteId, data }: { noteId: string; data: NoteUpdate }) =>
       api.put<NoteResponse>(`/notes/${noteId}`, data),
     
-    onSuccess: () => {
-      // 只刷新目录树，不更新单篇章节缓存
+    onSuccess: (updatedNote) => {
+      queryClient.setQueryData(['note', updatedNote.id], updatedNote);
       queryClient.invalidateQueries({ queryKey: ['directory', projectId] });
     },
   });

@@ -233,10 +233,10 @@ export const TreeNode = ({
     <div ref={setNodeRef} style={style} id={nodeId}>
       <div
         className={`
-          group flex items-center gap-1.5 py-1.5 px-2 rounded-lg cursor-pointer
+          group flex items-center gap-1.5 py-1.5 px-2 rounded-lg cursor-pointer relative
           transition-all duration-200 ease-out
-          ${isSelected 
-            ? 'bg-accent/20 text-accent-foreground font-medium shadow-sm' 
+          ${isSelected
+            ? 'bg-accent/20 text-accent-foreground font-medium shadow-sm'
             : 'hover:bg-accent/10 hover:text-accent-foreground'
           }
           ${node.type === 'note' && isSelected ? 'ring-1 ring-accent/30' : ''}
@@ -283,7 +283,7 @@ export const TreeNode = ({
           />
         ) : (
           <span className={`
-            flex-1 truncate text-sm
+            flex-1 truncate text-sm pr-16
             ${node.type === 'note' ? 'font-serif' : 'font-medium'}
             ${isSelected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}
           `}>
@@ -292,12 +292,18 @@ export const TreeNode = ({
         )}
 
         {!isEditing && !showDeleteConfirm && (
-          <>
+          <div className="
+            absolute right-1 top-1/2 -translate-y-1/2
+            flex items-center gap-0.5
+            opacity-0 group-hover:opacity-100
+            transition-all duration-200
+            bg-inherit rounded-md px-1
+            shadow-[-8px_0_8px_rgba(0,0,0,0.05)]
+          ">
             {node.type === 'volume' && (
               <button
                 onClick={(e) => handleCreateAct(e, node.id)}
                 className="
-                  opacity-0 group-hover:opacity-100
                   p-1 rounded-md hover:bg-accent/40
                   text-muted-foreground hover:text-foreground
                   transition-all duration-200
@@ -312,7 +318,6 @@ export const TreeNode = ({
               <button
                 onClick={(e) => handleCreateNote(e, node.id)}
                 className="
-                  opacity-0 group-hover:opacity-100
                   p-1 rounded-md hover:bg-accent/40
                   text-muted-foreground hover:text-foreground
                   transition-all duration-200
@@ -326,7 +331,6 @@ export const TreeNode = ({
             <button
               onClick={handleStartEdit}
               className="
-                opacity-0 group-hover:opacity-100
                 p-1 rounded-md hover:bg-accent/40
                 text-muted-foreground hover:text-foreground
                 transition-all duration-200
@@ -339,7 +343,6 @@ export const TreeNode = ({
             <button
               onClick={handleDelete}
               className="
-                opacity-0 group-hover:opacity-100
                 p-1 rounded-md hover:bg-destructive/20 hover:text-destructive
                 text-muted-foreground
                 transition-all duration-200
@@ -348,11 +351,15 @@ export const TreeNode = ({
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-          </>
+          </div>
         )}
 
         {showDeleteConfirm && (
-          <>
+          <div className="
+            absolute right-1 top-1/2 -translate-y-1/2
+            flex items-center gap-0.5
+            bg-inherit rounded-md px-1
+          ">
             <button
               onClick={handleConfirmDelete}
               className="
@@ -375,7 +382,7 @@ export const TreeNode = ({
             >
               <X className="h-3.5 w-3.5" />
             </button>
-          </>
+          </div>
         )}
       </div>
 

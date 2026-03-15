@@ -1,9 +1,11 @@
 import { Editor } from '@tiptap/react';
-import { 
-  Bold, Italic, Strikethrough, Code, 
-  Heading1, Heading2, List, ListOrdered, 
-  Quote, Undo, Redo, SeparatorVertical
+import {
+  Bold, Italic, Strikethrough, Code,
+  Heading1, Heading2, List, ListOrdered,
+  Quote, Undo, Redo,
+  Minus, Plus, Indent, Outdent
 } from 'lucide-react';
+import { useEditorSettingsStore } from '../../stores/editorSettingsStore';
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -13,6 +15,8 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
   if (!editor) {
     return null;
   }
+
+  const { lineSpacing, increaseLineSpacing, decreaseLineSpacing, paragraphSpacing, increaseParagraphSpacing, decreaseParagraphSpacing, paragraphIndent, increaseParagraphIndent, decreaseParagraphIndent } = useEditorSettingsStore();
 
   const btnClass = (isActive: boolean, isDisabled = false) => `
     p-2 rounded-lg transition-all duration-200 ease-out
@@ -146,6 +150,75 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
         title="引用"
       >
         <Quote className="h-4 w-4" />
+      </ToolbarButton>
+
+      <Divider />
+
+      {/* 行间距 */}
+      <ToolbarButton
+        onClick={decreaseLineSpacing}
+        isActive={false}
+        disabled={lineSpacing <= 1.0}
+        title="减小行间距"
+      >
+        <Minus className="h-4 w-4" />
+      </ToolbarButton>
+      <div className="flex items-center justify-center min-w-[3rem] text-xs text-muted-foreground font-medium">
+        {lineSpacing.toFixed(1)}
+      </div>
+      <ToolbarButton
+        onClick={increaseLineSpacing}
+        isActive={false}
+        disabled={lineSpacing >= 3.0}
+        title="增大行间距"
+      >
+        <Plus className="h-4 w-4" />
+      </ToolbarButton>
+
+      <Divider />
+
+      {/* 段落间距 */}
+      <ToolbarButton
+        onClick={decreaseParagraphSpacing}
+        isActive={false}
+        disabled={paragraphSpacing <= 0.2}
+        title="减小段落间距"
+      >
+        <Minus className="h-4 w-4" />
+      </ToolbarButton>
+      <div className="flex items-center justify-center min-w-[3rem] text-xs text-muted-foreground font-medium">
+        {paragraphSpacing.toFixed(1)}
+      </div>
+      <ToolbarButton
+        onClick={increaseParagraphSpacing}
+        isActive={false}
+        disabled={paragraphSpacing >= 3.0}
+        title="增大段落间距"
+      >
+        <Plus className="h-4 w-4" />
+      </ToolbarButton>
+
+      <Divider />
+
+      {/* 段首缩进 */}
+      <ToolbarButton
+        onClick={decreaseParagraphIndent}
+        isActive={false}
+        disabled={paragraphIndent <= 0}
+        title="减小段首缩进"
+      >
+        <Outdent className="h-4 w-4" />
+      </ToolbarButton>
+      <div className="flex items-center justify-center min-w-[3rem] text-xs text-muted-foreground font-medium">
+        {paragraphIndent.toFixed(1)}em
+      </div>
+      <ToolbarButton
+        onClick={increaseParagraphIndent}
+        isActive={false}
+        disabled={paragraphIndent >= 8.0}
+        title="增大段首缩进"
+      >
+        <Indent className="h-4 w-4" />
       </ToolbarButton>
     </div>
   );
