@@ -28,6 +28,7 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact'); // 视图模式
+  const [isClearAllMode, setIsClearAllMode] = useState(false); // 是否为清空全部模式
 
   // 获取回收站中的笔记
   const { data: deletedNotes, isLoading, refetch } = useQuery({
@@ -118,12 +119,14 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
       batchPermanentDeleteMutation.mutate(Array.from(selectedIds));
     }
     setShowConfirmClear(false);
+    setIsClearAllMode(false);
   };
 
   const handleClearAll = () => {
     if (!deletedNotes || deletedNotes.length === 0) return;
-    batchPermanentDeleteMutation.mutate(deletedNotes.map(note => note.id));
-    setShowConfirmClear(false);
+    setIsClearAllMode(true);
+    setSelectedIds(new Set(deletedNotes.map(note => note.id)));
+    setShowConfirmClear(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -183,6 +186,14 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
               
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => refetch()}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm border border-input rounded-md hover:bg-accent/10 transition-colors"
+                  title="刷新"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  刷新
+                </button>
+                <button
                   onClick={toggleViewMode}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm border border-input rounded-md hover:bg-accent/10 transition-colors"
                   title={viewMode === 'compact' ? '切换到详细视图' : '切换到缩略视图'}
@@ -199,6 +210,7 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                     </>
                   )}
                 </button>
+                <div className="w-px h-6 bg-border mx-1" />
                 <button
                   onClick={() => handleRestore()}
                   disabled={selectedIds.size === 0}
@@ -208,12 +220,22 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                   恢复选中
                 </button>
                 <button
-                  onClick={() => setShowConfirmClear(true)}
+                  onClick={() => {
+                    setIsClearAllMode(false);
+                    setShowConfirmClear(true);
+                  }}
                   disabled={selectedIds.size === 0}
                   className="flex items-center gap-2 px-4 py-2 text-sm bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                   永久删除
+                </button>
+                <button
+                  onClick={handleClearAll}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-destructive/80 text-destructive-foreground rounded-md hover:bg-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  清空回收站
                 </button>
               </div>
             </div>
@@ -390,14 +412,25 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
           <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="h-6 w-6 text-destructive" />
-              <h3 className="text-lg font-semibold text-foreground">确认永久删除</h3>
+              <h3 className="text-lg font-semibold text-foreground">
+                {isClearAllMode ? '确认清空回收站' : '确认永久删除'}
+              </h3>
             </div>
             <p className="text-muted-foreground mb-6">
-              此操作不可恢复，确定要永久删除选中的 {selectedIds.size} 个笔记吗？
+              {isClearAllMode 
+                ? `此操作不可恢复，确定要清空回收站中的所有 ${deletedNotes?.length || 0} 个笔记吗？`
+                : `此操作不可恢复，确定要永久删除选中的 ${selectedIds.size} 个笔记吗？`
+              }
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setShowConfirmClear(false)}
+                onClick={() => {
+                  setShowConfirmClear(false);
+                  if (isClearAllMode) {
+                    setSelectedIds(new Set());
+                    setIsClearAllMode(false);
+                  }
+                }}
                 className="flex items-center gap-2 px-4 py-2 text-sm border border-input rounded-md hover:bg-accent/10 transition-colors"
               >
                 <X className="h-4 w-4" />
@@ -408,7 +441,7 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
-                确认删除
+                {isClearAllMode ? '确认清空' : '确认删除'}
               </button>
             </div>
           </div>
