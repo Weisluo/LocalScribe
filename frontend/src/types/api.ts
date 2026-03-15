@@ -696,6 +696,12 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Deleted At
+             * Format: date-time
+             * @description 软删除时间，null 表示未删除
+             */
+            deleted_at?: string | null;
         };
         /**
          * NoteStatus

@@ -9,11 +9,13 @@ import { AIChat } from '@/components/AIChat';
 import { useNote, useUpdateNote, useCreateNote } from '@/hooks/useNote';
 import { useProjectStore } from '@/stores/projectStore';
 import { useUIStore } from '@/stores/uiStore';
+
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2 } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore } from 'lucide-react';
+import { TrashPage } from '@/pages/TrashPage';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -23,6 +25,8 @@ type ProjectResponse = components['schemas']['ProjectResponse'];
 export const EditorPage = () => {
   const { currentProjectId } = useProjectStore();
   const { openModal, newlyCreatedNoteId, setNewlyCreatedNoteId } = useUIStore();
+
+  const [showTrash, setShowTrash] = useState(false);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
@@ -325,6 +329,11 @@ export const EditorPage = () => {
   };
 
   const handleSelectNote = (id: string, title: string) => {
+    // 如果当前在回收站界面，先返回编辑器
+    if (showTrash) {
+      setShowTrash(false);
+    }
+    
     const now = Date.now();
     if (selectedNoteId && selectedNoteId !== id && (noteTitle || noteContent) && now - lastSaveTimeRef.current > 500 && !updateNoteMutation.isPending) {
       lastSaveTimeRef.current = now;
@@ -455,7 +464,10 @@ export const EditorPage = () => {
             </div>
           )}
           <button
-            onClick={() => openModal('volume', currentProjectId)}
+            onClick={() => {
+              setShowTrash(false);
+              openModal('volume', currentProjectId);
+            }}
             className="p-2 hover:bg-accent/30 rounded-lg text-muted-foreground hover:text-foreground flex-shrink-0 transition-all duration-200 hover:scale-105"
             title="新建卷"
           >
@@ -478,7 +490,10 @@ export const EditorPage = () => {
         <div className="h-auto flex flex-col flex-shrink-0 border-t border-border/60 bg-card/30 backdrop-blur-sm">
           <div className="p-3 flex gap-2">
             <button
-              onClick={handleDeleteProject}
+              onClick={() => {
+                setShowTrash(false);
+                handleDeleteProject();
+              }}
               disabled={!currentProjectId}
               className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200 disabled:opacity-50"
               title="删除当前项目"
@@ -486,11 +501,21 @@ export const EditorPage = () => {
               <Trash2 className="h-4 w-4" />
             </button>
             <button
-              onClick={() => openModal('project')}
+              onClick={() => {
+                setShowTrash(false);
+                openModal('project');
+              }}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
             >
               <PlusCircle className="h-4 w-4" />
               <span>新建项目</span>
+            </button>
+            <button
+              onClick={() => setShowTrash(true)}
+              className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
+              title="回收站"
+            >
+              <ArchiveRestore className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -498,45 +523,65 @@ export const EditorPage = () => {
 
       {/* 中间主编辑区 */}
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
-        {/* 标题栏 */}
-        <header className="h-16 border-b border-border/60 flex items-center bg-card/20 backdrop-blur-sm flex-shrink-0">
-          <div className="max-w-[850px] w-full mx-auto px-6">
-            <input
-              type="text"
-              value={noteTitle}
-              onChange={handleTitleChange}
-              onFocus={() => setIsTitleFocused(true)}
-              onBlur={() => setIsTitleFocused(false)}
-              className={`
-                text-2xl font-serif font-bold text-center bg-transparent border-b-2 focus:outline-none w-full transition-all duration-300 py-2
-                ${!isTitleFocused && noteTitle
-                  ? 'border-transparent text-foreground'
-                  : 'border-accent/50 focus:border-accent text-foreground'
-                }
-                placeholder:text-muted-foreground/50
-              `}
-              placeholder="无标题章节"
-            />
-          </div>
-        </header>
-
-        {/* 编辑器区域 */}
-        {isLoadingNote ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
-              <div className="relative">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <div className="absolute inset-0 blur-lg bg-primary/20 rounded-full" />
-              </div>
-              <span className="text-sm">加载中...</span>
+        {showTrash ? (
+          /* 回收站界面 */
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* 回收站顶部标题栏 */}
+            <div className="h-16 border-b border-border/60 flex items-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0">
+              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                <ArchiveRestore className="h-5 w-5" />
+                回收站
+              </h2>
+            </div>
+            {/* 回收站内容区域 */}
+            <div className="flex-1 overflow-hidden">
+              <TrashPage embedded={true} />
             </div>
           </div>
         ) : (
-          <Editor
-            key={selectedNoteId || 'new-note'}
-            content={noteContent}
-            onChange={onEditorChange}
-          />
+          /* 编辑器界面 */
+          <>
+            {/* 标题栏 */}
+            <header className="h-16 border-b border-border/60 flex items-center bg-card/20 backdrop-blur-sm flex-shrink-0">
+              <div className="max-w-[850px] w-full mx-auto px-6">
+                <input
+                  type="text"
+                  value={noteTitle}
+                  onChange={handleTitleChange}
+                  onFocus={() => setIsTitleFocused(true)}
+                  onBlur={() => setIsTitleFocused(false)}
+                  className={`
+                    text-2xl font-serif font-bold text-center bg-transparent border-b-2 focus:outline-none w-full transition-all duration-300 py-2
+                    ${!isTitleFocused && noteTitle
+                      ? 'border-transparent text-foreground'
+                      : 'border-accent/50 focus:border-accent text-foreground'
+                    }
+                    placeholder:text-muted-foreground/50
+                  `}
+                  placeholder="无标题章节"
+                />
+              </div>
+            </header>
+
+            {/* 编辑器区域 */}
+            {isLoadingNote ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                  <div className="relative">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div className="absolute inset-0 blur-lg bg-primary/20 rounded-full" />
+                  </div>
+                  <span className="text-sm">加载中...</span>
+                </div>
+              </div>
+            ) : (
+              <Editor
+                key={selectedNoteId || 'new-note'}
+                content={noteContent}
+                onChange={onEditorChange}
+              />
+            )}
+          </>
         )}
       </main>
 

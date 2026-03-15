@@ -62,7 +62,7 @@ export const useDeleteNote = (projectId: string) => {
 
   return useMutation({
     mutationFn: (noteId: string) =>
-      api.delete(`/notes/${noteId}`),
+      api.delete(`/notes/${noteId}`, { params: { permanent: false } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['directory', projectId] });
     },

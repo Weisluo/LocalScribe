@@ -1,10 +1,11 @@
 # backend/app/api/v1/notes.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from typing import List, Optional
 from pydantic import BaseModel
 import copy
+from datetime import datetime
 
 from app.models import Note
 from app.schemas import NoteCreate, NoteUpdate, NoteResponse
@@ -21,17 +22,35 @@ class MoveNoteRequest(BaseModel):
     target_folder_id: str  # 目标文件夹 ID
     new_order: int         # 新的排序位置
 
+class RestoreNoteRequest(BaseModel):
+    folder_id: Optional[str] = None  # 恢复时指定的目标文件夹，不传则使用原文件夹
+
 # --- 接口实现 ---
 
 @router.get("/", response_model=List[NoteResponse])
-def get_notes(folder_id: str = None, project_id: str = None, db: Session = Depends(get_db)):
+def get_notes(folder_id: str = None, project_id: str = None, include_deleted: bool = False, db: Session = Depends(get_db)):
     """获取章节列表，支持按文件夹或项目筛选"""
     query = db.query(Note)
+    
+    # 默认只显示未删除的笔记，除非 include_deleted=True
+    if not include_deleted:
+        query = query.filter(Note.deleted_at.is_(None))
+    
     if folder_id:
         query = query.filter(Note.folder_id == folder_id)
     if project_id:
         query = query.filter(Note.project_id == project_id)
     return query.all()
+
+@router.get("/deleted", response_model=List[NoteResponse])
+def get_deleted_notes(project_id: str, db: Session = Depends(get_db)):
+    """获取回收站中的笔记列表（按项目筛选）"""
+    return db.query(Note).filter(
+        and_(
+            Note.deleted_at.isnot(None),
+            Note.project_id == project_id
+        )
+    ).all()
 
 @router.get("/{note_id}", response_model=NoteResponse)
 def get_note(note_id: str, db: Session = Depends(get_db)):
@@ -82,25 +101,44 @@ def update_note(note_id: str, note_in: NoteUpdate, db: Session = Depends(get_db)
     return db_note
 
 @router.delete("/{note_id}")
-def delete_note(note_id: str, db: Session = Depends(get_db)):
-    """删除单个章节"""
+def delete_note(note_id: str, permanent: bool = False, db: Session = Depends(get_db)):
+    """删除单个章节（软删除或永久删除）"""
     db_note = db.query(Note).filter(Note.id == note_id).first()
     if not db_note:
         raise HTTPException(status_code=404, detail="Note not found")
     
-    db.delete(db_note)
+    if permanent:
+        # 永久删除
+        db.delete(db_note)
+    else:
+        # 软删除：设置删除时间
+        if db_note.deleted_at is None:
+            db_note.deleted_at = datetime.utcnow()
+    
     db.commit()
     return {"success": True}
 
 # --- 进阶功能 ---
 
 @router.post("/batch-delete")
-def batch_delete_notes(request: BatchDeleteRequest, db: Session = Depends(get_db)):
-    """批量删除章节"""
+def batch_delete_notes(request: BatchDeleteRequest, permanent: bool = False, db: Session = Depends(get_db)):
+    """批量删除章节（软删除或永久删除）"""
     if not request.ids:
         return {"success": True, "deleted_count": 0}
-        
-    deleted_count = db.query(Note).filter(Note.id.in_(request.ids)).delete(synchronize_session=False)
+    
+    if permanent:
+        # 永久删除
+        deleted_count = db.query(Note).filter(Note.id.in_(request.ids)).delete(synchronize_session=False)
+    else:
+        # 软删除：只处理未删除的记录
+        result = db.query(Note).filter(
+            Note.id.in_(request.ids),
+            Note.deleted_at.is_(None)
+        ).update({
+            "deleted_at": datetime.utcnow()
+        }, synchronize_session=False)
+        deleted_count = result.rowcount
+    
     db.commit()
     return {"success": True, "deleted_count": deleted_count}
 
@@ -151,3 +189,40 @@ def move_note(note_id: str, request: MoveNoteRequest, db: Session = Depends(get_
     
     db.commit()
     return {"success": True, "message": "移动/排序成功"}
+
+@router.post("/{note_id}/restore", response_model=NoteResponse)
+def restore_note(note_id: str, request: Optional[RestoreNoteRequest] = None, db: Session = Depends(get_db)):
+    """恢复已删除的笔记"""
+    note = db.query(Note).filter(Note.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    if not note.deleted_at:
+        raise HTTPException(status_code=400, detail="Note is not deleted")
+    
+    # 清除删除标记
+    note.deleted_at = None
+    
+    # 如果指定了新的文件夹，更新文件夹 ID
+    if request and request.folder_id:
+        note.folder_id = request.folder_id
+    
+    db.commit()
+    db.refresh(note)
+    return note
+
+@router.post("/batch-restore")
+def batch_restore_notes(request: BatchDeleteRequest, db: Session = Depends(get_db)):
+    """批量恢复已删除的笔记"""
+    if not request.ids:
+        return {"success": True, "restored_count": 0}
+    
+    restored_count = db.query(Note).filter(
+        Note.id.in_(request.ids),
+        Note.deleted_at.isnot(None)
+    ).update({
+        "deleted_at": None
+    }, synchronize_session=False)
+    
+    db.commit()
+    return {"success": True, "restored_count": restored_count}

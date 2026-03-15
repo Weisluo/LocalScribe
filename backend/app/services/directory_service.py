@@ -13,9 +13,10 @@ class DirectoryService:
             Folder.project_id == project_id
         ).order_by(Folder.order).all()
 
-        # 2. 获取该项目的所有章节，按 order 排序
+        # 2. 获取该项目的所有未删除章节，按 order 排序
         notes = db.query(Note).filter(
-            Note.project_id == project_id
+            Note.project_id == project_id,
+            Note.deleted_at.is_(None)
         ).order_by(Note.order).all()
 
         # 3. 建立 ID 到对象的映射
