@@ -16,7 +16,7 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
     return null;
   }
 
-  const { lineSpacing, increaseLineSpacing, decreaseLineSpacing, paragraphSpacing, increaseParagraphSpacing, decreaseParagraphSpacing, paragraphIndent, increaseParagraphIndent, decreaseParagraphIndent } = useEditorSettingsStore();
+  const { lineSpacing, increaseLineSpacing, decreaseLineSpacing, paragraphSpacing, increaseParagraphSpacing, decreaseParagraphSpacing, paragraphIndent, increaseParagraphIndent, decreaseParagraphIndent, fontSize, increaseFontSize, decreaseFontSize } = useEditorSettingsStore();
 
   const btnClass = (isActive: boolean, isDisabled = false) => `
     p-2 rounded-lg transition-all duration-200 ease-out
@@ -219,6 +219,29 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
         title="增大段首缩进"
       >
         <Indent className="h-4 w-4" />
+      </ToolbarButton>
+
+      <Divider />
+
+      {/* 字号 */}
+      <ToolbarButton
+        onClick={decreaseFontSize}
+        isActive={false}
+        disabled={fontSize <= 12}
+        title="减小字号"
+      >
+        <Minus className="h-4 w-4" />
+      </ToolbarButton>
+      <div className="flex items-center justify-center min-w-[3rem] text-xs text-muted-foreground font-medium">
+        {fontSize}px
+      </div>
+      <ToolbarButton
+        onClick={increaseFontSize}
+        isActive={false}
+        disabled={fontSize >= 36}
+        title="增大字号"
+      >
+        <Plus className="h-4 w-4" />
       </ToolbarButton>
     </div>
   );

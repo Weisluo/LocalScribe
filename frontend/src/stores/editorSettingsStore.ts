@@ -5,6 +5,7 @@ interface EditorSettingsState {
   lineSpacing: number;
   paragraphSpacing: number;
   paragraphIndent: number;
+  fontSize: number;
   setLineSpacing: (spacing: number) => void;
   increaseLineSpacing: () => void;
   decreaseLineSpacing: () => void;
@@ -14,6 +15,9 @@ interface EditorSettingsState {
   setParagraphIndent: (indent: number) => void;
   increaseParagraphIndent: () => void;
   decreaseParagraphIndent: () => void;
+  setFontSize: (size: number) => void;
+  increaseFontSize: () => void;
+  decreaseFontSize: () => void;
 }
 
 export const useEditorSettingsStore = create<EditorSettingsState>()(
@@ -22,6 +26,7 @@ export const useEditorSettingsStore = create<EditorSettingsState>()(
       lineSpacing: 1.8,
       paragraphSpacing: 1.0,
       paragraphIndent: 2.0,
+      fontSize: 18,
 
       setLineSpacing: (spacing) => set({ lineSpacing: spacing }),
 
@@ -63,6 +68,20 @@ export const useEditorSettingsStore = create<EditorSettingsState>()(
         const current = get().paragraphIndent;
         const next = Math.max(current - 0.5, 0);
         set({ paragraphIndent: next });
+      },
+
+      setFontSize: (size) => set({ fontSize: size }),
+
+      increaseFontSize: () => {
+        const current = get().fontSize;
+        const next = Math.min(current + 2, 36);
+        set({ fontSize: next });
+      },
+
+      decreaseFontSize: () => {
+        const current = get().fontSize;
+        const next = Math.max(current - 2, 12);
+        set({ fontSize: next });
       },
     }),
     {

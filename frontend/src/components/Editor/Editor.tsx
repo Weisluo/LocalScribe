@@ -15,7 +15,7 @@ export const Editor = ({ content, onChange }: EditorProps) => {
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isProgrammaticUpdateRef = useRef(false);
-  const { lineSpacing, paragraphSpacing, paragraphIndent } = useEditorSettingsStore();
+  const { lineSpacing, paragraphSpacing, paragraphIndent, fontSize } = useEditorSettingsStore();
 
   const editor = useEditor({
     extensions: [
@@ -82,8 +82,8 @@ export const Editor = ({ content, onChange }: EditorProps) => {
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] px-8 py-6',
-        style: `line-height: ${lineSpacing}; --paragraph-spacing: ${paragraphSpacing}em; --paragraph-indent: ${paragraphIndent}em;`,
+        class: 'prose max-w-none focus:outline-none min-h-[500px] px-8 py-6',
+        style: `font-size: ${fontSize}px; line-height: ${lineSpacing}; --paragraph-spacing: ${paragraphSpacing}em; --paragraph-indent: ${paragraphIndent}em;`,
       },
     },
   });
