@@ -27,25 +27,38 @@ export const Editor = ({ content, onChange }: EditorProps) => {
     editable: true,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+    },
+    onTransaction: ({ editor }) => {
+      // 只在有选区变化且编辑器聚焦时处理滚动
+      if (!editor.isFocused || !scrollContainerRef.current) return;
       
-      // 滚动到光标位置，保持在屏幕 2/3 高度
-      if (scrollContainerRef.current) {
-        const selection = editor.state.selection;
-        const { $head } = selection;
-        
-        // 获取光标位置的坐标
-        const coords = editor.view.coordsAtPos($head.pos);
-        
-        // 计算滚动位置
-        const containerRect = scrollContainerRef.current.getBoundingClientRect();
-        const containerHeight = containerRect.height;
-        
-        // 计算目标滚动位置：光标位置 - 容器顶部 - 容器高度的 1/3
-        const targetScrollTop = coords.top - containerRect.top - containerHeight * (1/3);
-        
-        // 平滑滚动
-        scrollContainerRef.current.scrollTo({
-          top: Math.max(0, scrollContainerRef.current.scrollTop + targetScrollTop),
+      const { selection } = editor.state;
+      const { $head } = selection;
+      
+      // 获取光标位置的坐标（相对于视口）
+      const coords = editor.view.coordsAtPos($head.pos);
+      const containerRect = scrollContainerRef.current.getBoundingClientRect();
+      const containerHeight = containerRect.height;
+      
+      // 计算光标相对于容器的位置
+      const cursorRelativeToContainer = coords.top - containerRect.top;
+      
+      // 目标位置：容器高度的 2/3 处
+      const targetPosition = containerHeight * (2 / 3);
+      
+      // 如果光标在目标位置下方，需要向下滚动
+      if (cursorRelativeToContainer > targetPosition) {
+        const scrollDelta = cursorRelativeToContainer - targetPosition;
+        scrollContainerRef.current.scrollBy({
+          top: scrollDelta,
+          behavior: 'smooth'
+        });
+      }
+      // 如果光标在容器顶部上方（被遮挡），向上滚动
+      else if (cursorRelativeToContainer < 50) {
+        const scrollDelta = targetPosition - cursorRelativeToContainer;
+        scrollContainerRef.current.scrollBy({
+          top: -scrollDelta,
           behavior: 'smooth'
         });
       }
