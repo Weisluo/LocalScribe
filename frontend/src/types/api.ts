@@ -283,6 +283,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analysis/segment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 文本分词分析
+         * @description 对文本进行分词分析，返回词频统计结果
+         *
+         *     - **text**: 待分析的文本内容
+         *     - **mode**: 分词模式 (default/full/search)
+         *     - **top_k**: 返回高频词数量
+         *     - **with_pos**: 是否返回词性标注
+         */
+        post: operations["segment_text_api_v1_analysis_segment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 文本统计信息
+         * @description 获取文本的详细统计信息
+         *
+         *     - **text**: 待统计的文本内容
+         *
+         *     返回：字符数、词数、句子数、段落数、平均句长等指标
+         */
+        post: operations["text_statistics_api_v1_analysis_statistics_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/keywords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 关键词提取
+         * @description 使用 TF-IDF 算法从文本中提取关键词
+         *
+         *     - **text**: 待提取的文本内容
+         *     - **top_k**: 提取关键词数量 (1-100)
+         *     - **with_weight**: 是否返回权重
+         */
+        post: operations["extract_keywords_api_v1_analysis_keywords_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/similarity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 文本相似度比较
+         * @description 比较两段文本的相似度
+         *
+         *     - **text1**: 文本1
+         *     - **text2**: 文本2
+         *
+         *     返回：相似度分数 (0-1) 和共同词汇列表
+         */
+        post: operations["calculate_similarity_api_v1_analysis_similarity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/segment/raw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 原始分词结果
+         * @description 获取原始分词结果（不进行词频统计）
+         *
+         *     - **text**: 待分析的文本内容
+         *     - **mode**: 分词模式
+         *     - **with_pos**: 是否返回词性标注
+         */
+        post: operations["segment_text_raw_api_v1_analysis_segment_raw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -425,6 +547,56 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * KeywordExtractRequest
+         * @description 关键词提取请求
+         */
+        KeywordExtractRequest: {
+            /**
+             * Text
+             * @description 待提取的文本内容
+             */
+            text: string;
+            /**
+             * Top K
+             * @description 提取关键词数量
+             * @default 20
+             */
+            top_k: number;
+            /**
+             * With Weight
+             * @description 是否返回权重
+             * @default true
+             */
+            with_weight: boolean;
+        };
+        /**
+         * KeywordExtractResponse
+         * @description 关键词提取响应
+         */
+        KeywordExtractResponse: {
+            /**
+             * Keywords
+             * @description 关键词列表
+             */
+            keywords: components["schemas"]["KeywordItem"][];
+        };
+        /**
+         * KeywordItem
+         * @description 关键词项
+         */
+        KeywordItem: {
+            /**
+             * Word
+             * @description 关键词
+             */
+            word: string;
+            /**
+             * Weight
+             * @description 权重
+             */
+            weight?: number | null;
         };
         /** MoveFolderRequest */
         MoveFolderRequest: {
@@ -587,6 +759,179 @@ export interface components {
             /** Cover */
             cover?: string | null;
         };
+        /**
+         * RawSegmentationResponse
+         * @description 原始分词结果响应
+         */
+        RawSegmentationResponse: {
+            /**
+             * Segmented
+             * @description 分词结果列表，每项包含词语和可选的词性标注
+             */
+            segmented: components["schemas"]["SegmentedWordItem"][];
+        };
+        /**
+         * SegmentationMode
+         * @description 分词模式
+         * @enum {string}
+         */
+        SegmentationMode: "default" | "full" | "search";
+        /**
+         * SegmentationRequest
+         * @description 分词分析请求
+         */
+        SegmentationRequest: {
+            /**
+             * Text
+             * @description 待分析的文本内容
+             */
+            text: string;
+            /** @default default */
+            mode: components["schemas"]["SegmentationMode"];
+            /**
+             * Top K
+             * @description 返回高频词数量
+             * @default 50
+             */
+            top_k: number | null;
+            /**
+             * With Pos
+             * @description 是否返回词性标注
+             * @default false
+             */
+            with_pos: boolean;
+        };
+        /**
+         * SegmentationResponse
+         * @description 分词分析响应
+         */
+        SegmentationResponse: {
+            /**
+             * Total Words
+             * @description 总词数（去重后）
+             */
+            total_words: number;
+            /**
+             * Total Tokens
+             * @description 总词频（含重复）
+             */
+            total_tokens: number;
+            /**
+             * Words
+             * @description 词语列表
+             */
+            words: components["schemas"]["WordItem"][];
+            /**
+             * Segmented Text
+             * @description 分词后的文本序列
+             */
+            segmented_text: string[];
+        };
+        /**
+         * SegmentedWordItem
+         * @description 原始分词结果中的单个词语项
+         */
+        SegmentedWordItem: {
+            /**
+             * Word
+             * @description 词语
+             */
+            word: string;
+            /**
+             * Pos
+             * @description 词性标注（如果有）
+             */
+            pos?: string | null;
+        };
+        /**
+         * TextSimilarityRequest
+         * @description 文本相似度比较请求
+         */
+        TextSimilarityRequest: {
+            /**
+             * Text1
+             * @description 文本1
+             */
+            text1: string;
+            /**
+             * Text2
+             * @description 文本2
+             */
+            text2: string;
+        };
+        /**
+         * TextSimilarityResponse
+         * @description 文本相似度比较响应
+         */
+        TextSimilarityResponse: {
+            /**
+             * Similarity
+             * @description 相似度（0-1之间）
+             */
+            similarity: number;
+            /**
+             * Common Words
+             * @description 共同词汇
+             */
+            common_words: string[];
+        };
+        /**
+         * TextStatisticsRequest
+         * @description 文本统计请求
+         */
+        TextStatisticsRequest: {
+            /**
+             * Text
+             * @description 待统计的文本内容
+             */
+            text: string;
+        };
+        /**
+         * TextStatisticsResponse
+         * @description 文本统计响应
+         */
+        TextStatisticsResponse: {
+            /**
+             * Char Count
+             * @description 字符总数（含标点）
+             */
+            char_count: number;
+            /**
+             * Char Count No Spaces
+             * @description 字符数（不含空格）
+             */
+            char_count_no_spaces: number;
+            /**
+             * Chinese Char Count
+             * @description 中文字符数
+             */
+            chinese_char_count: number;
+            /**
+             * Word Count
+             * @description 词数（按分词结果）
+             */
+            word_count: number;
+            /**
+             * Sentence Count
+             * @description 句子数
+             */
+            sentence_count: number;
+            /**
+             * Paragraph Count
+             * @description 段落数
+             */
+            paragraph_count: number;
+            /**
+             * Avg Sentence Length
+             * @description 平均句长（词数）
+             */
+            avg_sentence_length: number;
+            /**
+             * Avg Word Length
+             * @description 平均词长（字符数）
+             */
+            avg_word_length: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -619,6 +964,27 @@ export interface components {
              * @default []
              */
             children: components["schemas"]["ActNode"][];
+        };
+        /**
+         * WordItem
+         * @description 单个词语项
+         */
+        WordItem: {
+            /**
+             * Word
+             * @description 词语
+             */
+            word: string;
+            /**
+             * Count
+             * @description 出现次数
+             */
+            count: number;
+            /**
+             * Pos
+             * @description 词性标注
+             */
+            pos?: string | null;
         };
     };
     responses: never;
@@ -1289,6 +1655,171 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    segment_text_api_v1_analysis_segment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    text_statistics_api_v1_analysis_statistics_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextStatisticsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TextStatisticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_keywords_api_v1_analysis_keywords_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordExtractResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calculate_similarity_api_v1_analysis_similarity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextSimilarityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TextSimilarityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    segment_text_raw_api_v1_analysis_segment_raw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RawSegmentationResponse"];
                 };
             };
             /** @description Validation Error */

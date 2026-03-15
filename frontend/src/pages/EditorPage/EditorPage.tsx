@@ -12,7 +12,8 @@ import { useUIStore } from '@/stores/uiStore';
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type } from 'lucide-react';
+import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages } from 'lucide-react';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -97,26 +98,6 @@ export const EditorPage = () => {
       }
     }
     return null;
-  };
-
-  // 辅助函数：计算项目总字数（使用当前编辑内容的实时字数）
-  const calculateTotalWordCount = (nodes: VolumeNode[], currentNoteId: string | undefined, currentContent: string): number => {
-    let total = 0;
-    const currentContentLength = currentContent.replace(/<[^>]*>/g, '').length;
-    for (const volume of nodes) {
-      for (const act of volume.children) {
-        for (const note of act.children) {
-          const noteNode = note as NoteNode;
-          // 如果是当前编辑的章节，使用当前内容的实时字数
-          if (currentNoteId && noteNode.id === currentNoteId) {
-            total += currentContentLength;
-          } else {
-            total += noteNode.word_count || 0;
-          }
-        }
-      }
-    }
-    return total;
   };
 
   // 自动选中最新章节（当 tree 加载完成且没有选中章节时）
@@ -483,38 +464,97 @@ export const EditorPage = () => {
 
       {/* 右侧栏 - AI 助手 */}
       <aside className="w-80 border-l border-border/60 flex flex-col bg-card/10 flex-shrink-0">
-        {/* 状态栏 */}
-        <div className="h-14 border-b border-border/60 flex items-center justify-between px-4 flex-shrink-0 bg-card/30 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            {updateNoteMutation.isPending ? (
-              <>
-                <div className="relative">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <div className="absolute inset-0 blur-sm bg-primary/30 rounded-full" />
-                </div>
-                <span className="text-sm text-primary font-medium">保存中...</span>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/15">
-                  <Save className="h-3 w-3 text-green-600" />
-                </div>
-                <span className="text-sm text-green-600 font-medium">已保存</span>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full" title="本章字数">
-              <Type className="h-3 w-3" />
-              <span>{noteContent.replace(/<[^>]*>/g, '').length.toLocaleString()} 字</span>
+        {/* 状态栏 - 美化后的信息统计面板 */}
+        <div className="border-b border-border/60 flex flex-col flex-shrink-0 bg-gradient-to-br from-card/50 via-card/30 to-accent/5 backdrop-blur-sm">
+          {/* 保存状态指示器 */}
+          <div className="px-4 pt-3 pb-2">
+            <div className="flex items-center gap-2">
+              {updateNoteMutation.isPending ? (
+                <>
+                  <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary/60 animate-spin" style={{ animationDuration: '1s' }} />
+                  </div>
+                  <span className="text-sm text-primary font-medium">保存中...</span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30">
+                    <Save className="h-3 w-3 text-emerald-600" />
+                  </div>
+                  <span className="text-sm text-emerald-600 font-medium">已保存</span>
+                </>
+              )}
             </div>
-            {tree && tree.length > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-accent/30 px-2.5 py-1 rounded-full" title="全文总字数">
-                <BookOpen className="h-3 w-3" />
-                <span>{calculateTotalWordCount(tree, selectedNoteId, noteContent).toLocaleString()} 字</span>
-              </div>
-            )}
           </div>
+
+          {/* 统计卡片网格 */}
+          {(() => {
+            const currentText = noteContent.replace(/<[^>]*>/g, '');
+            const currentStats = calculateStatistics(currentText);
+            const projectStats = tree && tree.length > 0 
+              ? calculateProjectStatistics(tree, selectedNoteId, currentText)
+              : null;
+
+            return (
+              <div className="px-3 pb-3 space-y-2">
+                {/* 当前章节统计 */}
+                <div className="bg-gradient-to-br from-background/80 to-muted/30 rounded-lg p-2.5 ring-1 ring-border/40 shadow-sm">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <div className="w-1 h-3.5 bg-primary/60 rounded-full" />
+                    <span className="text-xs font-medium text-muted-foreground">当前章节</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="flex flex-col items-center p-1.5 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="字符总数">
+                      <FileText className="h-3.5 w-3.5 text-primary/70 mb-1" />
+                      <span className="text-sm font-semibold text-foreground">{formatNumber(currentStats.charCount)}</span>
+                      <span className="text-[10px] text-muted-foreground">字符</span>
+                    </div>
+                    <div className="flex flex-col items-center p-1.5 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-accent/20 transition-all duration-200" title="中文字符">
+                      <Languages className="h-3.5 w-3.5 text-accent/70 mb-1" />
+                      <span className="text-sm font-semibold text-foreground">{formatNumber(currentStats.chineseCharCount)}</span>
+                      <span className="text-[10px] text-muted-foreground">中文</span>
+                    </div>
+                    <div className="flex flex-col items-center p-1.5 bg-card/60 rounded-md ring-1 ring-border/30 hover:shadow-sm hover:ring-primary/20 transition-all duration-200" title="预计阅读时长">
+                      <Clock className="h-3.5 w-3.5 text-primary/70 mb-1" />
+                      <span className="text-sm font-semibold text-foreground">{formatReadingTime(currentStats.readingTime)}</span>
+                      <span className="text-[10px] text-muted-foreground">阅读</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 全文统计 */}
+                {projectStats && (
+                  <div className="bg-gradient-to-br from-accent/10 via-accent/5 to-background/80 rounded-lg p-2.5 ring-1 ring-accent/20 shadow-sm">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div className="w-1 h-3.5 bg-accent/60 rounded-full" />
+                      <span className="text-xs font-medium text-accent-foreground/70">全书统计</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2 p-2 bg-card/70 rounded-md ring-1 ring-border/30">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15">
+                          <BookOpen className="h-3.5 w-3.5 text-accent" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-muted-foreground">总字符</span>
+                          <span className="text-sm font-semibold text-foreground">{formatNumber(projectStats.charCount)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-card/70 rounded-md ring-1 ring-border/30">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
+                          <Type className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-muted-foreground">总中文</span>
+                          <span className="text-sm font-semibold text-foreground">{formatNumber(projectStats.chineseCharCount)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* AI 聊天区域 */}
