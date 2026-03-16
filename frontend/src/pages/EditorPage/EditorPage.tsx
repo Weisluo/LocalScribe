@@ -1,5 +1,5 @@
 // frontend/src/pages/EditorPage/EditorPage.tsx
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/utils/request';
 import type { components } from '@/types/api';
@@ -12,11 +12,12 @@ import { useUIStore } from '@/stores/uiStore';
 
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
-import { Export } from '@/components/Export';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
 import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore } from 'lucide-react';
-import { TrashPage } from '@/pages/TrashPage';
+
+const Export = lazy(() => import('@/components/Export/Export').then(m => ({ default: m.Export })));
+const TrashPage = lazy(() => import('@/pages/TrashPage').then(m => ({ default: m.TrashPage })));
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -513,11 +514,13 @@ export const EditorPage = () => {
                 <span>新建项目</span>
               </button>
               {tree && tree.length > 0 && (
-                <Export
-                  projectId={currentProjectId}
-                  projectTitle={project?.title}
-                  tree={tree}
-                />
+                <Suspense fallback={<div className="w-20 h-9 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
+                  <Export
+                    projectId={currentProjectId}
+                    projectTitle={project?.title}
+                    tree={tree}
+                  />
+                </Suspense>
               )}
             </div>
             <button
@@ -545,7 +548,9 @@ export const EditorPage = () => {
             </div>
             {/* 回收站内容区域 */}
             <div className="flex-1 overflow-hidden">
-              <TrashPage embedded={true} />
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                <TrashPage embedded={true} />
+              </Suspense>
             </div>
           </div>
         ) : (

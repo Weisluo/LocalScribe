@@ -11,7 +11,7 @@ interface Message {
 export const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [selectedModel, setSelectedModel] = useState('llama2');
+  const [selectedModel] = useState('llama2');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
