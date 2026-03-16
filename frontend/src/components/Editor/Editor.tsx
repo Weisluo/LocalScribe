@@ -6,15 +6,28 @@ import { Toolbar } from './Toolbar';
 import { ChevronDown, ChevronUp, Feather } from 'lucide-react';
 import { useEditorSettingsStore } from '../../stores/editorSettingsStore';
 
+const normalizeHtml = (html: string): string => {
+  if (!html) return '';
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return doc.body.innerHTML || '';
+  } catch {
+    return html;
+  }
+};
+
 interface EditorProps {
   content: string;
   onChange: (html: string) => void;
+  noteId?: string;
 }
 
-export const Editor = ({ content, onChange }: EditorProps) => {
+export const Editor = ({ content, onChange, noteId }: EditorProps) => {
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isProgrammaticUpdateRef = useRef(false);
+  const prevNoteIdRef = useRef<string | undefined>();
   const { lineSpacing, paragraphSpacing, paragraphIndent, fontSize } = useEditorSettingsStore();
 
   const editor = useEditor({
@@ -89,15 +102,39 @@ export const Editor = ({ content, onChange }: EditorProps) => {
   });
 
   useEffect(() => {
-    if (editor && !editor.isFocused && content !== editor.getHTML()) {
-      isProgrammaticUpdateRef.current = true;
-      editor.commands.setContent(content, false);
-      // 重置标志
-      setTimeout(() => {
-        isProgrammaticUpdateRef.current = false;
-      }, 0);
+    if (!editor) return;
+    
+    const isNoteChanged = noteId !== prevNoteIdRef.current;
+    const normalizedPropContent = normalizeHtml(content);
+    const normalizedEditorContent = normalizeHtml(editor.getHTML());
+    const hasContentChanged = normalizedPropContent !== normalizedEditorContent;
+    
+    if (hasContentChanged) {
+      if (isNoteChanged) {
+        isProgrammaticUpdateRef.current = true;
+        editor.commands.setContent(content, false);
+        editor.commands.blur();
+        // 延迟重置滚动，确保内容渲染完成
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+          }
+          isProgrammaticUpdateRef.current = false;
+        }, 100);
+      } else if (!editor.isFocused) {
+        isProgrammaticUpdateRef.current = true;
+        editor.commands.setContent(content, false);
+        setTimeout(() => {
+          isProgrammaticUpdateRef.current = false;
+        }, 0);
+      }
+    } else if (isNoteChanged && scrollContainerRef.current) {
+      // 内容未变化但 noteId 变化时，仍需重置滚动
+      scrollContainerRef.current.scrollTop = 0;
     }
-  }, [content, editor]);
+    
+    prevNoteIdRef.current = noteId;
+  }, [content, editor, noteId]);
 
   if (!editor) {
     return (

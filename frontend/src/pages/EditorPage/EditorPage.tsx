@@ -63,9 +63,12 @@ export const EditorPage = () => {
     enabled: !!currentProjectId,
   });
 
-  const { data: currentNote, isLoading: isLoadingNote } = useNote(selectedNoteId);
+  const { data: currentNote, isLoading: isLoadingNote, isFetching: isFetchingNote } = useNote(selectedNoteId);
   const updateNoteMutation = useUpdateNote(currentProjectId || '');
   const createNoteMutation = useCreateNote(currentProjectId || '');
+  
+  // 用于跟踪是否是新章节切换（用于显示加载状态）
+  const isSwitchingNote = isFetchingNote && !isLoadingNote;
 
   // 处理删除项目 - 打开确认弹窗
   const handleDeleteProject = () => {
@@ -574,24 +577,22 @@ export const EditorPage = () => {
                     placeholder:text-muted-foreground/50
                   `}
                   placeholder="无标题章节"
+                  disabled={isSwitchingNote}
                 />
               </div>
             </header>
 
-            {/* 编辑器区域 */}
-            {isLoadingNote ? (
-              <div className="flex-1 flex items-center justify-center">
+            {/* 编辑器区域 - 切换章节时显示加载状态 */}
+            {isSwitchingNote ? (
+              <div className="flex-1 flex items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                  <div className="relative">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <div className="absolute inset-0 blur-lg bg-primary/20 rounded-full" />
-                  </div>
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   <span className="text-sm">加载中...</span>
                 </div>
               </div>
             ) : (
               <Editor
-                key={selectedNoteId || 'new-note'}
+                noteId={selectedNoteId}
                 content={noteContent}
                 onChange={onEditorChange}
               />
