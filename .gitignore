@@ -15,6 +15,10 @@ build/
 *.sqlite3
 /data/
 
+# Logs
+logs/
+*.log
+
 # Environment Variables
 .env
 
@@ -22,7 +26,6 @@ build/
 node_modules/
 /dist/
 /.vite/
-*.log
 .DS_Store
 
 # IDE
@@ -31,7 +34,7 @@ node_modules/
 *.swp
 *.swo
 
-# Testing (新增)
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/

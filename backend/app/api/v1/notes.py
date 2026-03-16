@@ -10,7 +10,9 @@ from datetime import datetime
 from app.models import Note
 from app.schemas import NoteCreate, NoteUpdate, NoteResponse
 from app.core.dependencies import get_db
+from app.core.logging import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 # --- 定义额外的请求 Schema ---
@@ -30,9 +32,9 @@ class RestoreNoteRequest(BaseModel):
 @router.get("/", response_model=List[NoteResponse])
 def get_notes(folder_id: str = None, project_id: str = None, include_deleted: bool = False, db: Session = Depends(get_db)):
     """获取章节列表，支持按文件夹或项目筛选"""
+    logger.info(f"Getting notes - folder_id={folder_id}, project_id={project_id}, include_deleted={include_deleted}")
     query = db.query(Note)
     
-    # 默认只显示未删除的笔记，除非 include_deleted=True
     if not include_deleted:
         query = query.filter(Note.deleted_at.is_(None))
     
@@ -40,7 +42,9 @@ def get_notes(folder_id: str = None, project_id: str = None, include_deleted: bo
         query = query.filter(Note.folder_id == folder_id)
     if project_id:
         query = query.filter(Note.project_id == project_id)
-    return query.all()
+    result = query.all()
+    logger.debug(f"Found {len(result)} notes")
+    return result
 
 @router.get("/deleted", response_model=List[NoteResponse])
 def get_deleted_notes(project_id: str, db: Session = Depends(get_db)):
@@ -63,57 +67,58 @@ def get_note(note_id: str, db: Session = Depends(get_db)):
 @router.post("/", response_model=NoteResponse, status_code=201)
 def create_note(note_in: NoteCreate, db: Session = Depends(get_db)):
     """创建章节"""
+    logger.info(f"Creating note: {note_in.title} in folder {note_in.folder_id}")
     
-    # --- 自动排序逻辑 ---
-    # 如果前端没有传 order，或者传了 0 (Schema 默认值)，则自动计算
     if note_in.order is None or note_in.order == 0:
-        # 统计当前文件夹下的章节数量
         count = db.query(Note).filter(Note.folder_id == note_in.folder_id).count()
         note_in.order = count + 1
-    # ------------------------
 
     db_note = Note(**note_in.model_dump())
     db.add(db_note)
     db.commit()
     db.refresh(db_note)
+    logger.info(f"Note created successfully: id={db_note.id}, title={db_note.title}")
     return db_note
 
 @router.put("/{note_id}", response_model=NoteResponse)
 def update_note(note_id: str, note_in: NoteUpdate, db: Session = Depends(get_db)):
     """更新章节内容"""
+    logger.info(f"Updating note: {note_id}")
     db_note = db.query(Note).filter(Note.id == note_id).first()
     if not db_note:
+        logger.warning(f"Note not found: {note_id}")
         raise HTTPException(status_code=404, detail="Note not found")
 
     update_data = note_in.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_note, key, value)
 
-    # 如果更新了内容，自动计算字数
     if "content" in update_data and update_data["content"] is not None:
         import re
-        # 移除 HTML 标签后计算字数
         text = re.sub(r'<[^>]+>', '', update_data["content"])
         db_note.word_count = len(text)
 
     db.commit()
     db.refresh(db_note)
+    logger.info(f"Note updated: {note_id}, word_count={db_note.word_count}")
     return db_note
 
 @router.delete("/{note_id}")
 def delete_note(note_id: str, permanent: bool = False, db: Session = Depends(get_db)):
     """删除单个章节（软删除或永久删除）"""
+    logger.info(f"Deleting note: {note_id}, permanent={permanent}")
     db_note = db.query(Note).filter(Note.id == note_id).first()
     if not db_note:
+        logger.warning(f"Note not found for deletion: {note_id}")
         raise HTTPException(status_code=404, detail="Note not found")
     
     if permanent:
-        # 永久删除
         db.delete(db_note)
+        logger.info(f"Note permanently deleted: {note_id}")
     else:
-        # 软删除：设置删除时间
         if db_note.deleted_at is None:
             db_note.deleted_at = datetime.utcnow()
+            logger.info(f"Note soft deleted: {note_id}")
     
     db.commit()
     return {"success": True}

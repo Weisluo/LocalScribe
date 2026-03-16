@@ -1,14 +1,28 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
-# 导入 API 路由
+from app.core.logging import setup_logging, get_logger
+from app.core.config import settings
+
+setup_logging(settings.LOG_LEVEL)
+logger = get_logger(__name__)
+
 from app.api import router as api_router
 
-# 创建 FastAPI 应用实例
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Application starting up...")
+    yield
+    logger.info("Application shutting down...")
+
+
 app = FastAPI(
     title="LocalScribe API",
     description="本地写作助手后端 API",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 # 配置 CORS（允许前端开发服务器访问）
@@ -24,22 +38,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 注册 API 路由 ---
-# 将 api 路由挂载到 /api 路径下
-# 最终接口路径格式为：/api/v1/projects
 app.include_router(api_router, prefix="/api")
 
-# 健康检查路由
+
 @app.get("/")
 @app.get("/health")
 async def health_check():
+    logger.debug("Health check endpoint called")
     return {"status": "ok", "message": "LocalScribe API is running"}
-
-# 可选：添加启动/关闭事件
-@app.on_event("startup")
-async def startup_event():
-    print("应用启动中...")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    print("应用关闭中...")
