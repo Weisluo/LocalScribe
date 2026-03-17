@@ -23,12 +23,12 @@ export const ProjectSwitcher = () => {
       value={currentProjectId ?? undefined}
       onValueChange={setCurrentProjectId}
     >
-      <Select.Trigger className="inline-flex items-center justify-between w-full bg-muted/5 border border-input rounded-md py-2 pl-4 pr-2 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-ring">
+      <Select.Trigger className="inline-flex items-center justify-between w-full bg-muted/5 border border-input rounded-md py-2 pl-4 pr-2 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-ring group">
         <Select.Value placeholder="选择项目">
           {currentProject?.title}
         </Select.Value>
         <Select.Icon>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out group-data-[state=open]:rotate-180" />
         </Select.Icon>
       </Select.Trigger>
 
@@ -38,14 +38,15 @@ export const ProjectSwitcher = () => {
           side="bottom"
           align="start"
           sideOffset={4}
-          className="z-50 min-w-[var(--radix-select-trigger-width)] overflow-hidden bg-background border border-border rounded-md shadow-lg"
+          className="z-50 min-w-[var(--radix-select-trigger-width)] overflow-hidden bg-background border border-border rounded-md shadow-lg animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-top-2"
         >
           <Select.Viewport className="p-1">
-            {projects.map((project) => (
+            {projects.map((project, index) => (
               <Select.Item
                 key={project.id}
                 value={project.id}
-                className="relative flex items-center px-6 py-2 text-sm rounded-md cursor-pointer focus:outline-none transition-all duration-200 hover:bg-primary/5 hover:text-primary data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:font-medium border-l-2 border-transparent data-[state=checked]:border-primary"
+                className="relative flex items-center px-6 py-2 text-sm rounded-md cursor-pointer focus:outline-none transition-all duration-200 hover:bg-primary/5 hover:text-primary data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:font-medium border-l-2 border-transparent data-[state=checked]:border-primary animate-in slide-in-from-left-4 fade-in duration-300"
+                style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
               >
                 <Select.ItemText>{project.title}</Select.ItemText>
               </Select.Item>

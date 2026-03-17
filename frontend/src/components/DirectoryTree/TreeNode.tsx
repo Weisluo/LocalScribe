@@ -388,24 +388,32 @@ export const TreeNode = ({
 
       {isExpanded && hasChildren && (
         <SortableContext items={childIds} strategy={verticalListSortingStrategy}>
-          <div className="relative">
+          <div className="relative overflow-hidden animate-in slide-in-from-top-2 fade-in duration-300 ease-out">
             {/* 缩进引导线 */}
             <div 
               className="absolute left-0 top-0 bottom-0 w-px bg-border/40"
               style={{ left: `${(level + 1) * 14 + 14}px` }}
             />
-            {(node as VolumeNode | ActNode).children.map((child) => (
-              <TreeNode
+            {(node as VolumeNode | ActNode).children.map((child, index) => (
+              <div
                 key={child.id}
-                node={child}
-                level={level + 1}
-                isExpanded={expandedIds ? expandedIds.has(child.id) : false}
-                isSelected={isSelected}
-                onToggle={onToggle}
-                onSelect={onSelect}
-                expandedIds={expandedIds}
-                onNoteDeleted={onNoteDeleted}
-              />
+                className="animate-in slide-in-from-left-3 fade-in duration-300 ease-out"
+                style={{ 
+                  animationDelay: `${index * 30}ms`,
+                  animationFillMode: 'both'
+                }}
+              >
+                <TreeNode
+                  node={child}
+                  level={level + 1}
+                  isExpanded={expandedIds ? expandedIds.has(child.id) : false}
+                  isSelected={isSelected}
+                  onToggle={onToggle}
+                  onSelect={onSelect}
+                  expandedIds={expandedIds}
+                  onNoteDeleted={onNoteDeleted}
+                />
+              </div>
             ))}
           </div>
         </SortableContext>

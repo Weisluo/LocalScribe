@@ -258,7 +258,7 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
         ) : viewMode === 'compact' ? (
           /* 缩略视图模式 - 列表布局 */
           <div className="grid gap-3">
-            {deletedNotes.map((note) => (
+            {deletedNotes.map((note, index) => (
               <div
                 key={note.id}
                 className={`
@@ -267,7 +267,9 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                     ? 'bg-accent/10 border-accent/30'
                     : 'bg-card border-border hover:border-accent/20 hover:shadow-sm'
                   }
+                  animate-in slide-in-from-left-4 fade-in duration-300 ease-out
                 `}
+                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
                 {/* 复选框 */}
                 <button
@@ -331,7 +333,7 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
         ) : (
           /* 详细视图模式 - 卡片布局显示内容预览 */
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {deletedNotes.map((note) => (
+            {deletedNotes.map((note, index) => (
               <div
                 key={note.id}
                 className={`
@@ -340,7 +342,9 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                     ? 'bg-accent/10 border-accent/30'
                     : 'bg-card border-border hover:border-accent/20 hover:shadow-md'
                   }
+                  animate-in slide-in-from-bottom-4 fade-in zoom-in-95 duration-300 ease-out
                 `}
+                style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
               >
                 {/* 卡片头部 */}
                 <div className="flex items-start gap-3 p-4 border-b border-border/50">

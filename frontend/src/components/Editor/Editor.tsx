@@ -5,6 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Toolbar } from './Toolbar';
 import { ChevronDown, ChevronUp, Feather } from 'lucide-react';
 import { useEditorSettingsStore } from '../../stores/editorSettingsStore';
+import { TextTypeLoop } from '@/components/TextType';
 
 const normalizeHtml = (html: string): string => {
   if (!html) return '';
@@ -36,7 +37,7 @@ export const Editor = ({ content, onChange, noteId }: EditorProps) => {
         history: { depth: 50 },
       }),
       Placeholder.configure({
-        placeholder: '开始书写你的故事，让文字流淌...',
+        placeholder: '',
       }),
     ],
     content: content || '',
@@ -139,16 +140,35 @@ export const Editor = ({ content, onChange, noteId }: EditorProps) => {
   if (!editor) {
     return (
       <div className="flex-1 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <div className="relative">
-            <Feather className="h-8 w-8 animate-pulse" />
-            <div className="absolute inset-0 blur-lg bg-accent/30 rounded-full" />
+            <Feather className="h-10 w-10 animate-pulse" />
+            <div className="absolute inset-0 blur-xl bg-accent/30 rounded-full" />
           </div>
-          <span className="text-sm font-medium">准备纸笔...</span>
+          <div className="text-center">
+            <span className="text-sm font-medium block mb-2">准备纸笔</span>
+            <span className="text-xs opacity-60 h-4 block">
+              <TextTypeLoop
+                texts={[
+                  '正在准备创作环境...',
+                  '灵感即将涌现...',
+                  '故事等待被书写...',
+                ]}
+                speed={50}
+                deleteSpeed={35}
+                pauseDuration={1500}
+                cursorChar="|"
+                cursorClassName="text-accent animate-pulse"
+              />
+            </span>
+          </div>
         </div>
       </div>
     );
   }
+
+  // 检查编辑器是否为空
+  const isEmpty = editor.isEmpty;
 
   return (
     <div className="flex-1 flex flex-col bg-background overflow-hidden">
@@ -156,8 +176,37 @@ export const Editor = ({ content, onChange, noteId }: EditorProps) => {
       <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
         <div className="max-w-[850px] mx-auto py-10 px-6">
           {/* 纸张效果容器 */}
-          <div className="editor-paper bg-card rounded-xl min-h-[600px]">
+          <div className="editor-paper bg-card rounded-xl min-h-[600px] relative">
             <EditorContent editor={editor} />
+            {/* 打字机效果的占位符提示 - 在编辑器内容区域内 */}
+            {isEmpty && (
+              <div 
+                className="absolute pointer-events-none select-none"
+                style={{ 
+                  top: `${1.5 * fontSize}px`,
+                  left: `${2 * fontSize + fontSize * paragraphIndent}px`,
+                  right: `${2 * fontSize}px`,
+                  fontSize: `${fontSize}px`,
+                  lineHeight: lineSpacing,
+                }}
+              >
+                <div className="text-muted-foreground/30 font-serif italic">
+                  <TextTypeLoop
+                    texts={[
+                      '开始书写你的故事，让文字流淌...',
+                      '每一个伟大的故事都始于第一句话...',
+                      '记录下此刻的灵感，它可能改变一切...',
+                      '文字是思想的载体，开始创作吧...',
+                    ]}
+                    speed={55}
+                    deleteSpeed={35}
+                    pauseDuration={2500}
+                    cursorChar="▋"
+                    cursorClassName="text-accent/40 animate-pulse"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           {/* 底部占位区域，让最后一行可以滚动到视口 3/4 位置 */}
           <div className="h-[50vh]" />

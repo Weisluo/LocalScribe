@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Settings, Sparkles, MessageSquare, Wand2, X, AlertCircle } from 'lucide-react';
+import { TextTypeLoop } from '@/components/TextType';
 
 interface Message {
   id: string;
@@ -179,8 +180,20 @@ export const AIChat = () => {
               <Bot className="h-16 w-16 relative opacity-40" />
             </div>
             <p className="text-sm font-medium mb-2">AI 写作助手</p>
-            <p className="text-xs opacity-60 mb-6 text-center max-w-[200px]">
-              选择下方快捷指令或输入问题，让 AI 辅助你的创作
+            <p className="text-xs opacity-60 mb-6 text-center max-w-[240px] h-4">
+              <TextTypeLoop
+                texts={[
+                  '让 AI 辅助你的创作...',
+                  '润色文字，让表达更流畅',
+                  '生成创意灵感，突破瓶颈',
+                  '分析人物性格，深化角色',
+                ]}
+                speed={60}
+                deleteSpeed={40}
+                pauseDuration={2000}
+                cursorChar="|"
+                cursorClassName="text-accent animate-pulse"
+              />
             </p>
             
             {/* 快捷指令 */}
@@ -189,9 +202,10 @@ export const AIChat = () => {
                 <button
                   key={idx}
                   onClick={() => setInputValue(prompt.text)}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-card hover:bg-accent/10 border border-border/50 hover:border-accent/30 transition-all duration-200 text-left group"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-card hover:bg-accent/10 border border-border/50 hover:border-accent/30 transition-all duration-200 text-left group animate-in slide-in-from-bottom-3 fade-in zoom-in-95 duration-300"
+                  style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'both' }}
                 >
-                  <prompt.icon className={`h-4 w-4 ${prompt.color} group-hover:scale-110 transition-transform`} />
+                  <prompt.icon className={`h-4 w-4 ${prompt.color} group-hover:scale-110 transition-transform duration-200`} />
                   <span className="text-sm text-foreground/80">{prompt.text}</span>
                 </button>
               ))}
@@ -202,10 +216,10 @@ export const AIChat = () => {
             {messages.map((msg, index) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                className={`flex gap-3 animate-in fade-in slide-in-from-bottom-3 duration-300 ease-out ${
                   msg.role === 'user' ? 'flex-row-reverse' : ''
                 }`}
-                style={{ animationDelay: `${index * 50}ms` }}
+                style={{ animationDelay: `${Math.min(index * 80, 400)}ms`, animationFillMode: 'both' }}
               >
                 {/* 头像 */}
                 <div

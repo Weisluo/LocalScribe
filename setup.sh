@@ -106,21 +106,84 @@ get_install_cmd() {
     esac
 }
 
-# 安装 Node.js
+# 检查 Node.js 版本是否为 22.x
+check_node_version() {
+    if command -v node &>/dev/null; then
+        local node_version
+        node_version=$(node --version | sed 's/v//' | cut -d'.' -f1)
+        if [ "$node_version" = "22" ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# 安装 Node.js (使用 nvm)
 install_nodejs() {
-    case $PKG_MANAGER in
-        apt)
-            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            ;;
-        yum|dnf)
-            curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
-            sudo $PKG_MANAGER install -y nodejs
-            ;;
-        pacman)
-            sudo pacman -Sy --noconfirm nodejs npm
-            ;;
-    esac
+    # 检测是否在中国大陆，使用镜像源加速
+    local is_cn=false
+    if ! curl -s --max-time 3 https://www.google.com >/dev/null 2>&1; then
+        is_cn=true
+        print_step "镜像" "检测到国内网络环境，使用镜像源加速..."
+    fi
+
+    # 安装 nvm
+    print_step "NVM" "安装 Node Version Manager..."
+    export NVM_DIR="$HOME/.nvm"
+    
+    if [ "$is_cn" = true ]; then
+        # 使用国内镜像安装 nvm（通过设置环境变量）
+        export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+        # 使用官方安装脚本，但会通过镜像下载
+        curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | NVM_DIR="$NVM_DIR" bash
+    else
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+    fi
+
+    if [ ! -f "$NVM_DIR/nvm.sh" ]; then
+        print_error "nvm 安装失败：nvm.sh 文件不存在"
+        print_info "请检查网络连接后重试，或手动安装 nvm"
+        return 1
+    fi
+    
+    \. "$NVM_DIR/nvm.sh"
+    
+    if ! type nvm &>/dev/null; then
+        print_warning "nvm 已安装，但需要重新启动终端才能使用"
+        print_info "请关闭当前终端并重新打开，然后运行: source ~/.bashrc (或 ~/.zshrc)"
+        print_info "之后运行 'nvm install 22' 来安装 Node.js 22"
+        return 1
+    fi
+
+    # 使用 nvm 安装 Node.js 22
+    print_step "Node.js" "使用 nvm 安装 Node.js 22.x..."
+    if [ "$is_cn" = true ]; then
+        NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node nvm install 22
+    else
+        nvm install 22
+    fi
+    nvm use 22
+    nvm alias default 22
+
+    # 确保新终端也能使用 nvm 和 Node.js 22
+    # 添加到 bashrc 和 zshrc（如果不存在）
+    local nvm_init='export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use default > /dev/null 2>&1'
+    
+    if ! grep -q "NVM_DIR" "$HOME/.bashrc" 2>/dev/null; then
+        echo "" >> "$HOME/.bashrc"
+        echo "# NVM Configuration" >> "$HOME/.bashrc"
+        echo "$nvm_init" >> "$HOME/.bashrc"
+    fi
+    
+    if [ -f "$HOME/.zshrc" ] && ! grep -q "NVM_DIR" "$HOME/.zshrc" 2>/dev/null; then
+        echo "" >> "$HOME/.zshrc"
+        echo "# NVM Configuration" >> "$HOME/.zshrc"
+        echo "$nvm_init" >> "$HOME/.zshrc"
+    fi
+
+    print_success "Node.js $(node --version) 安装完成"
 }
 
 # 检查并安装命令
@@ -178,18 +241,33 @@ main() {
     check_and_install_command "pip3" "python3-pip"
 
     # 检查 Node.js 和 npm
-    if ! command -v node &>/dev/null || ! command -v npm &>/dev/null; then
-        print_warning "未找到 Node.js 或 npm"
-        read -rp "是否自动安装 Node.js 和 npm? [Y/n]: " choice
+    if ! check_node_version; then
+        if command -v node &>/dev/null; then
+            local current_version
+            current_version=$(node --version)
+            print_warning "当前 Node.js 版本为 $current_version，需要升级到 22.x"
+        else
+            print_warning "未找到 Node.js"
+        fi
+        read -rp "是否自动安装/升级 Node.js 到 22.x? [Y/n]: " choice
         choice=${choice:-Y}
         if [[ "$choice" =~ ^[Yy]$ ]]; then
-            print_step "安装" "正在安装 Node.js 和 npm (LTS 22.x)..."
+            print_step "安装" "正在安装 Node.js 22.x (LTS)..."
             install_nodejs
-            print_success "Node.js 和 npm 安装完成"
+            print_success "Node.js 22.x 安装完成"
+            # 验证安装
+            if check_node_version; then
+                print_success "Node.js 版本验证通过: $(node --version)"
+            else
+                print_error "Node.js 安装后版本验证失败，请手动检查"
+                exit 1
+            fi
         else
-            print_error "需要 Node.js 和 npm 但未安装"
+            print_error "需要 Node.js 22.x 但未安装"
             exit 1
         fi
+    else
+        print_success "Node.js 版本已满足要求: $(node --version)"
     fi
 
     # 检查 python3-venv
