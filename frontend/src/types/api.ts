@@ -825,6 +825,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/upload/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上传图片
+         * @description 上传图片文件（支持 JPG、PNG、GIF、WebP 格式，最大 10MB）
+         */
+        post: operations["upload_image_api_v1_upload_images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upload/files/{folder}/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取上传的文件
+         * @description 通过 URL 访问上传的文件
+         */
+        get: operations["get_uploaded_file_api_v1_upload_files__folder___filename__get"];
+        put?: never;
+        post?: never;
+        /**
+         * 删除上传的文件
+         * @description 删除已上传的文件
+         */
+        delete: operations["delete_uploaded_file_api_v1_upload_files__folder___filename__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -916,6 +960,20 @@ export interface components {
             items: {
                 [key: string]: unknown;
             }[];
+        };
+        /** Body_upload_image_api_v1_upload_images_post */
+        Body_upload_image_api_v1_upload_images_post: {
+            /**
+             * File
+             * @description 要上传的图片文件
+             */
+            file: string;
+            /**
+             * Folder
+             * @description 存储子目录（默认 images）
+             * @default images
+             */
+            folder: string | null;
         };
         /** FolderCreate */
         FolderCreate: {
@@ -1366,6 +1424,53 @@ export interface components {
              * @description 平均词长（字符数）
              */
             avg_word_length: number;
+        };
+        /**
+         * UploadError
+         * @description 上传错误响应
+         */
+        UploadError: {
+            /**
+             * Detail
+             * @description 错误详情
+             */
+            detail: string;
+        };
+        /**
+         * UploadResponse
+         * @description 文件上传响应
+         */
+        UploadResponse: {
+            /**
+             * Success
+             * @description 是否上传成功
+             */
+            success: boolean;
+            /**
+             * Filename
+             * @description 原始文件名
+             */
+            filename: string;
+            /**
+             * Url
+             * @description 文件访问 URL
+             */
+            url: string;
+            /**
+             * Size
+             * @description 文件大小（字节）
+             */
+            size: number;
+            /**
+             * Content Type
+             * @description 文件类型
+             */
+            content_type: string;
+            /**
+             * Message
+             * @description 提示信息
+             */
+            message?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -3924,6 +4029,130 @@ export interface operations {
                 "application/json": components["schemas"]["BatchUpdateOrderRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_image_api_v1_upload_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_image_api_v1_upload_images_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResponse"];
+                };
+            };
+            /** @description 文件验证失败 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadError"];
+                };
+            };
+            /** @description 文件过大 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadError"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 服务器错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadError"];
+                };
+            };
+        };
+    };
+    get_uploaded_file_api_v1_upload_files__folder___filename__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder: string;
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_uploaded_file_api_v1_upload_files__folder___filename__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder: string;
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

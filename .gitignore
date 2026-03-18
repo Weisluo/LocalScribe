@@ -40,3 +40,6 @@ deps
 
 # trae
 .trae/
+
+# Uploads
+/backend/uploads/
