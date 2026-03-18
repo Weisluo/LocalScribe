@@ -1,5 +1,10 @@
 # backend/app/api/v1/worldbuilding.py
-from fastapi import APIRouter, Depends, HTTPException, Query
+import json
+import io
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
@@ -899,6 +904,245 @@ def import_world_template(
         db.rollback()
         logger.error(f"Unexpected error importing world template: {str(e)}")
         raise HTTPException(status_code=500, detail="导入世界模板时发生未知错误")
+
+
+@router.get("/templates/{template_id}/export/file")
+def export_world_template_file(
+    template_id: str,
+    db: Session = Depends(get_db)
+):
+    """导出世界模板为可下载的 JSON 文件"""
+    logger.info(f"Exporting world template to file: {template_id}")
+    
+    template = db.query(WorldTemplate).filter(WorldTemplate.id == template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="世界模板不存在")
+    
+    try:
+        # 使用现有的加载函数获取完整数据
+        modules = load_template_modules_with_selectinload(template_id, db)
+        
+        template_modules = []
+        for module in modules:
+            submodules = module.submodules
+            items = [item for item in module.items if item.submodule_id is None]
+            
+            submodule_with_items = []
+            for submodule in submodules:
+                submodule_items = submodule.items
+                
+                submodule_with_items.append({
+                    "id": submodule.id,
+                    "module_id": submodule.module_id,
+                    "name": submodule.name,
+                    "description": submodule.description,
+                    "order_index": submodule.order_index,
+                    "color": submodule.color,
+                    "icon": submodule.icon,
+                    "created_at": submodule.created_at.isoformat() if submodule.created_at else None,
+                    "updated_at": submodule.updated_at.isoformat() if submodule.updated_at else None,
+                    "items": [
+                        {
+                            "id": item.id,
+                            "module_id": item.module_id,
+                            "submodule_id": item.submodule_id,
+                            "name": item.name,
+                            "content": item.content,
+                            "order_index": item.order_index,
+                            "is_published": item.is_published,
+                            "created_at": item.created_at.isoformat() if item.created_at else None,
+                            "updated_at": item.updated_at.isoformat() if item.updated_at else None
+                        }
+                        for item in submodule_items
+                    ]
+                })
+            
+            template_modules.append({
+                "id": module.id,
+                "template_id": module.template_id,
+                "module_type": module.module_type,
+                "name": module.name,
+                "description": module.description,
+                "icon": module.icon,
+                "order_index": module.order_index,
+                "is_collapsible": module.is_collapsible,
+                "is_required": module.is_required,
+                "created_at": module.created_at.isoformat() if module.created_at else None,
+                "updated_at": module.updated_at.isoformat() if module.updated_at else None,
+                "submodules": submodule_with_items,
+                "items": [
+                    {
+                        "id": item.id,
+                        "module_id": item.module_id,
+                        "submodule_id": item.submodule_id,
+                        "name": item.name,
+                        "content": item.content,
+                        "order_index": item.order_index,
+                        "is_published": item.is_published,
+                        "created_at": item.created_at.isoformat() if item.created_at else None,
+                        "updated_at": item.updated_at.isoformat() if item.updated_at else None
+                    }
+                    for item in items
+                ]
+            })
+        
+        # 构建导出数据
+        export_data = {
+            "name": template.name,
+            "description": template.description,
+            "cover_image": template.cover_image,
+            "tags": template.tags,
+            "exported_at": datetime.now().isoformat(),
+            "version": "1.0",
+            "modules": template_modules
+        }
+        
+        # 转换为 JSON 字符串
+        json_content = json.dumps(export_data, ensure_ascii=False, indent=2)
+        
+        # 生成文件名
+        safe_name = "".join(c for c in template.name if c.isalnum() or c in (' ', '-', '_')).strip()
+        filename = f"world_{safe_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        logger.info(f"World template exported to file: {filename}")
+        
+        return StreamingResponse(
+            io.BytesIO(json_content.encode('utf-8')),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    
+    except Exception as e:
+        logger.error(f"Error exporting world template to file: {str(e)}")
+        raise HTTPException(status_code=500, detail="导出世界模板文件时发生错误")
+
+
+@router.post("/templates/import/file", response_model=WorldTemplateResponse)
+async def import_world_template_file(
+    file: UploadFile = File(..., description="要导入的 JSON 文件"),
+    db: Session = Depends(get_db)
+):
+    """从 JSON 文件导入世界模板"""
+    logger.info(f"Importing world template from file: {file.filename}")
+    
+    # 验证文件类型
+    if not file.filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail="只支持 JSON 文件导入")
+    
+    try:
+        # 读取文件内容
+        content = await file.read()
+        
+        # 解析 JSON
+        try:
+            import_data = json.loads(content.decode('utf-8'))
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail=f"JSON 格式错误: {str(e)}")
+        
+        # 验证必要字段
+        if "name" not in import_data:
+            raise HTTPException(status_code=400, detail="导入文件缺少 'name' 字段")
+        if "modules" not in import_data or not isinstance(import_data["modules"], list):
+            raise HTTPException(status_code=400, detail="导入文件缺少 'modules' 字段或格式错误")
+        
+        template_name = import_data["name"]
+        
+        # 检查名称是否已存在
+        existing = db.query(WorldTemplate).filter(WorldTemplate.name == template_name).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"世界模板名称 '{template_name}' 已存在")
+        
+        # 创建新模板
+        template = WorldTemplate(
+            id=str(uuid.uuid4()),
+            name=template_name,
+            description=import_data.get("description"),
+            cover_image=import_data.get("cover_image"),
+            tags=import_data.get("tags", []),
+            is_public=False,
+            is_system_template=False
+        )
+        
+        db.add(template)
+        db.flush()
+        
+        # 导入模块
+        for module_data in import_data["modules"]:
+            module = WorldModule(
+                id=str(uuid.uuid4()),
+                template_id=template.id,
+                module_type=module_data.get("module_type", "special"),
+                name=module_data.get("name", "未命名模块"),
+                description=module_data.get("description"),
+                icon=module_data.get("icon"),
+                order_index=module_data.get("order_index", 0),
+                is_collapsible=module_data.get("is_collapsible", True),
+                is_required=module_data.get("is_required", False)
+            )
+            db.add(module)
+            db.flush()
+            
+            # 导入子模块
+            for submodule_data in module_data.get("submodules", []):
+                submodule = WorldSubmodule(
+                    id=str(uuid.uuid4()),
+                    module_id=module.id,
+                    name=submodule_data.get("name", "未命名子模块"),
+                    description=submodule_data.get("description"),
+                    order_index=submodule_data.get("order_index", 0),
+                    color=submodule_data.get("color"),
+                    icon=submodule_data.get("icon")
+                )
+                db.add(submodule)
+                db.flush()
+                
+                # 导入子模块项
+                for item_data in submodule_data.get("items", []):
+                    item = WorldModuleItem(
+                        id=str(uuid.uuid4()),
+                        module_id=module.id,
+                        submodule_id=submodule.id,
+                        name=item_data.get("name", "未命名项"),
+                        content=item_data.get("content", {}),
+                        order_index=item_data.get("order_index", 0),
+                        is_published=item_data.get("is_published", True)
+                    )
+                    db.add(item)
+            
+            # 导入模块项（不属于子模块的）
+            for item_data in module_data.get("items", []):
+                item = WorldModuleItem(
+                    id=str(uuid.uuid4()),
+                    module_id=module.id,
+                    submodule_id=None,
+                    name=item_data.get("name", "未命名项"),
+                    content=item_data.get("content", {}),
+                    order_index=item_data.get("order_index", 0),
+                    is_published=item_data.get("is_published", True)
+                )
+                db.add(item)
+        
+        db.commit()
+        db.refresh(template)
+        
+        logger.info(f"World template imported from file: {template.id}")
+        return template
+    
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error importing world template from file: {str(e)}")
+        raise HTTPException(status_code=500, detail="从文件导入世界模板时发生数据库错误")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error importing world template from file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"从文件导入世界模板时发生错误: {str(e)}")
+    finally:
+        await file.close()
+
 
 # --- 批量操作 API ---
 
