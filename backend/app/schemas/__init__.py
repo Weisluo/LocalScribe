@@ -11,6 +11,15 @@ from .analysis import (
     KeywordExtractRequest, KeywordExtractResponse, KeywordItem,
     TextSimilarityRequest, TextSimilarityResponse
 )
+from .worldbuilding import (
+    WorldTemplateCreate, WorldTemplateUpdate, WorldTemplateResponse, WorldTemplateWithModules,
+    WorldModuleCreate, WorldModuleUpdate, WorldModuleResponse, WorldModuleWithItems,
+    WorldSubmoduleCreate, WorldSubmoduleUpdate, WorldSubmoduleResponse, WorldSubmoduleWithItems,
+    WorldModuleItemCreate, WorldModuleItemUpdate, WorldModuleItemResponse,
+    WorldInstanceCreate, WorldInstanceUpdate, WorldInstanceResponse,
+    WorldTemplateExport, WorldTemplateImport, BatchDeleteRequest, BatchUpdateOrderRequest,
+    WorldTemplateFilter, ModuleType
+)
 
 __all__ = [
     "ProjectCreate", "ProjectUpdate", "ProjectResponse",
@@ -22,5 +31,12 @@ __all__ = [
     "SegmentedWordItem", "RawSegmentationResponse",
     "TextStatisticsRequest", "TextStatisticsResponse",
     "KeywordExtractRequest", "KeywordExtractResponse", "KeywordItem",
-    "TextSimilarityRequest", "TextSimilarityResponse"
+    "TextSimilarityRequest", "TextSimilarityResponse",
+    "WorldTemplateCreate", "WorldTemplateUpdate", "WorldTemplateResponse", "WorldTemplateWithModules",
+    "WorldModuleCreate", "WorldModuleUpdate", "WorldModuleResponse", "WorldModuleWithItems",
+    "WorldSubmoduleCreate", "WorldSubmoduleUpdate", "WorldSubmoduleResponse", "WorldSubmoduleWithItems",
+    "WorldModuleItemCreate", "WorldModuleItemUpdate", "WorldModuleItemResponse",
+    "WorldInstanceCreate", "WorldInstanceUpdate", "WorldInstanceResponse",
+    "WorldTemplateExport", "WorldTemplateImport", "BatchDeleteRequest", "BatchUpdateOrderRequest",
+    "WorldTemplateFilter", "ModuleType"
 ]

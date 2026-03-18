@@ -155,6 +155,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notes/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Deleted Notes
+         * @description 获取回收站中的笔记列表（按项目筛选）
+         */
+        get: operations["get_deleted_notes_api_v1_notes_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notes/{note_id}": {
         parameters: {
             query?: never;
@@ -175,7 +195,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Note
-         * @description 删除单个章节
+         * @description 删除单个章节（软删除或永久删除）
          */
         delete: operations["delete_note_api_v1_notes__note_id__delete"];
         options?: never;
@@ -194,7 +214,7 @@ export interface paths {
         put?: never;
         /**
          * Batch Delete Notes
-         * @description 批量删除章节
+         * @description 批量删除章节（软删除或永久删除）
          */
         post: operations["batch_delete_notes_api_v1_notes_batch_delete_post"];
         delete?: never;
@@ -237,6 +257,46 @@ export interface paths {
          */
         put: operations["move_note_api_v1_notes__note_id__move_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/{note_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Note
+         * @description 恢复已删除的笔记
+         */
+        post: operations["restore_note_api_v1_notes__note_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/batch-restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Restore Notes
+         * @description 批量恢复已删除的笔记
+         */
+        post: operations["batch_restore_notes_api_v1_notes_batch_restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -405,6 +465,366 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/worldbuilding/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get World Templates
+         * @description 获取世界模板列表
+         */
+        get: operations["get_world_templates_api_v1_worldbuilding_templates_get"];
+        put?: never;
+        /**
+         * Create World Template
+         * @description 创建新的世界模板
+         */
+        post: operations["create_world_template_api_v1_worldbuilding_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/templates/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search World Templates
+         * @description 高级搜索世界模板
+         */
+        post: operations["search_world_templates_api_v1_worldbuilding_templates_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get World Template
+         * @description 获取特定世界模板的详细信息
+         */
+        get: operations["get_world_template_api_v1_worldbuilding_templates__template_id__get"];
+        /**
+         * Update World Template
+         * @description 更新世界模板
+         */
+        put: operations["update_world_template_api_v1_worldbuilding_templates__template_id__put"];
+        post?: never;
+        /**
+         * Delete World Template
+         * @description 删除世界模板
+         */
+        delete: operations["delete_world_template_api_v1_worldbuilding_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/templates/{template_id}/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get World Modules
+         * @description 获取世界模板的所有模块
+         */
+        get: operations["get_world_modules_api_v1_worldbuilding_templates__template_id__modules_get"];
+        put?: never;
+        /**
+         * Create World Module
+         * @description 为世界模板创建模块
+         */
+        post: operations["create_world_module_api_v1_worldbuilding_templates__template_id__modules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/modules/{module_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update World Module
+         * @description 更新世界模块
+         */
+        put: operations["update_world_module_api_v1_worldbuilding_modules__module_id__put"];
+        post?: never;
+        /**
+         * Delete World Module
+         * @description 删除世界模块
+         */
+        delete: operations["delete_world_module_api_v1_worldbuilding_modules__module_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/modules/{module_id}/submodules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get World Submodules
+         * @description 获取世界模块的所有子模块
+         */
+        get: operations["get_world_submodules_api_v1_worldbuilding_modules__module_id__submodules_get"];
+        put?: never;
+        /**
+         * Create World Submodule
+         * @description 为世界模块创建子模块
+         */
+        post: operations["create_world_submodule_api_v1_worldbuilding_modules__module_id__submodules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/modules/{module_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get World Module Items
+         * @description 获取世界模块的项
+         */
+        get: operations["get_world_module_items_api_v1_worldbuilding_modules__module_id__items_get"];
+        put?: never;
+        /**
+         * Create World Module Item
+         * @description 为世界模块创建项
+         */
+        post: operations["create_world_module_item_api_v1_worldbuilding_modules__module_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update World Module Item
+         * @description 更新模块项
+         */
+        put: operations["update_world_module_item_api_v1_worldbuilding_items__item_id__put"];
+        post?: never;
+        /**
+         * Delete World Module Item
+         * @description 删除模块项
+         */
+        delete: operations["delete_world_module_item_api_v1_worldbuilding_items__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/submodules/{submodule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update World Submodule
+         * @description 更新子模块
+         */
+        put: operations["update_world_submodule_api_v1_worldbuilding_submodules__submodule_id__put"];
+        post?: never;
+        /**
+         * Delete World Submodule
+         * @description 删除子模块
+         */
+        delete: operations["delete_world_submodule_api_v1_worldbuilding_submodules__submodule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create World Instance
+         * @description 基于模板创建世界实例
+         */
+        post: operations["create_world_instance_api_v1_worldbuilding_instances_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/projects/{project_id}/instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project World Instances
+         * @description 获取项目的所有世界实例
+         */
+        get: operations["get_project_world_instances_api_v1_worldbuilding_projects__project_id__instances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/instances/{instance_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update World Instance
+         * @description 更新世界实例
+         */
+        put: operations["update_world_instance_api_v1_worldbuilding_instances__instance_id__put"];
+        post?: never;
+        /**
+         * Delete World Instance
+         * @description 删除世界实例
+         */
+        delete: operations["delete_world_instance_api_v1_worldbuilding_instances__instance_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/templates/{template_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export World Template
+         * @description 导出世界模板
+         */
+        get: operations["export_world_template_api_v1_worldbuilding_templates__template_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/templates/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import World Template
+         * @description 导入世界模板
+         */
+        post: operations["import_world_template_api_v1_worldbuilding_templates_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/batch/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Delete World Items
+         * @description 批量删除世界项
+         */
+        post: operations["batch_delete_world_items_api_v1_worldbuilding_batch_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/batch/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Update Order
+         * @description 批量更新排序
+         */
+        post: operations["batch_update_order_api_v1_worldbuilding_batch_order_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -487,10 +907,15 @@ export interface components {
              */
             children: components["schemas"]["NoteNode"][];
         };
-        /** BatchDeleteRequest */
-        BatchDeleteRequest: {
-            /** Ids */
-            ids: string[];
+        /** BatchUpdateOrderRequest */
+        BatchUpdateOrderRequest: {
+            /**
+             * Items
+             * @description 排序项列表
+             */
+            items: {
+                [key: string]: unknown;
+            }[];
         };
         /** FolderCreate */
         FolderCreate: {
@@ -598,6 +1023,11 @@ export interface components {
              */
             weight?: number | null;
         };
+        /**
+         * ModuleType
+         * @enum {string}
+         */
+        ModuleType: "map" | "history" | "politics" | "economy" | "races" | "systems" | "special";
         /** MoveFolderRequest */
         MoveFolderRequest: {
             /** Target Parent Id */
@@ -696,12 +1126,6 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-            /**
-             * Deleted At
-             * Format: date-time
-             * @description 软删除时间，null 表示未删除
-             */
-            deleted_at?: string | null;
         };
         /**
          * NoteStatus
@@ -775,6 +1199,11 @@ export interface components {
              * @description 分词结果列表，每项包含词语和可选的词性标注
              */
             segmented: components["schemas"]["SegmentedWordItem"][];
+        };
+        /** RestoreNoteRequest */
+        RestoreNoteRequest: {
+            /** Folder Id */
+            folder_id?: string | null;
         };
         /**
          * SegmentationMode
@@ -991,6 +1420,718 @@ export interface components {
              * @description 词性标注
              */
             pos?: string | null;
+        };
+        /** WorldInstanceCreate */
+        WorldInstanceCreate: {
+            /**
+             * Name
+             * @description 实例名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 实例描述
+             */
+            description?: string | null;
+            /**
+             * Custom Data
+             * @description 自定义数据
+             */
+            custom_data?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Template Id
+             * @description 模板ID
+             */
+            template_id: string;
+            /**
+             * Project Id
+             * @description 项目ID
+             */
+            project_id: string;
+        };
+        /** WorldInstanceResponse */
+        WorldInstanceResponse: {
+            /**
+             * Name
+             * @description 实例名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 实例描述
+             */
+            description?: string | null;
+            /**
+             * Custom Data
+             * @description 自定义数据
+             */
+            custom_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Id */
+            id: string;
+            /** Template Id */
+            template_id: string;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** WorldInstanceUpdate */
+        WorldInstanceUpdate: {
+            /**
+             * Name
+             * @description 实例名称
+             */
+            name?: string | null;
+            /**
+             * Description
+             * @description 实例描述
+             */
+            description?: string | null;
+            /**
+             * Custom Data
+             * @description 自定义数据
+             */
+            custom_data?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** WorldModuleCreate */
+        WorldModuleCreate: {
+            /** @description 模块类型 */
+            module_type: components["schemas"]["ModuleType"];
+            /**
+             * Name
+             * @description 模块名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 模块描述
+             */
+            description?: string | null;
+            /**
+             * Icon
+             * @description 模块图标
+             */
+            icon?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Is Collapsible
+             * @description 是否可折叠
+             * @default true
+             */
+            is_collapsible: boolean;
+            /**
+             * Is Required
+             * @description 是否必需
+             * @default false
+             */
+            is_required: boolean;
+            /**
+             * Template Id
+             * @description 模板ID
+             */
+            template_id: string;
+        };
+        /** WorldModuleItemCreate */
+        WorldModuleItemCreate: {
+            /**
+             * Name
+             * @description 项名称
+             */
+            name: string;
+            /**
+             * Content
+             * @description 结构化内容
+             */
+            content: {
+                [key: string]: unknown;
+            };
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Is Published
+             * @description 是否发布
+             * @default true
+             */
+            is_published: boolean;
+            /**
+             * Module Id
+             * @description 模块ID
+             */
+            module_id: string;
+            /**
+             * Submodule Id
+             * @description 子模块ID
+             */
+            submodule_id?: string | null;
+        };
+        /** WorldModuleItemResponse */
+        WorldModuleItemResponse: {
+            /**
+             * Name
+             * @description 项名称
+             */
+            name: string;
+            /**
+             * Content
+             * @description 结构化内容
+             */
+            content: {
+                [key: string]: unknown;
+            };
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Is Published
+             * @description 是否发布
+             * @default true
+             */
+            is_published: boolean;
+            /** Id */
+            id: string;
+            /** Module Id */
+            module_id: string;
+            /** Submodule Id */
+            submodule_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** WorldModuleItemUpdate */
+        WorldModuleItemUpdate: {
+            /**
+             * Name
+             * @description 项名称
+             */
+            name?: string | null;
+            /**
+             * Content
+             * @description 结构化内容
+             */
+            content?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             */
+            order_index?: number | null;
+            /**
+             * Is Published
+             * @description 是否发布
+             */
+            is_published?: boolean | null;
+            /**
+             * Submodule Id
+             * @description 子模块ID
+             */
+            submodule_id?: string | null;
+        };
+        /** WorldModuleResponse */
+        WorldModuleResponse: {
+            /** @description 模块类型 */
+            module_type: components["schemas"]["ModuleType"];
+            /**
+             * Name
+             * @description 模块名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 模块描述
+             */
+            description?: string | null;
+            /**
+             * Icon
+             * @description 模块图标
+             */
+            icon?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Is Collapsible
+             * @description 是否可折叠
+             * @default true
+             */
+            is_collapsible: boolean;
+            /**
+             * Is Required
+             * @description 是否必需
+             * @default false
+             */
+            is_required: boolean;
+            /** Id */
+            id: string;
+            /** Template Id */
+            template_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Submodule Count
+             * @default 0
+             */
+            submodule_count: number;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+        };
+        /** WorldModuleUpdate */
+        WorldModuleUpdate: {
+            /**
+             * Name
+             * @description 模块名称
+             */
+            name?: string | null;
+            /**
+             * Description
+             * @description 模块描述
+             */
+            description?: string | null;
+            /**
+             * Icon
+             * @description 模块图标
+             */
+            icon?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             */
+            order_index?: number | null;
+            /**
+             * Is Collapsible
+             * @description 是否可折叠
+             */
+            is_collapsible?: boolean | null;
+            /**
+             * Is Required
+             * @description 是否必需
+             */
+            is_required?: boolean | null;
+        };
+        /** WorldModuleWithItems */
+        WorldModuleWithItems: {
+            /** @description 模块类型 */
+            module_type: components["schemas"]["ModuleType"];
+            /**
+             * Name
+             * @description 模块名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 模块描述
+             */
+            description?: string | null;
+            /**
+             * Icon
+             * @description 模块图标
+             */
+            icon?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Is Collapsible
+             * @description 是否可折叠
+             * @default true
+             */
+            is_collapsible: boolean;
+            /**
+             * Is Required
+             * @description 是否必需
+             * @default false
+             */
+            is_required: boolean;
+            /** Id */
+            id: string;
+            /** Template Id */
+            template_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Submodule Count
+             * @default 0
+             */
+            submodule_count: number;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            /**
+             * Submodules
+             * @default []
+             */
+            submodules: components["schemas"]["WorldSubmoduleResponse"][];
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["WorldModuleItemResponse"][];
+        };
+        /** WorldSubmoduleCreate */
+        WorldSubmoduleCreate: {
+            /**
+             * Name
+             * @description 子模块名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 子模块描述
+             */
+            description?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Color
+             * @description 颜色标识
+             */
+            color?: string | null;
+            /**
+             * Icon
+             * @description 图标
+             */
+            icon?: string | null;
+            /**
+             * Module Id
+             * @description 模块 ID
+             */
+            module_id: string;
+        };
+        /** WorldSubmoduleResponse */
+        WorldSubmoduleResponse: {
+            /**
+             * Name
+             * @description 子模块名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 子模块描述
+             */
+            description?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Color
+             * @description 颜色标识
+             */
+            color?: string | null;
+            /**
+             * Icon
+             * @description 图标
+             */
+            icon?: string | null;
+            /** Id */
+            id: string;
+            /** Module Id */
+            module_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+        };
+        /** WorldSubmoduleUpdate */
+        WorldSubmoduleUpdate: {
+            /**
+             * Name
+             * @description 子模块名称
+             */
+            name?: string | null;
+            /**
+             * Description
+             * @description 子模块描述
+             */
+            description?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             */
+            order_index?: number | null;
+            /**
+             * Color
+             * @description 颜色标识
+             */
+            color?: string | null;
+            /**
+             * Icon
+             * @description 图标
+             */
+            icon?: string | null;
+        };
+        /** WorldTemplateCreate */
+        WorldTemplateCreate: {
+            /**
+             * Name
+             * @description 世界名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 世界描述
+             */
+            description?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图片 URL
+             */
+            cover_image?: string | null;
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[] | null;
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+            /**
+             * Is System Template
+             * @default false
+             */
+            is_system_template: boolean;
+        };
+        /** WorldTemplateExport */
+        WorldTemplateExport: {
+            template: components["schemas"]["WorldTemplateResponse"];
+            /** Modules */
+            modules: components["schemas"]["WorldModuleWithItems"][];
+        };
+        /** WorldTemplateFilter */
+        WorldTemplateFilter: {
+            /** Name */
+            name?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Is System Template */
+            is_system_template?: boolean | null;
+            /** Created By */
+            created_by?: string | null;
+        };
+        /** WorldTemplateImport */
+        WorldTemplateImport: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Modules */
+            modules: components["schemas"]["WorldModuleWithItems"][];
+        };
+        /** WorldTemplateResponse */
+        WorldTemplateResponse: {
+            /**
+             * Name
+             * @description 世界名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 世界描述
+             */
+            description?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图片 URL
+             */
+            cover_image?: string | null;
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[] | null;
+            /** Id */
+            id: string;
+            /** Is Public */
+            is_public: boolean;
+            /** Is System Template */
+            is_system_template: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Module Count
+             * @default 0
+             */
+            module_count: number;
+            /**
+             * Instance Count
+             * @default 0
+             */
+            instance_count: number;
+        };
+        /** WorldTemplateUpdate */
+        WorldTemplateUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Is System Template */
+            is_system_template?: boolean | null;
+        };
+        /** WorldTemplateWithModules */
+        WorldTemplateWithModules: {
+            /**
+             * Name
+             * @description 世界名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 世界描述
+             */
+            description?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图片 URL
+             */
+            cover_image?: string | null;
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[] | null;
+            /** Id */
+            id: string;
+            /** Is Public */
+            is_public: boolean;
+            /** Is System Template */
+            is_system_template: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Module Count
+             * @default 0
+             */
+            module_count: number;
+            /**
+             * Instance Count
+             * @default 0
+             */
+            instance_count: number;
+            /**
+             * Modules
+             * @default []
+             */
+            modules: components["schemas"]["WorldModuleWithItems"][];
+        };
+        /** BatchDeleteRequest */
+        app__api__v1__notes__BatchDeleteRequest: {
+            /** Ids */
+            ids: string[];
+        };
+        /** BatchDeleteRequest */
+        app__schemas__worldbuilding__BatchDeleteRequest: {
+            /**
+             * Ids
+             * @description 要删除的 ID 列表
+             */
+            ids: string[];
         };
     };
     responses: never;
@@ -1352,6 +2493,7 @@ export interface operations {
             query?: {
                 folder_id?: string;
                 project_id?: string;
+                include_deleted?: boolean;
             };
             header?: never;
             path?: never;
@@ -1399,6 +2541,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NoteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_deleted_notes_api_v1_notes_deleted_get: {
+        parameters: {
+            query: {
+                project_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -1480,7 +2653,9 @@ export interface operations {
     };
     delete_note_api_v1_notes__note_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                permanent?: boolean;
+            };
             header?: never;
             path: {
                 note_id: string;
@@ -1511,14 +2686,16 @@ export interface operations {
     };
     batch_delete_notes_api_v1_notes_batch_delete_post: {
         parameters: {
-            query?: never;
+            query?: {
+                permanent?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BatchDeleteRequest"];
+                "application/json": components["schemas"]["app__api__v1__notes__BatchDeleteRequest"];
             };
         };
         responses: {
@@ -1585,6 +2762,74 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["MoveNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_note_api_v1_notes__note_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RestoreNoteRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_restore_notes_api_v1_notes_batch_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__v1__notes__BatchDeleteRequest"];
             };
         };
         responses: {
@@ -1826,6 +3071,867 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RawSegmentationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_templates_api_v1_worldbuilding_templates_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                name?: string | null;
+                is_public?: boolean | null;
+                is_system_template?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_template_api_v1_worldbuilding_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldTemplateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_world_templates_api_v1_worldbuilding_templates_search_post: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldTemplateFilter"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_template_api_v1_worldbuilding_templates__template_id__get: {
+        parameters: {
+            query?: {
+                include_modules?: boolean;
+            };
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateWithModules"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_template_api_v1_worldbuilding_templates__template_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldTemplateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_template_api_v1_worldbuilding_templates__template_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_modules_api_v1_worldbuilding_templates__template_id__modules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_module_api_v1_worldbuilding_templates__template_id__modules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldModuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_module_api_v1_worldbuilding_modules__module_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldModuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_module_api_v1_worldbuilding_modules__module_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_submodules_api_v1_worldbuilding_modules__module_id__submodules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldSubmoduleResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_submodule_api_v1_worldbuilding_modules__module_id__submodules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldSubmoduleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldSubmoduleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_module_items_api_v1_worldbuilding_modules__module_id__items_get: {
+        parameters: {
+            query?: {
+                submodule_id?: string | null;
+            };
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleItemResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_module_item_api_v1_worldbuilding_modules__module_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldModuleItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_module_item_api_v1_worldbuilding_items__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldModuleItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_module_item_api_v1_worldbuilding_items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_submodule_api_v1_worldbuilding_submodules__submodule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submodule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldSubmoduleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldSubmoduleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_submodule_api_v1_worldbuilding_submodules__submodule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submodule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_instance_api_v1_worldbuilding_instances_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldInstanceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldInstanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_world_instances_api_v1_worldbuilding_projects__project_id__instances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldInstanceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_instance_api_v1_worldbuilding_instances__instance_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldInstanceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldInstanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_instance_api_v1_worldbuilding_instances__instance_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_world_template_api_v1_worldbuilding_templates__template_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateExport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_world_template_api_v1_worldbuilding_templates_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldTemplateImport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_world_items_api_v1_worldbuilding_batch_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__schemas__worldbuilding__BatchDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_update_order_api_v1_worldbuilding_batch_order_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchUpdateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
