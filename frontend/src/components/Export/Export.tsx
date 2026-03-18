@@ -526,7 +526,7 @@ ${allXhtml}
       const chapters = collectAllChapters(tree);
       
       for (const chapter of chapters) {
-        const note = await api.get<any>(`/projects/${projectId}/notes/${chapter.id}`);
+        const note = await api.get<any>(`/notes/${chapter.id}`);
         chapter.content = htmlToPlainText(note.content || '');
       }
 
