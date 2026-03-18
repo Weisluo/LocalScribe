@@ -19,9 +19,6 @@ build/
 logs/
 *.log
 
-# Environment Variables
-.env
-
 # Frontend
 node_modules/
 /dist/

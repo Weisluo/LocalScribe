@@ -60,11 +60,25 @@ export const EditorPage = () => {
     queryFn: () => api.get<ProjectResponse[]>('/projects'),
   });
 
-  const { data: project } = useQuery({
+  const { setCurrentProjectId } = useProjectStore();
+
+  const { data: project, error: projectError } = useQuery({
     queryKey: ['project', currentProjectId],
     queryFn: () => api.get<ProjectResponse>(`/projects/${currentProjectId}`),
     enabled: !!currentProjectId,
+    retry: false,
   });
+
+  // 处理项目获取失败的情况：如果 404，清除无效的 currentProjectId
+  useEffect(() => {
+    if (projectError && currentProjectId) {
+      const axiosError = projectError as { response?: { status: number } };
+      if (axiosError.response?.status === 404) {
+        console.warn(`Project ${currentProjectId} not found, clearing currentProjectId`);
+        setCurrentProjectId('');
+      }
+    }
+  }, [projectError, currentProjectId, setCurrentProjectId]);
 
   const { data: currentNote, isLoading: isLoadingNote, isFetching: isFetchingNote } = useNote(selectedNoteId);
   const updateNoteMutation = useUpdateNote(currentProjectId || '');
