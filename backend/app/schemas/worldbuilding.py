@@ -66,7 +66,7 @@ class WorldModuleBase(BaseModel):
     is_required: bool = Field(False, description="是否必需")
 
 class WorldModuleCreate(WorldModuleBase):
-    template_id: str = Field(..., description="模板ID")
+    pass
 
 class WorldModuleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="模块名称")
@@ -95,7 +95,7 @@ class WorldSubmoduleBase(BaseModel):
     icon: Optional[str] = Field(None, max_length=100, description="图标")
 
 class WorldSubmoduleCreate(WorldSubmoduleBase):
-    module_id: str = Field(..., description="模块 ID")
+    pass
 
 class WorldSubmoduleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="子模块名称")
@@ -135,7 +135,6 @@ class WorldModuleItemBase(BaseModel):
         return v
 
 class WorldModuleItemCreate(WorldModuleItemBase):
-    module_id: str = Field(..., description="模块ID")
     submodule_id: Optional[str] = Field(None, description="子模块ID")
 
 class WorldModuleItemUpdate(BaseModel):

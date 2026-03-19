@@ -18,7 +18,7 @@ class WorldTemplate(Base):
     # 元数据
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    created_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_by = Column(String(36), nullable=True)  # 用户ID，暂不设置外键约束
     
     # 关系
     modules = relationship("WorldModule", back_populates="template", cascade="all, delete-orphan")
@@ -94,20 +94,20 @@ class WorldModuleItem(Base):
 class WorldInstance(Base):
     """世界实例 - 基于模板创建的具体世界"""
     __tablename__ = "world_instances"
-    
+
     id = Column(String(36), primary_key=True, index=True)
     template_id = Column(String(36), ForeignKey("world_templates.id"), nullable=False)
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    
+
     # 自定义配置
     custom_data = Column(JSON)  # 自定义数据覆盖
-    
+
     # 元数据
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
+
     # 关系
     template = relationship("WorldTemplate", back_populates="instances")
-    project = relationship("Project")
+    project = relationship("Project", back_populates="world_instances")

@@ -14,10 +14,11 @@ import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave, SaveResult, SAVE_THROTTLE_DELAY } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2 } from 'lucide-react';
 
 const Export = lazy(() => import('@/components/Export/Export').then(m => ({ default: m.Export })));
 const TrashPage = lazy(() => import('@/pages/TrashPage').then(m => ({ default: m.TrashPage })));
+const WorldbuildingView = lazy(() => import('@/components/Worldbuilding').then(m => ({ default: m.WorldbuildingView })));
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -29,6 +30,7 @@ export const EditorPage = () => {
   const { openModal, newlyCreatedNoteId, setNewlyCreatedNoteId } = useUIStore();
 
   const [showTrash, setShowTrash] = useState(false);
+  const [showWorldbuilding, setShowWorldbuilding] = useState(false);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
@@ -526,8 +528,8 @@ export const EditorPage = () => {
           </button>
         </div>
 
-        {/* 目录树区域 */}
-        <div className="flex-1 overflow-y-auto py-2" ref={treeRef}>
+        {/* 目录树区域 - 占据约 2/3 高度 */}
+        <div className="h-[67%] overflow-y-auto py-2" ref={treeRef}>
           <DirectoryTree
             projectId={currentProjectId}
             selectedNoteId={selectedNoteId}
@@ -535,6 +537,22 @@ export const EditorPage = () => {
             expandedIds={expandedIds}
             onToggle={handleToggle}
           />
+        </div>
+
+        {/* 中间功能区 - 世界观设定 */}
+        <div className="flex-1 border-t border-border/60 bg-card/20 backdrop-blur-sm flex flex-col">
+          <div className="p-3 flex flex-col gap-2">
+            <button
+              onClick={() => setShowWorldbuilding(true)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
+              title="世界观设定"
+            >
+              <Globe2 className="h-4 w-4" />
+              <span>世界观设定</span>
+            </button>
+          </div>
+          {/* 预留空间给后续功能 */}
+          <div className="flex-1" />
         </div>
 
         {/* 底部操作栏 */}
@@ -585,7 +603,11 @@ export const EditorPage = () => {
 
       {/* 中间主编辑区 */}
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
-        {showTrash ? (
+        {showWorldbuilding ? (
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <WorldbuildingView onBack={() => setShowWorldbuilding(false)} />
+          </Suspense>
+        ) : showTrash ? (
           /* 回收站界面 */
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* 回收站顶部标题栏 */}

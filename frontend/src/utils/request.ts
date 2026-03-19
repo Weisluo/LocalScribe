@@ -1,5 +1,31 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+// 自定义错误类型
+export class ApiError extends Error {
+  public status?: number;
+  public code?: string;
+  public details?: any;
+
+  constructor(message: string, status?: number, code?: string, details?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+// 错误代码映射
+const ERROR_CODES = {
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  TIMEOUT_ERROR: 'TIMEOUT_ERROR',
+  SERVER_ERROR: 'SERVER_ERROR',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  AUTH_ERROR: 'AUTH_ERROR',
+  PERMISSION_ERROR: 'PERMISSION_ERROR',
+  NOT_FOUND_ERROR: 'NOT_FOUND_ERROR',
+} as const;
+
 // 1. 创建 axios 实例
 const service: AxiosInstance = axios.create({
   baseURL: '/api/v1', // 你的后端 API 基础路径
@@ -39,11 +65,14 @@ service.interceptors.response.use(
 
     // 统一错误处理逻辑
     let errorMessage = '网络请求失败，请检查网络连接';
+    let errorCode: keyof typeof ERROR_CODES = ERROR_CODES.SERVER_ERROR;
+    let errorDetails: any = null;
 
     if (error.response) {
       // 服务器返回了错误状态码 (4xx, 5xx)
       const status = error.response.status;
       const data = error.response.data;
+      errorDetails = data;
 
       if (data?.detail) {
         errorMessage = data.detail;
@@ -53,35 +82,47 @@ service.interceptors.response.use(
         switch (status) {
           case 400:
             errorMessage = '请求参数错误';
+            errorCode = ERROR_CODES.VALIDATION_ERROR;
             break;
           case 401:
             errorMessage = '未授权，请登录';
+            errorCode = ERROR_CODES.AUTH_ERROR;
             break;
           case 403:
             errorMessage = '拒绝访问';
+            errorCode = ERROR_CODES.PERMISSION_ERROR;
             break;
           case 404:
             errorMessage = '请求的资源不存在';
+            errorCode = ERROR_CODES.NOT_FOUND_ERROR;
             break;
           case 500:
             errorMessage = '服务器内部错误';
+            errorCode = ERROR_CODES.SERVER_ERROR;
             break;
           default:
             errorMessage = `服务器错误: ${status}`;
+            errorCode = ERROR_CODES.SERVER_ERROR;
         }
       }
     } else if (error.request) {
       // 请求已发出，但没有收到响应
       errorMessage = '服务器无响应，请检查后端是否启动';
+      errorCode = ERROR_CODES.NETWORK_ERROR;
     } else {
       // 发送请求时出错
       errorMessage = error.message;
+      if (error.code === 'ECONNABORTED') {
+        errorCode = ERROR_CODES.TIMEOUT_ERROR;
+      }
     }
 
     // TODO: 后续这里可以接入全局 UI 提示组件 (如 Toast)
-    alert(`错误: ${errorMessage}`); 
+    console.warn(`API Error [${errorCode}]: ${errorMessage}`);
 
-    return Promise.reject(error);
+    // 返回自定义错误对象
+    const apiError = new ApiError(errorMessage, error.response?.status, errorCode, errorDetails);
+    return Promise.reject(apiError);
   }
 );
 

@@ -22,6 +22,7 @@ class Project(Base):
     # 定义关联关系（方便后续查询，可选但推荐）
     folders: Mapped[List["Folder"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     notes: Mapped[List["Note"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    world_instances: Mapped[List["WorldInstance"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Project {self.title}>"
