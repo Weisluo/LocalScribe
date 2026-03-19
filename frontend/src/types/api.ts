@@ -785,6 +785,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/worldbuilding/templates/{template_id}/export/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export World Template File
+         * @description 导出世界模板为可下载的 JSON 文件
+         */
+        get: operations["export_world_template_file_api_v1_worldbuilding_templates__template_id__export_file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/templates/import/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import World Template File
+         * @description 从 JSON 文件导入世界模板
+         */
+        post: operations["import_world_template_file_api_v1_worldbuilding_templates_import_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/worldbuilding/batch/delete": {
         parameters: {
             query?: never;
@@ -960,6 +1000,14 @@ export interface components {
             items: {
                 [key: string]: unknown;
             }[];
+        };
+        /** Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post */
+        Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post: {
+            /**
+             * File
+             * @description 要导入的 JSON 文件
+             */
+            file: string;
         };
         /** Body_upload_image_api_v1_upload_images_post */
         Body_upload_image_api_v1_upload_images_post: {
@@ -1184,6 +1232,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Deleted At */
+            deleted_at?: string | null;
         };
         /**
          * NoteStatus
@@ -1649,11 +1699,6 @@ export interface components {
              * @default false
              */
             is_required: boolean;
-            /**
-             * Template Id
-             * @description 模板ID
-             */
-            template_id: string;
         };
         /** WorldModuleItemCreate */
         WorldModuleItemCreate: {
@@ -1681,11 +1726,6 @@ export interface components {
              * @default true
              */
             is_published: boolean;
-            /**
-             * Module Id
-             * @description 模块ID
-             */
-            module_id: string;
             /**
              * Submodule Id
              * @description 子模块ID
@@ -1960,11 +2000,6 @@ export interface components {
              * @description 图标
              */
             icon?: string | null;
-            /**
-             * Module Id
-             * @description 模块 ID
-             */
-            module_id: string;
         };
         /** WorldSubmoduleResponse */
         WorldSubmoduleResponse: {
@@ -3961,6 +3996,70 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["WorldTemplateImport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_world_template_file_api_v1_worldbuilding_templates__template_id__export_file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_world_template_file_api_v1_worldbuilding_templates_import_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post"];
             };
         };
         responses: {

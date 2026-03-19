@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Text, JSON, DateTime, Boolean, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core.database import Base
+from . import Base
 
 class WorldTemplate(Base):
     """世界模板 - 可重用的世界观模板"""

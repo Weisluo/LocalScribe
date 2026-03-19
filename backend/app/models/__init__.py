@@ -1,6 +1,7 @@
 from datetime import datetime
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import MetaData
+
+from app.core.database import Base
 
 convention = {
     "ix": "ix_%(column_0_label)s",
@@ -12,11 +13,8 @@ convention = {
 
 metadata = MetaData(naming_convention=convention)
 
-Base = declarative_base(metadata=metadata)
+Base.metadata = metadata
 
-# --- 导入所有模型，确保 Alembic 能扫描到 ---
-
-# 注意：必须在 Base 定义之后导入
 from .project import Project
 from .folder import Folder
 from .note import Note
