@@ -1102,11 +1102,7 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
   );
 };
 
-interface WorldbuildingViewProps {
-  onBack: () => void;
-}
-
-export const WorldbuildingView = ({ onBack }: WorldbuildingViewProps) => {
+export const WorldbuildingView = () => {
   const [activeTab, setActiveTab] = useState<TabType>('map');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
@@ -1204,10 +1200,6 @@ export const WorldbuildingView = ({ onBack }: WorldbuildingViewProps) => {
   // 处理初始选择弹窗关闭
   const handleInitialChoiceClose = () => {
     setShowInitialChoice(false);
-    // 如果没有模板，返回编辑器
-    if (templates.length === 0) {
-      onBack();
-    }
   };
 
   // 处理创建新世界
@@ -1268,19 +1260,13 @@ export const WorldbuildingView = ({ onBack }: WorldbuildingViewProps) => {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="h-16 border-b border-border/60 flex items-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0">
-        <button
-          onClick={onBack}
-          className="mr-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-        >
+      <header className="h-16 border-b border-border/60 flex items-center justify-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0 relative group">
+        <h1 className="text-xl font-semibold text-foreground flex items-center gap-2 absolute left-6">
           <Globe2 className="h-5 w-5" />
-          <span>返回编辑器</span>
-        </button>
-        <div className="h-6 w-px bg-border/60 mx-2" />
-        <h1 className="text-xl font-semibold">世界观设定</h1>
+          世界观设定
+        </h1>
         {currentTemplate && (
-          <div className="ml-3 flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">—</span>
+          <>
             {isEditingTemplateName ? (
               <div className="flex items-center gap-2">
                 <input
@@ -1315,30 +1301,32 @@ export const WorldbuildingView = ({ onBack }: WorldbuildingViewProps) => {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{currentTemplate.name}</span>
-                <button
-                  onClick={handleStartEditTemplateName}
-                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-foreground transition-colors"
-                  title="修改名称"
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={handleDeleteTemplate}
-                  disabled={deleteTemplateMutation.isPending}
-                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-destructive transition-colors ml-1"
-                  title="删除世界"
-                >
-                  {deleteTemplateMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              </div>
+              <>
+                <span className="text-2xl font-semibold text-foreground">{currentTemplate.name}</span>
+                <div className="flex items-center gap-1 absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={handleStartEditTemplateName}
+                    className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-foreground transition-colors"
+                    title="修改名称"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={handleDeleteTemplate}
+                    disabled={deleteTemplateMutation.isPending}
+                    className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-destructive transition-colors"
+                    title="删除世界"
+                  >
+                    {deleteTemplateMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+              </>
             )}
-          </div>
+          </>
         )}
       </header>
 
@@ -1371,14 +1359,8 @@ export const WorldbuildingView = ({ onBack }: WorldbuildingViewProps) => {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 py-4 border-b border-border/40 bg-muted/10">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                {TAB_CONFIG[activeTab].label}设定
-              </h2>
-            </div>
-
-            {!currentTemplate && !templatesLoading && (
+          {!currentTemplate && !templatesLoading && (
+            <div className="px-6 py-4">
               <div className="mt-4 flex flex-col items-center justify-center py-8 text-center">
                 <Globe2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
                 <p className="text-muted-foreground mb-4">还没有创建世界模板</p>
@@ -1399,8 +1381,8 @@ export const WorldbuildingView = ({ onBack }: WorldbuildingViewProps) => {
                   </button>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* 弹窗组件 */}
           <InitialChoiceModal

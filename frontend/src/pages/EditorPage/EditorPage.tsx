@@ -379,9 +379,12 @@ export const EditorPage = () => {
   };
 
   const handleSelectNote = (id: string, title: string) => {
-    // 如果当前在回收站界面，先返回编辑器
+    // 如果当前在回收站或世界观设定界面，先返回编辑器
     if (showTrash) {
       setShowTrash(false);
+    }
+    if (showWorldbuilding) {
+      setShowWorldbuilding(false);
     }
     
     const now = Date.now();
@@ -519,6 +522,7 @@ export const EditorPage = () => {
           <button
             onClick={() => {
               setShowTrash(false);
+              setShowWorldbuilding(false);
               openModal('volume', currentProjectId);
             }}
             className="p-2 hover:bg-accent/30 rounded-lg text-muted-foreground hover:text-foreground flex-shrink-0 transition-all duration-200 hover:scale-105"
@@ -543,7 +547,10 @@ export const EditorPage = () => {
         <div className="flex-1 border-t border-border/60 bg-card/20 backdrop-blur-sm flex flex-col">
           <div className="p-3 flex flex-col gap-2">
             <button
-              onClick={() => setShowWorldbuilding(true)}
+              onClick={() => {
+                setShowTrash(false);
+                setShowWorldbuilding(true);
+              }}
               className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
               title="世界观设定"
             >
@@ -561,6 +568,7 @@ export const EditorPage = () => {
             <button
               onClick={() => {
                 setShowTrash(false);
+                setShowWorldbuilding(false);
                 handleDeleteProject();
               }}
               disabled={!currentProjectId}
@@ -573,6 +581,7 @@ export const EditorPage = () => {
               <button
                 onClick={() => {
                   setShowTrash(false);
+                  setShowWorldbuilding(false);
                   openModal('project');
                 }}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs text-emerald-600/80 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-lg transition-all duration-200"
@@ -591,7 +600,10 @@ export const EditorPage = () => {
               )}
             </div>
             <button
-              onClick={() => setShowTrash(true)}
+              onClick={() => {
+                setShowWorldbuilding(false);
+                setShowTrash(true);
+              }}
               className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
               title="回收站"
             >
@@ -605,7 +617,7 @@ export const EditorPage = () => {
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
         {showWorldbuilding ? (
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <WorldbuildingView onBack={() => setShowWorldbuilding(false)} />
+            <WorldbuildingView />
           </Suspense>
         ) : showTrash ? (
           /* 回收站界面 */
