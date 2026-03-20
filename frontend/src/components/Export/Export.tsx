@@ -25,7 +25,7 @@ interface ChapterData {
 
 type ExportFormat = 'pdf' | 'epub' | 'txt' | 'docx';
 
-export const Export = ({ projectId, projectTitle, tree }: ExportProps) => {
+export const Export = ({ projectTitle, tree }: ExportProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 

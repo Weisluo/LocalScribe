@@ -14,11 +14,13 @@ import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave, SaveResult, SAVE_THROTTLE_DELAY } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2 } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 const Export = lazy(() => import('@/components/Export/Export').then(m => ({ default: m.Export })));
 const TrashPage = lazy(() => import('@/pages/TrashPage').then(m => ({ default: m.TrashPage })));
 const WorldbuildingView = lazy(() => import('@/components/Worldbuilding').then(m => ({ default: m.WorldbuildingView })));
+const WritingCalendar = lazy(() => import('@/components/WritingCalendar').then(m => ({ default: m.WritingCalendar })));
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
@@ -49,6 +51,10 @@ export const EditorPage = () => {
   // 右侧栏宽度状态 - 默认最小 25%
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(25);
   const [isResizing, setIsResizing] = useState(false);
+
+  // 日历和统计面板状态
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // 拖拽调整大小相关引用
   const resizingRef = useRef(false);
@@ -288,6 +294,43 @@ export const EditorPage = () => {
       }
     );
   }, [tree, createNoteMutation, currentProjectId]);
+
+  // 时间更新效果
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 从目录树生成每日写作统计数据
+  const dailyStats = useMemo(() => {
+    if (!tree) return [];
+
+    const stats = new Map<string, number>();
+
+    const processNode = (node: VolumeNode | ActNode | NoteNode) => {
+      if (node.type === 'note') {
+        const note = node as NoteNode;
+        // 使用 created_at 作为写作日期，转换为本地日期
+        if (note.created_at && note.word_count) {
+          const date = format(new Date(note.created_at), 'yyyy-MM-dd');
+          const current = stats.get(date) || 0;
+          stats.set(date, current + (note.word_count || 0));
+        }
+      }
+      if ('children' in node && node.children) {
+        node.children.forEach(processNode);
+      }
+    };
+
+    tree.forEach(processNode);
+
+    return Array.from(stats.entries()).map(([date, wordCount]) => ({
+      date,
+      wordCount,
+    }));
+  }, [tree]);
 
   // 每次目录树更新后，确保当前选中的章节祖先节点保持展开
   useEffect(() => {
@@ -707,8 +750,8 @@ export const EditorPage = () => {
       >
         {/* 状态栏 - 美化后的信息统计面板 */}
         <div className="border-b border-border/60 flex flex-col flex-shrink-0 bg-gradient-to-br from-card/50 via-card/30 to-accent/5 backdrop-blur-sm">
-          {/* 保存状态指示器 */}
-          <div className="px-4 pt-3 pb-2">
+          {/* 保存状态指示器 和 日期时间 */}
+          <div className="px-4 pt-3 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {updateNoteMutation.isPending ? (
                 <>
@@ -727,6 +770,25 @@ export const EditorPage = () => {
                 </>
               )}
             </div>
+            
+            {/* 日期时间按钮 */}
+            <button
+              onClick={() => setShowCalendar(!showCalendar)}
+              className={`
+                flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-lg
+                transition-all duration-300 ease-out
+                ${showCalendar 
+                  ? 'bg-primary/15 text-primary ring-1 ring-primary/30 scale-105 shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/20 hover:scale-105'
+                }
+                active:scale-95
+              `}
+            >
+              <Calendar className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                showCalendar ? 'rotate-12 scale-110' : ''
+              }`} />
+              <span>{format(currentTime, 'MM-dd HH:mm')}</span>
+            </button>
           </div>
 
           {/* 统计卡片网格 */}
@@ -793,8 +855,27 @@ export const EditorPage = () => {
           })()}
         </div>
 
-        {/* AI 聊天区域 */}
-        <div className="flex-1 overflow-hidden">
+        {/* 日历和统计面板 */}
+        <div className={`
+          overflow-hidden transition-all duration-500 ease-out
+          ${showCalendar 
+            ? 'max-h-[500px] opacity-100 translate-y-0' 
+            : 'max-h-0 opacity-0 -translate-y-4'
+          }
+        `}>
+          {showCalendar && (
+            <Suspense fallback={<div className="p-4 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}>
+              <WritingCalendar
+                isOpen={showCalendar}
+                onClose={() => setShowCalendar(false)}
+                dailyStats={dailyStats}
+              />
+            </Suspense>
+          )}
+        </div>
+
+        {/* AI 聊天区域 - 根据日历显示状态调整高度 */}
+        <div className={`overflow-hidden ${showCalendar ? 'flex-1 min-h-[200px]' : 'flex-1'}`}>
           <AIChat />
         </div>
       </aside>
