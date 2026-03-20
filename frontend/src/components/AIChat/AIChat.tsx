@@ -202,7 +202,7 @@ export const AIChat = () => {
                 <button
                   key={idx}
                   onClick={() => setInputValue(prompt.text)}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-card hover:bg-accent/10 border border-border/50 hover:border-accent/30 transition-all duration-200 text-left group animate-in slide-in-from-bottom-3 fade-in zoom-in-95 duration-300"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-card hover:bg-accent/10 border border-border/50 hover:border-accent/30 transition-all duration-200 text-left group animate-in slide-in-from-bottom-3 fade-in zoom-in-95"
                   style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'both' }}
                 >
                   <prompt.icon className={`h-4 w-4 ${prompt.color} group-hover:scale-110 transition-transform duration-200`} />
