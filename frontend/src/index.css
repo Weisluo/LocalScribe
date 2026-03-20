@@ -74,16 +74,27 @@
   * {
     @apply border-border;
   }
-  
+
   html {
     scroll-behavior: smooth;
   }
-  
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "kern" 1, "liga" 1;
     text-rendering: optimizeLegibility;
+  }
+
+  /* 禁用非输入元素的光标闪烁 */
+  button, [role="button"], [role="option"], [role="menuitem"], [role="tab"], [role="switch"],
+  div, span, p, h1, h2, h3, h4, h5, h6, li, td, th, label, figcaption {
+    caret-color: transparent;
+  }
+
+  /* 只在真正的输入元素上显示光标 */
+  input, textarea, [contenteditable="true"] {
+    caret-color: auto;
   }
   
   /* 衬线字体类 - 用于标题和编辑器 */
@@ -218,6 +229,12 @@
   outline: none;
   font-family: 'Noto Serif SC', Georgia, serif;
   color: hsl(var(--foreground));
+  caret-color: auto;
+}
+
+/* 确保编辑器内部所有元素都有光标 */
+.ProseMirror * {
+  caret-color: auto;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
