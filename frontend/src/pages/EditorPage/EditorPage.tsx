@@ -12,7 +12,7 @@ import { useUIStore } from '@/stores/uiStore';
 
 import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
-import { useAutoSave, SaveResult, SAVE_THROTTLE_DELAY } from '@/hooks/useAutoSave';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
 import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
@@ -44,9 +44,6 @@ export const EditorPage = () => {
   const treeRef = useRef<HTMLDivElement>(null); // 用于滚动
   const hasAutoCreatedRef = useRef(false); // 标记是否已自动创建章节
   const containerRef = useRef<HTMLDivElement>(null); // 主容器引用
-  const lastSavedContentRef = useRef<string>(''); // 上次保存时的内容
-  const lastSavedTitleRef = useRef<string>(''); // 上次保存时的标题
-  const prevSelectedNoteIdRef = useRef<string | undefined>(); // 上次选中的章节 ID
 
   // 右侧栏宽度状态 - 默认最小 25%
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(25);
@@ -193,8 +190,6 @@ export const EditorPage = () => {
     setSelectedNoteId(undefined);
     setNoteTitle('');
     setNoteContent('');
-    lastSavedTitleRef.current = '';
-    lastSavedContentRef.current = '';
     setExpandedIds(new Set());
   }, [currentProjectId]);
 
@@ -222,8 +217,6 @@ export const EditorPage = () => {
         setSelectedNoteId(newlyCreatedNoteId);
         setNoteTitle(title || '');
         setNoteContent('');
-        lastSavedTitleRef.current = title || '';
-        lastSavedContentRef.current = '';
 
         // 展开新章节所在的幕及其祖先
         setExpandedIds((prev) => {
@@ -270,8 +263,6 @@ export const EditorPage = () => {
           setSelectedNoteId(newNote.id);
           setNoteTitle(newNote.title); // 后端返回的 title 为空字符串，输入框显示 placeholder
           setNoteContent('');
-          lastSavedTitleRef.current = newNote.title || '';
-          lastSavedContentRef.current = '';
 
           // 展开新章节所在的幕及其祖先
           setExpandedIds((prev) => {
@@ -359,35 +350,19 @@ export const EditorPage = () => {
     }
   }, [selectedNoteId]);
 
-  // 同步章节数据（仅当切换章节时，避免覆盖用户正在编辑的内容）
+  // 同步章节数据（仅当切换章节时）
   useEffect(() => {
-    // 检测是否发生了章节切换
-    const isNoteSwitching = prevSelectedNoteIdRef.current !== selectedNoteId;
-    
     if (currentNote) {
-      // 如果是章节切换，强制同步数据；否则只在没有未保存的更改时同步
-      const shouldSync = isNoteSwitching || 
-        (noteContent === lastSavedContentRef.current && noteTitle === lastSavedTitleRef.current);
-
-      if (shouldSync) {
-        if (currentNote.title !== noteTitle) {
-          setNoteTitle(currentNote.title || '无标题');
-          lastSavedTitleRef.current = currentNote.title || '';
-        }
-        if (currentNote.content !== noteContent) {
-          setNoteContent(currentNote.content || '');
-          lastSavedContentRef.current = currentNote.content || '';
-        }
+      if (currentNote.title !== noteTitle) {
+        setNoteTitle(currentNote.title || '无标题');
+      }
+      if (currentNote.content !== noteContent) {
+        setNoteContent(currentNote.content || '');
       }
     } else if (!selectedNoteId) {
       setNoteTitle('');
       setNoteContent('');
-      lastSavedTitleRef.current = '';
-      lastSavedContentRef.current = '';
     }
-    
-    // 更新上次选中的章节 ID
-    prevSelectedNoteIdRef.current = selectedNoteId;
   }, [currentNote, selectedNoteId]);
 
   const noteData = useMemo(() => ({
@@ -397,18 +372,14 @@ export const EditorPage = () => {
 
   const handleSave = useCallback((data: { title: string; content: string }) => {
     const now = Date.now();
-    if (now - lastSaveTimeRef.current < SAVE_THROTTLE_DELAY) return 'skipped' as SaveResult;
+    if (now - lastSaveTimeRef.current < 500) return;
     if (selectedNoteId && !updateNoteMutation.isPending) {
       lastSaveTimeRef.current = now;
-      lastSavedTitleRef.current = data.title;
-      lastSavedContentRef.current = data.content;
       updateNoteMutation.mutate({
         noteId: selectedNoteId,
         data: data
       });
-      return 'success' as SaveResult;
     }
-    return 'skipped' as SaveResult;
   }, [selectedNoteId, updateNoteMutation]);
 
   useAutoSave({ data: noteData, onSave: handleSave });
@@ -431,7 +402,7 @@ export const EditorPage = () => {
     }
     
     const now = Date.now();
-    if (selectedNoteId && selectedNoteId !== id && (noteTitle || noteContent) && now - lastSaveTimeRef.current > SAVE_THROTTLE_DELAY && !updateNoteMutation.isPending) {
+    if (selectedNoteId && selectedNoteId !== id && (noteTitle || noteContent) && now - lastSaveTimeRef.current > 500 && !updateNoteMutation.isPending) {
       lastSaveTimeRef.current = now;
       updateNoteMutation.mutate(
         {
@@ -446,11 +417,8 @@ export const EditorPage = () => {
         }
       );
     }
-    // 只设置选中的章节 ID 和标题，内容等待 currentNote 更新后由 useEffect 同步
     setSelectedNoteId(id);
     setNoteTitle(title);
-    // 注意：不调用 setNoteContent 和更新 lastSavedContentRef，避免内容闪烁
-    // useEffect 会在 currentNote 更新后自动同步内容
   };
 
   const handleToggle = (id: string) => {
