@@ -105,6 +105,7 @@ export const CreateItemModal = () => {
 
       // 如果是创建项目，自动切换到新项目
       if (modalType === 'project' && data?.id) {
+        await queryClient.invalidateQueries({ queryKey: ['projects'] });
         setCurrentProjectId(data.id);
       }
     },

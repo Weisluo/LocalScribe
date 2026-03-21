@@ -86,6 +86,17 @@ export const EditorPage = () => {
     }
   }, [projectError, currentProjectId, setCurrentProjectId]);
 
+  // 初始化检查：当 projects 列表加载完成后，验证 currentProjectId 是否有效
+  useEffect(() => {
+    if (projects && currentProjectId) {
+      const projectExists = projects.some(p => p.id === currentProjectId);
+      if (!projectExists) {
+        console.warn(`Project ${currentProjectId} not found in project list, clearing currentProjectId`);
+        setCurrentProjectId('');
+      }
+    }
+  }, [projects, currentProjectId, setCurrentProjectId]);
+
   const { data: currentNote, isLoading: isLoadingNote, isFetching: isFetchingNote } = useNote(selectedNoteId);
   const updateNoteMutation = useUpdateNote(currentProjectId || '');
   const createNoteMutation = useCreateNote(currentProjectId || '');
