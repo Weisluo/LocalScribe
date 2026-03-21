@@ -49,7 +49,7 @@ export const DirectoryTree = ({
   const setCurrentNoteId = useNoteStore(state => state.setCurrentNoteId);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { delay: 1500, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

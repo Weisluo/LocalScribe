@@ -245,7 +245,7 @@ export const TreeNode = ({
         style={{ paddingLeft: `${level * 14 + 8}px` }}
         onClick={handleClick}
         {...attributes}
-        {...listeners}
+        {...(isEditing ? {} : listeners)}
       >
         {node.type !== 'note' && (
           <button
