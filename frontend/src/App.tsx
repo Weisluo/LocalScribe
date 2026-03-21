@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { preloadModules } from '@/hooks/useIdlePreload';
 
 const EditorPage = lazy(() => import('./pages/EditorPage/EditorPage').then(m => ({ default: m.EditorPage })));
@@ -26,6 +27,22 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster 
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{
+          duration: 4000,
+          style: {
+            padding: '12px 16px',
+          },
+          classNames: {
+            toast: 'group-[.toaster]:pr-8',
+            title: 'group-[.toaster]:text-sm',
+            description: 'group-[.toaster]:text-xs',
+          },
+        }}
+      />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route path="/" element={<EditorPage />} />

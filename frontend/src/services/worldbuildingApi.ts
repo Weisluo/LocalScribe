@@ -66,7 +66,7 @@ export interface WorldInstance {
   project_id: string;
   name: string;
   description?: string;
-  custom_data?: Record<string, any>;
+  custom_data?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -197,26 +197,26 @@ export const worldbuildingApi = {
     project_id: string;
     name: string;
     description?: string;
-    custom_data?: Record<string, any>;
+    custom_data?: Record<string, unknown>;
   }) => {
     return api.post<WorldInstance>('/worldbuilding/instances', data);
   },
 
   importTemplate: (data: {
     name: string;
-    template_data: Record<string, any>;
+    template_data: Record<string, unknown>;
     project_id?: string;
   }) => {
     return api.post<WorldTemplate>('/worldbuilding/templates/import', data);
   },
 
   exportTemplate: (templateId: string) => {
-    return api.get<Record<string, any>>(`/worldbuilding/templates/${templateId}/export`);
+    return api.get<Record<string, unknown>>(`/worldbuilding/templates/${templateId}/export`);
   },
 
   // 文件导入导出相关功能
   downloadTemplateAsFile: async (templateId: string, filename?: string) => {
-    const data = await api.get<Record<string, any>>(`/worldbuilding/templates/${templateId}/export`);
+    const data = await api.get<Record<string, unknown>>(`/worldbuilding/templates/${templateId}/export`);
     
     // 创建下载链接
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

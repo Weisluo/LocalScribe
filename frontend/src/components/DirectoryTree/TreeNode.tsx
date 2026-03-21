@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ChevronRight, FileText, Folder, FolderOpen, Plus, BookOpen, Scroll, Edit2, Trash2, Check, X } from 'lucide-react';
 import type { components } from '@/types/api';
 import { useSortable } from '@dnd-kit/sortable';
@@ -123,13 +124,13 @@ export const TreeNode = ({
   const handleSaveEdit = () => {
     if (!editValue.trim()) return;
     if (!currentProjectId) {
-      alert('请先选择项目');
+      toast.warning('请先选择项目');
       setIsEditing(false);
       return;
     }
     
+    // 章节重命名
     if (node.type === 'note') {
-      // 章节重命名
       updateNoteMutation.mutate({
         noteId: node.id,
         data: { title: editValue.trim() }
@@ -142,7 +143,7 @@ export const TreeNode = ({
         onError: (error) => {
           console.error('重命名章节失败:', error);
           // 显示错误提示
-          alert('重命名失败，请重试');
+          toast.error('重命名失败，请重试');
           // 保持编辑状态，允许用户重试或取消
         }
       });
@@ -158,7 +159,7 @@ export const TreeNode = ({
         onError: (error) => {
           console.error('重命名卷/幕失败:', error);
           // 显示错误提示
-          alert('重命名失败，请重试');
+          toast.error('重命名失败，请重试');
           // 保持编辑状态，允许用户重试或取消
         }
       });
@@ -177,7 +178,7 @@ export const TreeNode = ({
 
   const handleConfirmDelete = () => {
     if (!currentProjectId) {
-      alert('请先选择项目');
+      toast.warning('请先选择项目');
       setShowDeleteConfirm(false);
       return;
     }
@@ -193,7 +194,7 @@ export const TreeNode = ({
         onError: (error) => {
           console.error('删除章节失败:', error);
           // 显示错误提示
-          alert('删除失败，请重试');
+          toast.error('删除失败，请重试');
           // 关闭确认对话框
           setShowDeleteConfirm(false);
         }
@@ -207,7 +208,7 @@ export const TreeNode = ({
         onError: (error) => {
           console.error('删除卷/幕失败:', error);
           // 显示错误提示
-          alert('删除失败，请重试');
+          toast.error('删除失败，请重试');
           // 关闭确认对话框
           setShowDeleteConfirm(false);
         }

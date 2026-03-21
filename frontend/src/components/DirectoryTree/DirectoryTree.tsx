@@ -4,8 +4,8 @@ import { useMoveFolder } from '@/hooks/useDirectory';
 import { useMoveNote } from '@/hooks/useNote';
 import { TreeNode } from './TreeNode';
 import { Loader2, Library, Sparkles } from 'lucide-react';
-import type { components } from '@/types/api';
 import { useNoteStore } from '@/stores/noteStore';
+import type { TreeNodeType, VolumeNode, ActNode, NoteNode } from '@/types';
 
 import {
   DndContext,
@@ -23,11 +23,6 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-
-type VolumeNode = components['schemas']['VolumeNode'];
-type ActNode = components['schemas']['ActNode'];
-type NoteNode = components['schemas']['NoteNode'];
-type TreeNodeType = VolumeNode | ActNode | NoteNode;
 
 interface DirectoryTreeProps {
   projectId: string;
@@ -92,13 +87,13 @@ export const DirectoryTree = ({
       // 如果删除的是当前选中的章节，需要找到上一章
       
       // 递归查找所有章节节点
-      const findAllNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): NoteNode[] => {
+      const findAllNotes = (nodes: TreeNodeType[]): NoteNode[] => {
         let notes: NoteNode[] = [];
         for (const node of nodes) {
           if (node.type === 'note') {
             notes.push(node as NoteNode);
           } else if ('children' in node) {
-            notes = notes.concat(findAllNotes(node.children as any));
+            notes = notes.concat(findAllNotes(node.children as TreeNodeType[]));
           }
         }
         return notes;

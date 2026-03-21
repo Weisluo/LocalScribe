@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } fro
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/utils/request';
 import type { components } from '@/types/api';
+import type { TreeNodeType, VolumeNode, ActNode, NoteNode } from '@/types';
 import { DirectoryTree } from '@/components/DirectoryTree';
 import { Editor } from '@/components/Editor';
 import { AIChat } from '@/components/AIChat';
@@ -23,9 +24,6 @@ const TrashPage = lazy(() => import('@/pages/TrashPage').then(m => ({ default: m
 const WorldbuildingView = lazy(() => import('@/components/Worldbuilding').then(m => ({ default: m.WorldbuildingView })));
 const WritingCalendar = lazy(() => import('@/components/WritingCalendar').then(m => ({ default: m.WritingCalendar })));
 
-type VolumeNode = components['schemas']['VolumeNode'];
-type ActNode = components['schemas']['ActNode'];
-type NoteNode = components['schemas']['NoteNode'];
 type ProjectResponse = components['schemas']['ProjectResponse'];
 
 export const EditorPage = () => {
@@ -43,9 +41,11 @@ export const EditorPage = () => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set()); // 展开状态
 
   const lastSaveTimeRef = useRef<number>(0);
-  const treeRef = useRef<HTMLDivElement>(null); // 用于滚动
-  const hasAutoCreatedRef = useRef(false); // 标记是否已自动创建章节
-  const containerRef = useRef<HTMLDivElement>(null); // 主容器引用
+  const treeRef = useRef<HTMLDivElement>(null);
+  const hasAutoCreatedRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const noteTitleRef = useRef<string>(noteTitle);
+  const noteContentRef = useRef<string>(noteContent);
 
   // 右侧栏宽度状态 - 默认最小 25%
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(25);
@@ -130,33 +130,19 @@ export const EditorPage = () => {
     enabled: !!currentProjectId,
   });
 
-  // 辅助函数：查找第一个幕
-  const findFirstAct = (nodes: (VolumeNode | ActNode | NoteNode)[]): ActNode | null => {
-    for (const node of nodes) {
-      if (node.type === 'act') {
-        return node as ActNode;
-      }
-      if ('children' in node && node.children.length > 0) {
-        const found = findFirstAct(node.children as any);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
   // 辅助函数：检查是否有任何章节
-  const hasAnyChapters = (nodes: (VolumeNode | ActNode | NoteNode)[]): boolean => {
+  const hasAnyChapters = useCallback((nodes: (VolumeNode | ActNode | NoteNode)[]): boolean => {
     for (const node of nodes) {
       if (node.type === 'note') return true;
       if ('children' in node && node.children.length > 0) {
-        if (hasAnyChapters(node.children as any)) return true;
+        if (hasAnyChapters(node.children as TreeNodeType[])) return true;
       }
     }
     return false;
-  };
+  }, []);
 
   // 辅助函数：查找节点的所有祖先 ID
-  const findAncestors = (
+  const findAncestors = useCallback((
     nodes: (VolumeNode | ActNode | NoteNode)[],
     targetId: string,
     ancestors: string[] = []
@@ -166,25 +152,39 @@ export const EditorPage = () => {
         return ancestors;
       }
       if ('children' in node && node.children.length > 0) {
-        const result = findAncestors(node.children as any, targetId, [...ancestors, node.id]);
+        const result = findAncestors(node.children as TreeNodeType[], targetId, [...ancestors, node.id]);
         if (result) return result;
       }
     }
     return null;
-  };
+  }, []);
+
+  // 辅助函数：查找第一个幕
+  const findFirstAct = useCallback((nodes: (VolumeNode | ActNode | NoteNode)[]): ActNode | null => {
+    for (const node of nodes) {
+      if (node.type === 'act') {
+        return node as ActNode;
+      }
+      if ('children' in node && node.children.length > 0) {
+        const found = findFirstAct(node.children as TreeNodeType[]);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
 
   // 自动选中最新章节（当 tree 加载完成且没有选中章节时）
   useEffect(() => {
     if (!tree || tree.length === 0 || selectedNoteId) return;
 
     // 递归查找所有章节节点
-    const findAllNotes = (nodes: (VolumeNode | ActNode | NoteNode)[]): NoteNode[] => {
+    const findAllNotes = (nodes: TreeNodeType[]): NoteNode[] => {
       let notes: NoteNode[] = [];
       for (const node of nodes) {
         if (node.type === 'note') {
           notes.push(node as NoteNode);
         } else if ('children' in node) {
-          notes = notes.concat(findAllNotes(node.children as any));
+          notes = notes.concat(findAllNotes(node.children as TreeNodeType[]));
         }
       }
       return notes;
@@ -207,7 +207,7 @@ export const EditorPage = () => {
     if (ancestors) {
       setExpandedIds(new Set(ancestors));
     }
-  }, [tree, selectedNoteId]);
+  }, [tree, selectedNoteId, findAncestors]);
 
   // 监听 projectId 变化，重置自动创建标记和选中状态
   useEffect(() => {
@@ -225,13 +225,13 @@ export const EditorPage = () => {
   useEffect(() => {
     if (newlyCreatedNoteId && tree) {
       // 查找新创建的章节的标题
-      const findNoteTitle = (nodes: (VolumeNode | ActNode | NoteNode)[], targetId: string): string | undefined => {
+      const findNoteTitle = (nodes: TreeNodeType[], targetId: string): string | undefined => {
         for (const node of nodes) {
           if (node.type === 'note' && node.id === targetId) {
             return node.title;
           }
           if ('children' in node && node.children.length > 0) {
-            const found = findNoteTitle(node.children as any, targetId);
+            const found = findNoteTitle(node.children as TreeNodeType[], targetId);
             if (found) return found;
           }
         }
@@ -268,7 +268,7 @@ export const EditorPage = () => {
         setNewlyCreatedNoteId(null);
       }
     }
-  }, [newlyCreatedNoteId, tree, setNewlyCreatedNoteId]);
+  }, [newlyCreatedNoteId, tree, setNewlyCreatedNoteId, findAncestors]);
 
   // 自动创建第一个章节（当项目没有任何章节时）
   useEffect(() => {
@@ -312,7 +312,7 @@ export const EditorPage = () => {
         },
       }
     );
-  }, [tree, createNoteMutation, currentProjectId]);
+  }, [tree, createNoteMutation, currentProjectId, hasAnyChapters, findFirstAct, findAncestors]);
 
   // 时间更新效果
   useEffect(() => {
@@ -363,7 +363,7 @@ export const EditorPage = () => {
         return next;
       });
     }
-  }, [tree, selectedNoteId]);
+  }, [tree, selectedNoteId, findAncestors]);
 
   // 滚动到选中的章节
   useEffect(() => {
@@ -378,13 +378,17 @@ export const EditorPage = () => {
     }
   }, [selectedNoteId]);
 
-  // 同步章节数据（仅当切换章节时）
+  useEffect(() => {
+    noteTitleRef.current = noteTitle;
+    noteContentRef.current = noteContent;
+  }, [noteTitle, noteContent]);
+
   useEffect(() => {
     if (currentNote) {
-      if (currentNote.title !== noteTitle) {
+      if (currentNote.title !== noteTitleRef.current) {
         setNoteTitle(currentNote.title || '无标题');
       }
-      if (currentNote.content !== noteContent) {
+      if (currentNote.content !== noteContentRef.current) {
         setNoteContent(currentNote.content || '');
       }
     } else if (!selectedNoteId) {

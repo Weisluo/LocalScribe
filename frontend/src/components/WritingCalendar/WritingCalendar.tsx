@@ -59,8 +59,12 @@ export const WritingCalendar = ({ isOpen, onClose, dailyStats, currentMonth: pro
 
   useEffect(() => {
     if (propMonth && propMonth.getTime() !== currentMonth.getTime()) {
-      handleMonthChange(propMonth);
+      setIsAnimating(true);
+      prevMonthRef.current = currentMonth;
+      setCurrentMonth(propMonth);
+      setTimeout(() => setIsAnimating(false), 40);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propMonth]);
 
   // 将统计数据转换为 Map 便于查询

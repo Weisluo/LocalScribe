@@ -11,7 +11,7 @@ export function useIdlePreload(importFns: ImportFn[], delay = 1000) {
 
     const preload = () => {
       importFns.forEach((importFn) => {
-        importFn().catch(() => {});
+        importFn().catch(() => { });
       });
     };
 
@@ -33,7 +33,7 @@ export function useIdlePreload(importFns: ImportFn[], delay = 1000) {
 export function preloadModules(importFns: ImportFn[], delay = 1000) {
   const preload = () => {
     importFns.forEach((importFn) => {
-      importFn().catch(() => {});
+      importFn().catch(() => { });
     });
   };
 

@@ -1,5 +1,6 @@
 // frontend/src/components/Modals/CreateItemModal.tsx
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Modal } from './Modal';
 import { useUIStore } from '@/stores/uiStore';
 import { useProjectStore } from '@/stores/projectStore';
@@ -59,9 +60,9 @@ export const CreateItemModal = () => {
   const createMutation = useMutation({
     mutationFn: async (data: { title: string }) => {
       if (modalType === 'project') {
-        return api.post('/projects', { title: data.title });
+        return api.post<{ id: string }>('/projects', { title: data.title });
       } else if (modalType === 'volume') {
-        return api.post('/folders', {
+        return api.post<{ id: string }>('/folders', {
           name: data.title,
           project_id: currentProjectId,
           type: 'volume',
@@ -69,7 +70,7 @@ export const CreateItemModal = () => {
           order: 0,
         });
       } else if (modalType === 'act') {
-        return api.post('/folders', {
+        return api.post<{ id: string }>('/folders', {
           name: data.title,
           project_id: currentProjectId,
           type: 'act',
@@ -77,7 +78,7 @@ export const CreateItemModal = () => {
           order: 0,
         });
       } else if (modalType === 'note') {
-        return api.post('/notes', {
+        return api.post<{ id: string }>('/notes', {
           title: data.title,
           project_id: currentProjectId,
           folder_id: modalParentId,
@@ -111,7 +112,7 @@ export const CreateItemModal = () => {
     },
     onError: (error) => {
       console.error('操作失败:', error);
-      alert('操作失败，请重试');
+      toast.error('操作失败，请重试');
     },
   });
 
@@ -134,7 +135,7 @@ export const CreateItemModal = () => {
     },
     onError: (error) => {
       console.error('操作失败:', error);
-      alert('操作失败，请重试');
+      toast.error('操作失败，请重试');
     },
   });
 
@@ -152,13 +153,13 @@ export const CreateItemModal = () => {
 
     // 对于幕和章节，必须存在父级 ID
     if ((modalType === 'act' || modalType === 'note') && !modalParentId) {
-      alert('请先选择父级');
+      toast.warning('请先选择父级');
       return;
     }
 
     // 创建项目时不需要 projectId，其他都需要
     if (modalType !== 'project' && !currentProjectId) {
-      alert('请先选择或创建项目');
+      toast.warning('请先选择或创建项目');
       return;
     }
 

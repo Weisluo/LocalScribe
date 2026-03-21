@@ -32,5 +32,6 @@ export const useAutoSave = ({ data, onSave, delay = 800 }: AutoSaveOptions) => {
         lastSavedDataRef.current = debouncedData;
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedData, onSave]);
 };

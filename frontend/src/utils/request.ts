@@ -1,12 +1,19 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// 自定义错误类型
+interface ApiErrorResponse {
+  detail?: string;
+  error?: {
+    message?: string;
+    code?: string;
+  };
+}
+
 export class ApiError extends Error {
   public status?: number;
   public code?: string;
-  public details?: any;
+  public details?: unknown;
 
-  constructor(message: string, status?: number, code?: string, details?: any) {
+  constructor(message: string, status?: number, code?: string, details?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -59,14 +66,14 @@ service.interceptors.response.use(
     // 直接返回 response.data，这样我们在业务代码中拿到直接就是数据对象
     return response.data;
   },
-  (error: AxiosError<any>) => {
+  (error: AxiosError<ApiErrorResponse>) => {
     // 对响应错误做点什么
     console.error('Response Error:', error);
 
     // 统一错误处理逻辑
     let errorMessage = '网络请求失败，请检查网络连接';
     let errorCode: keyof typeof ERROR_CODES = ERROR_CODES.SERVER_ERROR;
-    let errorDetails: any = null;
+    let errorDetails: unknown = null;
 
     if (error.response) {
       // 服务器返回了错误状态码 (4xx, 5xx)
@@ -128,19 +135,19 @@ service.interceptors.response.use(
 
 // 4. 封装常用请求方法
 export const api = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => 
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> => 
     service.get(url, config),
   
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => 
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => 
     service.post(url, data, config),
   
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => 
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => 
     service.put(url, data, config),
   
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => 
+  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => 
     service.patch(url, data, config),
   
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => 
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> => 
     service.delete(url, config),
 };
 

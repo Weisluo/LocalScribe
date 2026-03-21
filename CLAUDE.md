@@ -120,7 +120,7 @@ Database migrations are managed by Alembic (`migrations/`). The SQLite file is s
 - Type checking: mypy
 
 ### Frontend
-- ESLint is configured for TypeScript/React.
+- ESLint is configured for TypeScript/React (see `frontend/.eslintrc.cjs`). It uses `eslint:recommended`, `@typescript-eslint/recommended`, and `react-hooks/recommended` with custom rules for unused variables and `any` types.
 - No unit‑test framework is currently set up.
 
 ## Useful Scripts

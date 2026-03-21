@@ -47,7 +47,7 @@ const Modal = ({ isOpen, onClose, title, children, showCloseButton = true }: Mod
         setIsVisible(false);
       }, 200);
     }
-  }, [isOpen]);
+  }, [isOpen, isVisible]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -359,7 +359,9 @@ const ImportTemplateModal = ({ isOpen, onClose, onSubmit, isLoading }: ImportTem
           if (data.name && !name) {
             setName(data.name);
           }
-        } catch {}
+        } catch {
+          // JSON 解析失败，忽略
+        }
       }
     };
     reader.readAsText(selectedFile);
@@ -709,7 +711,7 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate }: SubmoduleSectio
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ itemId, data }: { itemId: string; data: any }) =>
+    mutationFn: ({ itemId, data }: { itemId: string; data: Partial<{ name: string; content: Record<string, string>; order_index: number; is_published: boolean }> }) =>
       worldbuildingApi.updateItem(itemId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'submodule-items', submodule.id] });
@@ -817,7 +819,7 @@ const ModuleSection = ({ module, onModuleUpdate }: ModuleSectionProps) => {
   });
 
   const updateItemMutation = useMutation({
-    mutationFn: ({ itemId, data }: { itemId: string; data: any }) =>
+    mutationFn: ({ itemId, data }: { itemId: string; data: Partial<{ name: string; content: Record<string, string>; order_index: number; is_published: boolean }> }) =>
       worldbuildingApi.updateItem(itemId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items', module.id] });

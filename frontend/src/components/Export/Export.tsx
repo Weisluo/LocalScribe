@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { FileDown, Loader2, ChevronDown } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak } from 'docx';
@@ -387,8 +388,8 @@ ${allXhtml}
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch {
-      alert('请安装jszip库以支持EPUB导出');
+    } catch (_error) {
+      toast.error('请安装jszip库以支持EPUB导出');
     }
   };
 
@@ -428,7 +429,7 @@ ${allXhtml}
   };
 
   const exportToDOCX = async (chapters: ChapterData[], date: string) => {
-    const docChildren: any[] = [];
+    const docChildren: Paragraph[] = [];
     
     docChildren.push(
       new Paragraph({
@@ -526,7 +527,7 @@ ${allXhtml}
       const chapters = collectAllChapters(tree);
       
       for (const chapter of chapters) {
-        const note = await api.get<any>(`/notes/${chapter.id}`);
+        const note = await api.get<components['schemas']['NoteResponse']>(`/notes/${chapter.id}`);
         chapter.content = htmlToPlainText(note.content || '');
       }
 
@@ -543,7 +544,7 @@ ${allXhtml}
       }
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请重试');
+      toast.error('导出失败，请重试');
     } finally {
       setIsExporting(false);
     }

@@ -1,0 +1,118 @@
+/* Sonner Toast 自定义样式 - 匹配温暖文学风格 */
+[data-sonner-toaster] {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --normal-bg: hsl(var(--card));
+  --normal-border: hsl(var(--border));
+  --normal-text: hsl(var(--foreground));
+  --success-bg: hsl(142 30% 94%);
+  --success-border: hsl(142 30% 70%);
+  --success-text: hsl(142 50% 30%);
+  --error-bg: hsl(0 30% 94%);
+  --error-border: hsl(0 40% 70%);
+  --error-text: hsl(0 55% 40%);
+  --warning-bg: hsl(43 55% 92%);
+  --warning-border: hsl(43 55% 65%);
+  --warning-text: hsl(43 60% 30%);
+  --info-bg: hsl(220 25% 94%);
+  --info-border: hsl(220 35% 65%);
+  --info-text: hsl(220 35% 35%);
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+  border-radius: var(--radius);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--normal-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  border-color: var(--error-border);
+  background: var(--error-bg);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-content] {
+  color: var(--success-text);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-content] {
+  color: var(--error-text);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-content] {
+  color: var(--warning-text);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] [data-content] {
+  color: var(--info-text);
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  background: transparent;
+  border: none;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-close-button]:hover {
+  opacity: 1;
+}
+
+[data-sonner-toaster] [data-sonner-toast] [data-icon] {
+  opacity: 0.9;
+}
+
+.dark [data-sonner-toaster] {
+  --normal-bg: hsl(var(--card));
+  --normal-border: hsl(var(--border));
+  --normal-text: hsl(var(--foreground));
+  --success-bg: hsl(142 25% 15%);
+  --success-border: hsl(142 30% 35%);
+  --success-text: hsl(142 40% 70%);
+  --error-bg: hsl(0 25% 15%);
+  --error-border: hsl(0 35% 35%);
+  --error-text: hsl(0 50% 70%);
+  --warning-bg: hsl(43 40% 18%);
+  --warning-border: hsl(43 45% 40%);
+  --warning-text: hsl(43 50% 75%);
+  --info-bg: hsl(220 20% 15%);
+  --info-border: hsl(220 30% 35%);
+  --info-text: hsl(220 35% 70%);
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast] {
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}

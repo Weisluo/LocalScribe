@@ -3,6 +3,10 @@
  * 提供字符统计、中文字符统计、阅读时长计算等功能
  */
 
+import type { components } from '@/types/api';
+
+type VolumeNode = components['schemas']['VolumeNode'];
+
 export interface TextStatistics {
   /** 字符总数（含标点） */
   charCount: number;
@@ -47,7 +51,7 @@ export function calculateStatistics(text: string): TextStatistics {
  * @returns 全文统计结果
  */
 export function calculateProjectStatistics(
-  tree: any[],
+  tree: VolumeNode[],
   currentNoteId: string | undefined,
   currentContent: string
 ): TextStatistics {
