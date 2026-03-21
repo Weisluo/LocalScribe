@@ -7,25 +7,91 @@ import {
   Copy, Check
 } from 'lucide-react';
 import { useEditorSettingsStore } from '../../stores/editorSettingsStore';
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 
 interface ToolbarProps {
   editor: Editor | null;
 }
 
+const getBtnClass = (isActive: boolean, isDisabled = false) => `
+  p-2 rounded-lg transition-all duration-200 ease-out
+  ${isDisabled 
+    ? 'opacity-30 cursor-not-allowed' 
+    : 'hover:bg-accent/60 hover:scale-105 active:scale-95 cursor-pointer'
+  }
+  ${isActive 
+    ? 'bg-accent text-accent-foreground shadow-sm' 
+    : 'text-muted-foreground hover:text-foreground'
+  }
+`;
+
+interface ToolbarButtonProps {
+  onClick: () => void;
+  isActive: boolean;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
+}
+
+const ToolbarButton = memo(({ onClick, isActive, disabled, title, children }: ToolbarButtonProps) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={getBtnClass(isActive, disabled)}
+    title={title}
+  >
+    {children}
+  </button>
+));
+
+ToolbarButton.displayName = 'ToolbarButton';
+
+const Divider = () => (
+  <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
+);
+
+const ToolbarGroup = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-0.5 flex-shrink-0">
+    {children}
+  </div>
+);
+
 export const Toolbar = ({ editor }: ToolbarProps) => {
   const [copied, setCopied] = useState(false);
 
-  if (!editor) {
-    return null;
-  }
+  const {
+    lineSpacing,
+    paragraphSpacing,
+    paragraphIndent,
+    fontSize,
+    increaseLineSpacing,
+    decreaseLineSpacing,
+    increaseParagraphSpacing,
+    decreaseParagraphSpacing,
+    increaseParagraphIndent,
+    decreaseParagraphIndent,
+    increaseFontSize,
+    decreaseFontSize
+  } = useEditorSettingsStore(state => ({
+    lineSpacing: state.lineSpacing,
+    paragraphSpacing: state.paragraphSpacing,
+    paragraphIndent: state.paragraphIndent,
+    fontSize: state.fontSize,
+    increaseLineSpacing: state.increaseLineSpacing,
+    decreaseLineSpacing: state.decreaseLineSpacing,
+    increaseParagraphSpacing: state.increaseParagraphSpacing,
+    decreaseParagraphSpacing: state.decreaseParagraphSpacing,
+    increaseParagraphIndent: state.increaseParagraphIndent,
+    decreaseParagraphIndent: state.decreaseParagraphIndent,
+    increaseFontSize: state.increaseFontSize,
+    decreaseFontSize: state.decreaseFontSize
+  }));
 
-  const { lineSpacing, increaseLineSpacing, decreaseLineSpacing, paragraphSpacing, increaseParagraphSpacing, decreaseParagraphSpacing, paragraphIndent, increaseParagraphIndent, decreaseParagraphIndent, fontSize, increaseFontSize, decreaseFontSize } = useEditorSettingsStore();
-
-  const handleCopyAll = async () => {
+  const handleCopyAll = useCallback(async () => {
+    if (!editor) return;
+    
     const text = editor.getText();
     
-    // 降级方案：使用 document.execCommand('copy') 或创建临时 textarea
     const fallbackCopy = (textToCopy: string): boolean => {
       const textArea = document.createElement('textarea');
       textArea.value = textToCopy;
@@ -48,11 +114,9 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
     };
     
     try {
-      // 优先使用现代 Clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
       } else {
-        // 降级到 execCommand
         const success = fallbackCopy(text);
         if (!success) {
           throw new Error('复制失败：浏览器不支持复制功能');
@@ -62,59 +126,15 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('复制失败:', err);
-      // 可以在这里添加用户提示，比如 toast 通知
-      alert('复制失败，请手动复制内容');
     }
-  };
+  }, [editor]);
 
-  const btnClass = (isActive: boolean, isDisabled = false) => `
-    p-2 rounded-lg transition-all duration-200 ease-out
-    ${isDisabled 
-      ? 'opacity-30 cursor-not-allowed' 
-      : 'hover:bg-accent/60 hover:scale-105 active:scale-95 cursor-pointer'
-    }
-    ${isActive 
-      ? 'bg-accent text-accent-foreground shadow-sm' 
-      : 'text-muted-foreground hover:text-foreground'
-    }
-  `;
-
-  const Divider = () => (
-    <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
-  );
-
-  const ToolbarGroup = ({ children }: { children: React.ReactNode }) => (
-    <div className="flex items-center gap-0.5 flex-shrink-0">
-      {children}
-    </div>
-  );
-
-  const ToolbarButton = ({
-    onClick,
-    isActive,
-    disabled,
-    title,
-    children,
-  }: {
-    onClick: () => void;
-    isActive: boolean;
-    disabled?: boolean;
-    title: string;
-    children: React.ReactNode;
-  }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={btnClass(isActive, disabled)}
-      title={title}
-    >
-      {children}
-    </button>
-  );
+  if (!editor) {
+    return null;
+  }
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-0.5 gap-y-1 p-2.5">
-      {/* 撤销 / 重做 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -136,7 +156,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 标题 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -156,7 +175,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 格式化 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -190,7 +208,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 列表与引用 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -217,7 +234,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 行间距 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={decreaseLineSpacing}
@@ -242,7 +258,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 段落间距 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={decreaseParagraphSpacing}
@@ -267,7 +282,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 段首缩进 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={decreaseParagraphIndent}
@@ -292,7 +306,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 字号 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={decreaseFontSize}
@@ -317,7 +330,6 @@ export const Toolbar = ({ editor }: ToolbarProps) => {
 
       <Divider />
 
-      {/* 复制全部内容 */}
       <ToolbarGroup>
         <ToolbarButton
           onClick={handleCopyAll}
