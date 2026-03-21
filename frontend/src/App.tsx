@@ -1,6 +1,6 @@
-// frontend/src/App.tsx
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { preloadModules } from '@/hooks/useIdlePreload';
 
 const EditorPage = lazy(() => import('./pages/EditorPage/EditorPage').then(m => ({ default: m.EditorPage })));
 const TrashPage = lazy(() => import('./pages/TrashPage').then(m => ({ default: m.TrashPage })));
@@ -15,6 +15,15 @@ const LoadingFallback = () => (
 );
 
 function App() {
+  useEffect(() => {
+    preloadModules(
+      [
+        () => import('./pages/TrashPage'),
+      ],
+      2000
+    );
+  }, []);
+
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingFallback />}>

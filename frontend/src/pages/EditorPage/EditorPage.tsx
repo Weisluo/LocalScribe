@@ -16,6 +16,7 @@ import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
 import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { preloadModules } from '@/hooks/useIdlePreload';
 
 const Export = lazy(() => import('@/components/Export/Export').then(m => ({ default: m.Export })));
 const TrashPage = lazy(() => import('@/pages/TrashPage').then(m => ({ default: m.TrashPage })));
@@ -96,6 +97,18 @@ export const EditorPage = () => {
       }
     }
   }, [projects, currentProjectId, setCurrentProjectId]);
+
+  useEffect(() => {
+    preloadModules(
+      [
+        () => import('@/components/Export/Export'),
+        () => import('@/components/Worldbuilding'),
+        () => import('@/components/WritingCalendar'),
+        () => import('jszip'),
+      ],
+      3000
+    );
+  }, []);
 
   const { data: currentNote, isLoading: isLoadingNote, isFetching: isFetchingNote } = useNote(selectedNoteId);
   const updateNoteMutation = useUpdateNote(currentProjectId || '');
