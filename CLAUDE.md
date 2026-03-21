@@ -1,0 +1,136 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+LocalScribe is a local writing assistant application with a React/Vite frontend and Python/FastAPI backend. It provides features for note-taking, world-building, character management, and text analysis.
+
+- **Frontend**: React 18 + TypeScript, Vite, Tailwind CSS, Zustand (state), React Query (API), TipTap (editor), DND Kit (drag-and-drop)
+- **Backend**: FastAPI, SQLAlchemy (SQLite), Alembic (migrations), Pydantic v2
+- **Database**: SQLite (file at `backend/data/local_scribe.db`)
+
+## Development Setup
+
+1. Run the setup script to install dependencies (requires Node.js 22.x, Python 3, pip):
+   ```bash
+   ./setup.sh
+   ```
+   This installs system dependencies, creates a Python virtual environment in `backend/venv`, installs backend and frontend packages, and runs database migrations.
+
+2. Start the backend server:
+   ```bash
+   cd backend && ./venv/bin/uvicorn app.main:app --reload
+   ```
+   API runs on http://localhost:8000 with auto‑reload.
+
+3. Start the frontend dev server (in another terminal):
+   ```bash
+   cd frontend && npm run dev
+   ```
+   Frontend runs on http://localhost:5173 and proxies `/api` requests to the backend.
+
+## Common Commands
+
+### Backend
+```bash
+cd backend
+# Run server with auto‑reload
+./venv/bin/uvicorn app.main:app --reload
+# Run tests
+./venv/bin/pytest
+# Run tests with coverage
+./venv/bin/pytest --cov=app
+# Format code (black)
+./venv/bin/black app tests
+# Sort imports (isort)
+./venv/bin/isort app tests
+# Lint (flake8)
+./venv/bin/flake8 app tests
+# Type check (mypy)
+./venv/bin/mypy app
+# Create a new database migration (after model changes)
+./venv/bin/alembic revision --autogenerate -m "description"
+# Apply migrations
+./venv/bin/alembic upgrade head
+```
+
+### Frontend
+```bash
+cd frontend
+# Dev server
+npm run dev
+# Build for production
+npm run build
+# Preview production build
+npm run preview
+# Generate TypeScript types from OpenAPI spec (requires backend running)
+npm run gen:types
+# Lint (ESLint)
+npx eslint src --ext ts,tsx
+```
+
+## Architecture
+
+### Backend Structure (`backend/app/`)
+- `core/` – configuration, database setup, logging, dependencies, exceptions
+- `models/` – SQLAlchemy ORM models (Note, Project, Character, Outline, WorldBuilding, Folder)
+- `services/` – business logic (ai_service, directory_service, analysis_service)
+- `api/` – FastAPI route handlers (organized by feature)
+- `utils/` – helper functions (Chinese text processing, file utilities)
+
+API routes are versioned under `/api/v1/` (see `app/api/v1/`). The main router mounts them under `/api` (see `app/main.py`). CORS is configured for the frontend dev server.
+
+Database migrations are managed by Alembic (`migrations/`). The SQLite file is stored in `backend/data/`.
+
+### Frontend Structure (`frontend/src/`)
+- `components/` – reusable UI components (editor, sidebar, modals, etc.)
+- `pages/` – route‑level components (EditorPage, TrashPage)
+- `stores/` – Zustand state stores
+- `services/` – API clients (worldbuildingApi.ts, analysisApi.ts)
+- `hooks/` – custom React hooks
+- `utils/` – helper functions
+- `types/` – TypeScript definitions (including auto‑generated API types)
+- Uses path alias `@` for `src` (configured in `tsconfig.json` and `vite.config.ts`)
+
+### State & API Communication
+- **State management**: Zustand stores in `src/stores/`
+- **API calls**: Axios‑based services in `src/services/`, wrapped with React Query (`@tanstack/react-query`)
+- **Routing**: React Router v6 with lazy‑loaded pages
+
+### Styling
+- Tailwind CSS with a custom color system using CSS variables (see `tailwind.config.js`)
+- Radix UI components for accessible primitives
+- CSS‑in‑JS via `clsx` and `tailwind-merge`
+
+## Database
+
+- SQLite database file: `backend/data/local_scribe.db`
+- Migrations: `alembic upgrade head` applies pending migrations.
+- New migrations are created with `alembic revision --autogenerate` after model changes.
+- The database URL is configured in `backend/.env` (`DATABASE_URL`).
+
+## Testing & Quality
+
+### Backend
+- Tests are in `backend/tests/` using pytest.
+- Use `pytest -v` for verbose output, `pytest --cov=app` for coverage.
+- Code formatting: black, isort
+- Linting: flake8
+- Type checking: mypy
+
+### Frontend
+- ESLint is configured for TypeScript/React.
+- No unit‑test framework is currently set up.
+
+## Useful Scripts
+
+- `setup.sh` – full installation script (installs system dependencies, Node.js 22.x, Python virtual environment, runs migrations)
+- `scripts/backup_db.sh` – placeholder for database backup (empty)
+- `scripts/generate_types.sh` – placeholder for generating TypeScript types (empty)
+
+## Notes
+
+- The frontend dev server proxies `/api` to `http://localhost:8000` (see `frontend/vite.config.ts`).
+- Backend environment variables are in `backend/.env` (currently only `DATABASE_URL`).
+- The project uses Chinese‑language comments and logs throughout.

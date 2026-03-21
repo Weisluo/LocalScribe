@@ -1,6 +1,6 @@
 // frontend/src/pages/EditorPage/EditorPage.tsx
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/utils/request';
 import type { components } from '@/types/api';
 import { DirectoryTree } from '@/components/DirectoryTree';
@@ -30,6 +30,7 @@ type ProjectResponse = components['schemas']['ProjectResponse'];
 export const EditorPage = () => {
   const { currentProjectId } = useProjectStore();
   const { openModal, newlyCreatedNoteId, setNewlyCreatedNoteId } = useUIStore();
+  const queryClient = useQueryClient();
 
   const [showTrash, setShowTrash] = useState(false);
   const [showWorldbuilding, setShowWorldbuilding] = useState(false);
@@ -191,7 +192,10 @@ export const EditorPage = () => {
     setNoteTitle('');
     setNoteContent('');
     setExpandedIds(new Set());
-  }, [currentProjectId]);
+    setShowTrash(false);
+    setShowWorldbuilding(false);
+    queryClient.removeQueries({ queryKey: ['worldbuilding'] });
+  }, [currentProjectId, queryClient]);
 
   // 监听新创建的章节，自动选中
   useEffect(() => {

@@ -23,6 +23,7 @@ class Project(Base):
     folders: Mapped[List["Folder"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     notes: Mapped[List["Note"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     world_instances: Mapped[List["WorldInstance"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    world_templates: Mapped[List["WorldTemplate"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Project {self.title}>"

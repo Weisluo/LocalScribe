@@ -298,6 +298,18 @@ main() {
     "$BACKEND_DIR/venv/bin/pip" install -r "$BACKEND_DIR/requirements-dev.txt"
     print_success "后端依赖安装完成"
 
+    # 验证 alembic 安装
+    print_step "验证" "检查 alembic 是否正确安装..."
+    if ! "$BACKEND_DIR/venv/bin/python" -c "import alembic" 2>/dev/null; then
+        print_warning "alembic 未正确安装，正在重新安装..."
+        "$BACKEND_DIR/venv/bin/pip" install alembic
+        if ! "$BACKEND_DIR/venv/bin/python" -c "import alembic" 2>/dev/null; then
+            print_error "alembic 安装失败，请手动安装: pip install alembic"
+            exit 1
+        fi
+    fi
+    print_success "alembic 验证通过 (版本: $("$BACKEND_DIR/venv/bin/alembic" --version | head -1))"
+
     # 创建数据库目录
     mkdir -p "$BACKEND_DIR/data"
     print_success "数据库目录已准备"

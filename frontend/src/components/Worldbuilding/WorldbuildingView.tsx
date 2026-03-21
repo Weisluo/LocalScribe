@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { worldbuildingApi, WorldModule, WorldSubmodule, WorldModuleItem } from '@/services/worldbuildingApi';
+import { useProjectStore } from '@/stores/projectStore';
 import { Loader2, Plus, ChevronDown, ChevronRight, Edit2, Trash2, X, Save, Globe2, Map, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload } from 'lucide-react';
 
 // 弹窗组件
@@ -1107,6 +1108,7 @@ export const WorldbuildingView = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
   const [editingTemplateName, setEditingTemplateName] = useState('');
+  const { currentProjectId } = useProjectStore();
 
   // 弹窗状态
   const [showInitialChoice, setShowInitialChoice] = useState(false);
@@ -1116,9 +1118,11 @@ export const WorldbuildingView = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: templates = [], isLoading: templatesLoading } = useQuery({
-    queryKey: ['worldbuilding', 'templates'],
-    queryFn: () => worldbuildingApi.getTemplates(),
+  const { data: templates = [], isLoading: templatesLoading, isFetching: templatesFetching } = useQuery({
+    queryKey: ['worldbuilding', 'templates', currentProjectId],
+    queryFn: () => worldbuildingApi.getTemplates({ project_id: currentProjectId ?? undefined }),
+    enabled: !!currentProjectId,
+    staleTime: 300,
   });
 
   const { data: currentTemplate, isLoading: templateLoading } = useQuery({
@@ -1127,16 +1131,16 @@ export const WorldbuildingView = () => {
     enabled: !!selectedTemplateId,
   });
 
-  // 检查是否需要显示初始选择弹窗
+  // 检查是否需要显示初始选择弹窗（仅在首次加载且非获取中时检查）
   useEffect(() => {
-    if (!templatesLoading && templates.length === 0) {
+    if (!templatesLoading && !templatesFetching && templates.length === 0 && currentProjectId) {
       setShowInitialChoice(true);
     }
-  }, [templatesLoading, templates]);
+  }, [templatesLoading, templatesFetching, templates.length, currentProjectId]);
 
   const createTemplateMutation = useMutation({
     mutationFn: (data: { name: string; description?: string }) =>
-      worldbuildingApi.createTemplate(data),
+      worldbuildingApi.createTemplate({ ...data, project_id: currentProjectId ?? undefined }),
     onSuccess: async (newTemplate) => {
       // 自动创建所有默认模块
       const modulePromises = TAB_ORDER.map((tabType, index) =>
@@ -1161,12 +1165,13 @@ export const WorldbuildingView = () => {
       return worldbuildingApi.importTemplate({
         name,
         template_data: templateData,
+        project_id: currentProjectId ?? undefined,
       });
     },
     onSuccess: (newTemplate) => {
       setSelectedTemplateId(newTemplate.id);
       setShowImportModal(false);
-      setShowInitialChoice(false); // 关闭初始选择弹窗
+      setShowInitialChoice(false);
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
     },
   });
@@ -1194,6 +1199,15 @@ export const WorldbuildingView = () => {
       setSelectedTemplateId(templates[0].id);
     }
   }, [templates, selectedTemplateId]);
+
+  useEffect(() => {
+    setSelectedTemplateId(null);
+    setActiveTab('map');
+    setShowInitialChoice(false);
+    setShowCreateModal(false);
+    setShowImportModal(false);
+    setShowDeleteModal(false);
+  }, [currentProjectId]);
 
   const currentModule = currentTemplate?.modules?.find(m => m.module_type === activeTab);
 

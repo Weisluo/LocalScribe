@@ -26,6 +26,40 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 router = APIRouter()
 
+
+def _check_template_name_exists(
+    db: Session,
+    name: str,
+    project_id: Optional[str] = None,
+    exclude_id: Optional[str] = None
+) -> None:
+    """
+    检查世界模板名称是否已存在
+    
+    Args:
+        db: 数据库会话
+        name: 模板名称
+        project_id: 项目ID（可选，用于区分不同项目下的模板）
+        exclude_id: 排除的模板ID（用于更新时排除自身）
+    
+    Raises:
+        HTTPException: 如果名称已存在则抛出 400 错误
+    """
+    query = db.query(WorldTemplate).filter(WorldTemplate.name == name)
+    
+    if exclude_id:
+        query = query.filter(WorldTemplate.id != exclude_id)
+    
+    if project_id:
+        query = query.filter(WorldTemplate.project_id == project_id)
+    else:
+        query = query.filter(WorldTemplate.project_id.is_(None))
+    
+    existing = query.first()
+    if existing:
+        raise HTTPException(status_code=400, detail="世界模板名称已存在")
+
+
 def load_template_modules_with_selectinload(template_id: str, db: Session):
     """使用selectinload优化加载模板的模块、子模块和项"""
     try:
@@ -100,10 +134,7 @@ def create_world_template(
     logger.info(f"Creating world template: {template_data.name}")
     
     try:
-        # 检查名称是否已存在
-        existing = db.query(WorldTemplate).filter(WorldTemplate.name == template_data.name).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="世界模板名称已存在")
+        _check_template_name_exists(db, template_data.name, template_data.project_id)
         
         template = WorldTemplate(
             id=str(uuid.uuid4()),
@@ -134,6 +165,7 @@ def get_world_templates(
     name: Optional[str] = None,
     is_public: Optional[bool] = None,
     is_system_template: Optional[bool] = None,
+    project_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """获取世界模板列表"""
@@ -147,7 +179,9 @@ def get_world_templates(
         query = query.filter(WorldTemplate.is_public == is_public)
     if is_system_template is not None:
         query = query.filter(WorldTemplate.is_system_template == is_system_template)
-    
+    if project_id is not None:
+        query = query.filter(WorldTemplate.project_id == project_id)
+
     templates = query.offset(skip).limit(limit).all()
     
     # 计算模块和实例数量
@@ -187,6 +221,8 @@ def search_world_templates(
     
     if filter_data.created_by:
         query = query.filter(WorldTemplate.created_by == filter_data.created_by)
+    if filter_data.project_id:
+        query = query.filter(WorldTemplate.project_id == filter_data.project_id)
     
     templates = query.offset(skip).limit(limit).all()
     
@@ -298,16 +334,12 @@ def update_world_template(
     if not template:
         raise HTTPException(status_code=404, detail="世界模板不存在")
     
-    # 检查名称是否已存在（如果修改了名称）
-    if template_data.name and template_data.name != template.name:
-        existing = db.query(WorldTemplate).filter(
-            WorldTemplate.name == template_data.name,
-            WorldTemplate.id != template_id
-        ).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="世界模板名称已存在")
+    new_name = template_data.name if template_data.name is not None else template.name
+    new_project_id = template_data.project_id if template_data.project_id is not None else template.project_id
     
-    # 更新字段
+    if new_name != template.name or template_data.project_id is not None:
+        _check_template_name_exists(db, new_name, new_project_id, exclude_id=template_id)
+    
     update_data = template_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(template, field, value)
@@ -833,18 +865,15 @@ def import_world_template(
     logger.info(f"Importing world template: {import_data.name}")
     
     try:
-        # 检查名称是否已存在
-        existing = db.query(WorldTemplate).filter(WorldTemplate.name == import_data.name).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="世界模板名称已存在")
+        _check_template_name_exists(db, import_data.name, import_data.project_id)
         
-        # 创建新模板
         template = WorldTemplate(
             id=str(uuid.uuid4()),
             name=import_data.name,
             description=import_data.description,
             is_public=False,
-            is_system_template=False
+            is_system_template=False,
+            project_id=import_data.project_id
         )
         
         db.add(template)
@@ -1048,13 +1077,10 @@ async def import_world_template_file(
             raise HTTPException(status_code=400, detail="导入文件缺少 'modules' 字段或格式错误")
         
         template_name = import_data["name"]
+        project_id = import_data.get("project_id")
         
-        # 检查名称是否已存在
-        existing = db.query(WorldTemplate).filter(WorldTemplate.name == template_name).first()
-        if existing:
-            raise HTTPException(status_code=400, detail=f"世界模板名称 '{template_name}' 已存在")
+        _check_template_name_exists(db, template_name, project_id)
         
-        # 创建新模板
         template = WorldTemplate(
             id=str(uuid.uuid4()),
             name=template_name,
@@ -1062,7 +1088,8 @@ async def import_world_template_file(
             cover_image=import_data.get("cover_image"),
             tags=import_data.get("tags", []),
             is_public=False,
-            is_system_template=False
+            is_system_template=False,
+            project_id=project_id
         )
         
         db.add(template)

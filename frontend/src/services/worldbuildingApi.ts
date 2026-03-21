@@ -8,6 +8,7 @@ export interface WorldTemplate {
   tags: string[];
   is_public: boolean;
   is_system_template: boolean;
+  project_id?: string;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -71,7 +72,7 @@ export interface WorldInstance {
 }
 
 export const worldbuildingApi = {
-  getTemplates: (params?: { skip?: number; limit?: number; name?: string; is_public?: boolean }) => {
+  getTemplates: (params?: { skip?: number; limit?: number; name?: string; is_public?: boolean; project_id?: string }) => {
     return api.get<WorldTemplate[]>('/worldbuilding/templates', { params });
   },
 
@@ -85,6 +86,7 @@ export const worldbuildingApi = {
     cover_image?: string;
     tags?: string[];
     is_public?: boolean;
+    project_id?: string;
   }) => {
     return api.post<WorldTemplate>('/worldbuilding/templates', data);
   },
@@ -203,6 +205,7 @@ export const worldbuildingApi = {
   importTemplate: (data: {
     name: string;
     template_data: Record<string, any>;
+    project_id?: string;
   }) => {
     return api.post<WorldTemplate>('/worldbuilding/templates/import', data);
   },
@@ -229,8 +232,7 @@ export const worldbuildingApi = {
     return data;
   },
 
-  uploadTemplateFromFile: async (file: File) => {
-    // 读取文件内容
+  uploadTemplateFromFile: async (file: File, project_id?: string) => {
     const fileContent = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target?.result as string);
@@ -238,13 +240,12 @@ export const worldbuildingApi = {
       reader.readAsText(file);
     });
     
-    // 解析JSON数据
     const templateData = JSON.parse(fileContent);
     
-    // 调用导入API
     return api.post<WorldTemplate>('/worldbuilding/templates/import', {
       name: templateData.template?.name || `导入模板_${new Date().toISOString()}`,
-      template_data: templateData
+      template_data: templateData,
+      project_id,
     });
   },
 };

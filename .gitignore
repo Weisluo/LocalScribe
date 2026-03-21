@@ -38,6 +38,9 @@ htmlcov/
 .bin
 deps
 
+# AI/Claude
+.claude/
+
 # trae
 .trae/
 

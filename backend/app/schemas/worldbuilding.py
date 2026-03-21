@@ -34,6 +34,7 @@ class WorldBase(BaseModel):
 class WorldTemplateCreate(WorldBase):
     is_public: bool = False
     is_system_template: bool = False
+    project_id: Optional[str] = None
 
 class WorldTemplateUpdate(BaseModel):
     name: Optional[str] = None
@@ -42,13 +43,15 @@ class WorldTemplateUpdate(BaseModel):
     tags: Optional[List[str]] = None
     is_public: Optional[bool] = None
     is_system_template: Optional[bool] = None
+    project_id: Optional[str] = None
 
 class WorldTemplateResponse(WorldBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     is_public: bool
     is_system_template: bool
+    project_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     created_by: Optional[str] = None
@@ -203,6 +206,7 @@ class WorldTemplateExport(BaseModel):
 class WorldTemplateImport(BaseModel):
     name: str
     description: Optional[str] = None
+    project_id: Optional[str] = None
     modules: List[WorldModuleWithItems]
 
 # 批量操作 Schema
@@ -238,3 +242,4 @@ class WorldTemplateFilter(BaseModel):
     is_public: Optional[bool] = None
     is_system_template: Optional[bool] = None
     created_by: Optional[str] = None
+    project_id: Optional[str] = None

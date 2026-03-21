@@ -14,7 +14,8 @@ class WorldTemplate(Base):
     tags = Column(JSON)  # 标签列表
     is_public = Column(Boolean, default=False)  # 是否公开
     is_system_template = Column(Boolean, default=False)  # 是否系统模板
-    
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=True)  # 所属项目
+
     # 元数据
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -23,6 +24,7 @@ class WorldTemplate(Base):
     # 关系
     modules = relationship("WorldModule", back_populates="template", cascade="all, delete-orphan")
     instances = relationship("WorldInstance", back_populates="template", cascade="all, delete-orphan")
+    project = relationship("Project", back_populates="world_templates")
 
 class WorldModule(Base):
     """世界模块 - 地图、历史、政治、经济、种族、体系、特殊"""
