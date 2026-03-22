@@ -52,11 +52,17 @@ class WorldModule(Base):
     items = relationship("WorldModuleItem", back_populates="module", cascade="all, delete-orphan")
 
 class WorldSubmodule(Base):
-    """子模块 - 模块下的分类（如种族下的不同种族）"""
+    """子模块 - 模块下的分类（如种族下的不同种族）
+    
+    对于历史模块：
+    - 时代：parent_id 为 null
+    - 事件：parent_id 指向时代
+    """
     __tablename__ = "world_submodules"
     
     id = Column(String(36), primary_key=True, index=True)
     module_id = Column(String(36), ForeignKey("world_modules.id"), nullable=False)
+    parent_id = Column(String(36), ForeignKey("world_submodules.id"), nullable=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
     order_index = Column(Integer, default=0)
@@ -72,6 +78,7 @@ class WorldSubmodule(Base):
     # 关系
     module = relationship("WorldModule", back_populates="submodules")
     items = relationship("WorldModuleItem", back_populates="submodule", cascade="all, delete-orphan")
+    children = relationship("WorldSubmodule", backref="parent", remote_side=[id], cascade="all, delete-orphan", single_parent=True)
 
 class WorldModuleItem(Base):
     """模块项 - 具体的世界设定内容"""

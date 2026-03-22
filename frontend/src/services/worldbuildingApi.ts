@@ -42,6 +42,7 @@ export interface WorldSubmodule {
   order_index: number;
   color?: string;
   icon?: string;
+  parent_id?: string;
   created_at: string;
   updated_at: string;
   item_count: number;
@@ -144,6 +145,7 @@ export const worldbuildingApi = {
     order_index?: number;
     color?: string;
     icon?: string;
+    parent_id?: string;
   }) => {
     return api.post<WorldSubmodule>(`/worldbuilding/modules/${moduleId}/submodules`, data);
   },
@@ -152,7 +154,9 @@ export const worldbuildingApi = {
     name: string;
     description: string;
     order_index: number;
-    color: string;
+    color?: string | null;
+    icon?: string | null;
+    parent_id?: string | null;
   }>) => {
     return api.put<WorldSubmodule>(`/worldbuilding/submodules/${submoduleId}`, data);
   },
@@ -161,7 +165,7 @@ export const worldbuildingApi = {
     return api.delete(`/worldbuilding/submodules/${submoduleId}`);
   },
 
-  getItems: (moduleId: string, params?: { submodule_id?: string }) => {
+  getItems: (moduleId: string, params?: { submodule_id?: string; include_all?: boolean }) => {
     return api.get<WorldModuleItem[]>(`/worldbuilding/modules/${moduleId}/items`, { params });
   },
 

@@ -495,16 +495,19 @@ def create_world_submodule(
 @router.get("/modules/{module_id}/submodules", response_model=List[WorldSubmoduleResponse])
 def get_world_submodules(
     module_id: str,
+    parent_id: Optional[str] = Query(None, description="父级子模块ID，用于过滤特定父级的子模块"),
     db: Session = Depends(get_db)
 ):
     """获取世界模块的所有子模块"""
-    logger.info(f"Getting world submodules for module: {module_id}")
+    logger.info(f"Getting world submodules for module: {module_id}, parent_id: {parent_id}")
     
-    submodules = db.query(WorldSubmodule).filter(
-        WorldSubmodule.module_id == module_id
-    ).order_by(WorldSubmodule.order_index).all()
+    query = db.query(WorldSubmodule).filter(WorldSubmodule.module_id == module_id)
     
-    # 计算项的数量
+    if parent_id is not None:
+        query = query.filter(WorldSubmodule.parent_id == parent_id)
+    
+    submodules = query.order_by(WorldSubmodule.order_index).all()
+    
     for submodule in submodules:
         submodule.item_count = db.query(WorldModuleItem).filter(WorldModuleItem.submodule_id == submodule.id).count()
     
@@ -550,6 +553,7 @@ def create_world_module_item(
 def get_world_module_items(
     module_id: str,
     submodule_id: Optional[str] = None,
+    include_all: bool = False,
     db: Session = Depends(get_db)
 ):
     """获取世界模块的项"""
@@ -557,10 +561,11 @@ def get_world_module_items(
     
     query = db.query(WorldModuleItem).filter(WorldModuleItem.module_id == module_id)
     
-    if submodule_id:
-        query = query.filter(WorldModuleItem.submodule_id == submodule_id)
-    else:
-        query = query.filter(WorldModuleItem.submodule_id.is_(None))
+    if not include_all:
+        if submodule_id:
+            query = query.filter(WorldModuleItem.submodule_id == submodule_id)
+        else:
+            query = query.filter(WorldModuleItem.submodule_id.is_(None))
     
     items = query.order_by(WorldModuleItem.order_index).all()
     logger.debug(f"Found {len(items)} items")
@@ -641,17 +646,12 @@ def delete_world_submodule(
     submodule_id: str,
     db: Session = Depends(get_db)
 ):
-    """删除子模块"""
+    """删除子模块（级联删除关联的项）"""
     logger.info(f"Deleting world submodule: {submodule_id}")
     
     submodule = db.query(WorldSubmodule).filter(WorldSubmodule.id == submodule_id).first()
     if not submodule:
         raise HTTPException(status_code=404, detail="子模块不存在")
-    
-    # 检查是否有项关联到此子模块
-    item_count = db.query(WorldModuleItem).filter(WorldModuleItem.submodule_id == submodule_id).count()
-    if item_count > 0:
-        raise HTTPException(status_code=400, detail="无法删除包含项的模块")
     
     db.delete(submodule)
     db.commit()

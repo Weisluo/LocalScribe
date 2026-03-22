@@ -1,7 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+interface FastAPIValidationError {
+  loc?: (string | number)[];
+  msg?: string;
+  type?: string;
+}
+
 interface ApiErrorResponse {
-  detail?: string;
+  detail?: string | FastAPIValidationError[];
   error?: {
     message?: string;
     code?: string;
@@ -82,7 +88,22 @@ service.interceptors.response.use(
       errorDetails = data;
 
       if (data?.detail) {
-        errorMessage = data.detail;
+        // 处理字符串类型的 detail
+        if (typeof data.detail === 'string') {
+          errorMessage = data.detail;
+        } 
+        // 处理数组类型的 detail（FastAPI 验证错误）
+        else if (Array.isArray(data.detail)) {
+          const errors = data.detail.map((err: any) => {
+            const field = err.loc?.join('.') || '未知字段';
+            return `${field}: ${err.msg}`;
+          });
+          errorMessage = errors.join('; ');
+        }
+        // 处理对象类型的 detail
+        else if (typeof data.detail === 'object') {
+          errorMessage = JSON.stringify(data.detail);
+        }
       } else if (data?.error?.message) {
         errorMessage = data.error.message;
       } else {
@@ -102,6 +123,10 @@ service.interceptors.response.use(
           case 404:
             errorMessage = '请求的资源不存在';
             errorCode = ERROR_CODES.NOT_FOUND_ERROR;
+            break;
+          case 422:
+            errorMessage = '数据验证失败';
+            errorCode = ERROR_CODES.VALIDATION_ERROR;
             break;
           case 500:
             errorMessage = '服务器内部错误';

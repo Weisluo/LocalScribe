@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { worldbuildingApi, WorldModule, WorldSubmodule, WorldModuleItem } from '@/services/worldbuildingApi';
 import { useProjectStore } from '@/stores/projectStore';
 import { Loader2, Plus, ChevronDown, ChevronRight, Edit2, Trash2, X, Save, Globe2, Map, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload } from 'lucide-react';
+import { HistoryView } from './HistoryView';
 
 // 弹窗组件
 interface ModalProps {
@@ -1430,24 +1431,28 @@ export const WorldbuildingView = () => {
             isLoading={deleteTemplateMutation.isPending}
           />
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-hidden">
             {templateLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : activeTab === 'history' && currentModule ? (
+              <HistoryView moduleId={currentModule.id} />
             ) : currentModule ? (
-              <div className="max-w-4xl mx-auto">
-                <ModuleSection
-                  module={currentModule}
-                  onModuleUpdate={() => {
-                    if (selectedTemplateId) {
-                      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'template', selectedTemplateId] });
-                    }
-                  }}
-                />
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="max-w-4xl mx-auto">
+                  <ModuleSection
+                    module={currentModule}
+                    onModuleUpdate={() => {
+                      if (selectedTemplateId) {
+                        queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'template', selectedTemplateId] });
+                      }
+                    }}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <span className="h-12 w-12 text-muted-foreground/30 mb-3 flex items-center justify-center">
                   {(() => {
                     const Icon = TAB_CONFIG[activeTab].icon;

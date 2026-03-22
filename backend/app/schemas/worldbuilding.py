@@ -94,8 +94,9 @@ class WorldSubmoduleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="子模块名称")
     description: Optional[str] = Field(None, max_length=1000, description="子模块描述")
     order_index: int = Field(0, ge=0, description="排序索引")
-    color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$', description="颜色标识")
+    color: Optional[str] = Field(None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）")
     icon: Optional[str] = Field(None, max_length=100, description="图标")
+    parent_id: Optional[str] = Field(None, description="父级子模块ID（用于时代-事件层级）")
 
 class WorldSubmoduleCreate(WorldSubmoduleBase):
     pass
@@ -104,8 +105,9 @@ class WorldSubmoduleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="子模块名称")
     description: Optional[str] = Field(None, max_length=1000, description="子模块描述")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
-    color: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$', description="颜色标识")
+    color: Optional[str] = Field(None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）")
     icon: Optional[str] = Field(None, max_length=100, description="图标")
+    parent_id: Optional[str] = Field(None, description="父级子模块ID")
 
 class WorldSubmoduleResponse(WorldSubmoduleBase):
     model_config = ConfigDict(from_attributes=True)
