@@ -4,6 +4,11 @@ Revision ID: b0ec4e485448
 Revises: 063d2b67b83b
 Create Date: 2026-03-22 14:37:02.959035
 
+此迁移重建 world_templates 表以修复外键约束问题：
+1. 移除指向不存在的 users 表的外键 (created_by)
+2. 添加指向 projects 表的外键 (project_id)
+3. 注意：project_id 列在 1ab95b05f309 迁移中已添加，但无外键约束
+
 """
 from typing import Sequence, Union
 

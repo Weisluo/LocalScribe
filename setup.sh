@@ -67,6 +67,128 @@ cleanup() {
 
 trap cleanup EXIT
 
+# 显示迁移修复选项菜单
+show_migration_menu() {
+    echo ""
+    echo -e "${YELLOW}请选择修复方案:${NC}"
+    echo ""
+    echo "  1) 删除数据库重新初始化 (推荐)"
+    echo "     - 删除现有数据库，重新运行所有迁移"
+    echo "     - 适用于开发环境，会丢失现有数据"
+    echo ""
+    echo "  2) 合并所有迁移文件 (开发环境重置)"
+    echo "     - 删除所有历史迁移，创建新的初始迁移"
+    echo "     - 仅适用于早期开发阶段，所有开发者需要重新初始化"
+    echo ""
+    echo "  3) 尝试继续迁移 (可能失败)"
+    echo "     - 保留现有数据库，尝试继续执行迁移"
+    echo "     - 如果迁移文件有冲突，会报错"
+    echo ""
+    echo "  4) 跳过数据库初始化"
+    echo "     - 不进行任何数据库操作"
+    echo ""
+}
+
+# 合并所有迁移文件
+merge_all_migrations() {
+    print_step "数据库" "合并所有迁移文件..."
+    
+    if [ ! -f "$PROJECT_ROOT/merge_migrations.py" ]; then
+        print_error "未找到 merge_migrations.py 脚本"
+        return 1
+    fi
+    
+    # 运行合并脚本（自动确认模式）
+    "$BACKEND_DIR/venv/bin/python" "$PROJECT_ROOT/merge_migrations.py" --auto
+    
+    return $?
+}
+
+# 检查和修复数据库迁移
+check_and_fix_migrations() {
+    print_step "数据库" "检查迁移状态..."
+    
+    cd "$BACKEND_DIR"
+    
+    # 检查数据库文件是否存在
+    local db_file="$BACKEND_DIR/data/local_scribe.db"
+    local needs_reset=false
+    local migration_status="ok"
+    
+    if [ -f "$db_file" ]; then
+        # 获取当前迁移版本
+        local current_rev
+        current_rev=$("$BACKEND_DIR/venv/bin/alembic" current 2>/dev/null | grep -oP '[a-f0-9]{12}' | head -1)
+        
+        # 获取最新迁移版本
+        local head_rev
+        head_rev=$("$BACKEND_DIR/venv/bin/alembic" heads 2>/dev/null | grep -oP '[a-f0-9]{12}' | head -1)
+        
+        print_step "数据库" "当前版本: ${current_rev:-none}, 最新版本: ${head_rev:-none}"
+        
+        # 检查是否需要修复
+        if [ -n "$current_rev" ] && [ -n "$head_rev" ] && [ "$current_rev" != "$head_rev" ]; then
+            migration_status="conflict"
+            print_warning "数据库迁移版本不一致"
+            
+            # 尝试运行修复脚本
+            if [ -f "$PROJECT_ROOT/fix_migrations.py" ]; then
+                print_step "数据库" "运行迁移修复检查..."
+                "$BACKEND_DIR/venv/bin/python" "$PROJECT_ROOT/fix_migrations.py" || true
+            fi
+            
+            # 显示选择菜单
+            show_migration_menu
+            
+            local choice
+            read -rp "请输入选项 [1-4]: " choice
+            
+            case $choice in
+                1)
+                    print_step "数据库" "删除数据库重新初始化..."
+                    rm -f "$db_file"
+                    print_success "已删除旧数据库"
+                    needs_reset=true
+                    ;;
+                2)
+                    print_step "数据库" "合并所有迁移文件..."
+                    if merge_all_migrations; then
+                        print_success "迁移合并完成"
+                        needs_reset=true
+                    else
+                        print_error "迁移合并失败"
+                        exit 1
+                    fi
+                    ;;
+                3)
+                    print_warning "尝试继续迁移，如果失败请重新运行并选择其他选项"
+                    ;;
+                4)
+                    print_warning "跳过数据库初始化"
+                    return 0
+                    ;;
+                *)
+                    print_error "无效选项"
+                    exit 1
+                    ;;
+            esac
+        elif [ -z "$current_rev" ]; then
+            print_success "数据库为空，将全新初始化"
+            needs_reset=true
+        else
+            print_success "数据库版本已是最新"
+        fi
+    else
+        print_success "数据库文件不存在，将全新创建"
+        needs_reset=true
+    fi
+    
+    # 创建数据目录
+    mkdir -p "$BACKEND_DIR/data"
+    
+    return 0
+}
+
 # 检查网络连接
 check_network() {
     if ! curl -s --max-time 5 https://www.google.com >/dev/null && \
@@ -310,9 +432,8 @@ main() {
     fi
     print_success "alembic 验证通过 (版本: $("$BACKEND_DIR/venv/bin/alembic" --version | head -1))"
 
-    # 创建数据库目录
-    mkdir -p "$BACKEND_DIR/data"
-    print_success "数据库目录已准备"
+    # 检查和修复数据库迁移
+    check_and_fix_migrations
 
     # 前端依赖安装
     echo ""

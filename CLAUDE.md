@@ -110,6 +110,69 @@ Database migrations are managed by Alembic (`migrations/`). The SQLite file is s
 - New migrations are created with `alembic revision --autogenerate` after model changes.
 - The database URL is configured in `backend/.env` (`DATABASE_URL`).
 
+### Database Migration Guidelines
+
+When creating new Alembic migrations, follow these best practices to ensure SQLite compatibility and avoid conflicts:
+
+#### 1. Always Use Batch Mode for SQLite
+SQLite has limited ALTER TABLE support. Always use `batch_alter_table` for schema changes:
+
+```python
+def upgrade() -> None:
+    with op.batch_alter_table('table_name', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('new_column', sa.String(36), nullable=True))
+        batch_op.create_foreign_key(
+            'fk_name', 'ref_table',
+            ['column'], ['ref_column'],
+            ondelete='SET NULL'
+        )
+        batch_op.create_index('ix_name', ['column'], unique=False)
+
+def downgrade() -> None:
+    with op.batch_alter_table('table_name', schema=None) as batch_op:
+        batch_op.drop_index('ix_name')
+        batch_op.drop_constraint('fk_name', type_='foreignkey')
+        batch_op.drop_column('new_column')
+```
+
+#### 2. Add Existence Checks for Idempotency
+Make migrations safe to run multiple times by checking if objects already exist:
+
+```python
+def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    
+    # Check if column already exists
+    columns = [col['name'] for col in inspector.get_columns('table_name')]
+    if 'new_column' in columns:
+        return  # Skip if already exists
+    
+    with op.batch_alter_table('table_name', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('new_column', sa.String(36), nullable=True))
+```
+
+#### 3. Never Modify Published Migrations
+Once a migration is pushed to the repository, never modify it. If you need to fix something:
+- Create a new migration to correct the issue
+- Or use `fix_migrations.py` to check and repair
+
+#### 4. Maintain Linear Migration History
+Avoid creating migration branches. Always base new migrations on the current head:
+```bash
+# Check current migration status
+./venv/bin/alembic current
+./venv/bin/alembic history
+
+# Create new migration from current head
+./venv/bin/alembic revision --autogenerate -m "description"
+```
+
+#### 5. Team Development Rules
+- **Never commit database files** (`*.db`, `*.sqlite3`) - already in `.gitignore`
+- Run migrations before committing model changes
+- If migration conflicts occur, use `fix_migrations.py` to diagnose
+
 ## Testing & Quality
 
 ### Backend
