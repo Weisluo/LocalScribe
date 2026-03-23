@@ -211,21 +211,21 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
         };
       case 'normal':
         return { 
-          bg: 'bg-gradient-to-br from-slate-400 to-slate-500', 
-          gradient: 'from-slate-400 to-slate-500',
-          shadow: 'shadow-slate-400/20' 
+          bg: 'bg-gradient-to-br from-muted-foreground/70 to-muted-foreground/50', 
+          gradient: 'from-muted-foreground/70 to-muted-foreground/50',
+          shadow: 'shadow-muted-foreground/20' 
         };
       case 'minor':
         return { 
-          bg: 'bg-gradient-to-br from-muted-foreground/60 to-muted-foreground/40', 
-          gradient: 'from-muted-foreground/60 to-muted-foreground/40',
+          bg: 'bg-gradient-to-br from-muted-foreground/50 to-muted-foreground/30', 
+          gradient: 'from-muted-foreground/50 to-muted-foreground/30',
           shadow: 'shadow-muted-foreground/10' 
         };
       default:
         return { 
-          bg: 'bg-gradient-to-br from-slate-400 to-slate-500', 
-          gradient: 'from-slate-400 to-slate-500',
-          shadow: 'shadow-slate-400/20' 
+          bg: 'bg-gradient-to-br from-muted-foreground/70 to-muted-foreground/50', 
+          gradient: 'from-muted-foreground/70 to-muted-foreground/50',
+          shadow: 'shadow-muted-foreground/20' 
         };
     }
   };
@@ -518,7 +518,7 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
       <div className="flex min-h-full">
         <div className="relative flex-shrink-0 w-16 flex justify-center">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 min-h-full rounded-full overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/50 via-purple-500/40 to-amber-500/30" />
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/50 via-accent/40 to-primary/30" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent animate-pulse" style={{ animationDuration: '3s' }} />
           </div>
           
@@ -530,10 +530,10 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
               transition={{ delay: 0.2, ...animationConfig.spring }}
             >
               <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-amber-500 flex items-center justify-center shadow-xl shadow-indigo-500/40">
-                  <div className="w-3 h-3 rounded-full bg-white/90" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary via-primary/90 to-accent flex items-center justify-center shadow-xl shadow-primary/30">
+                  <div className="w-3 h-3 rounded-full bg-primary-foreground/90" />
                 </div>
-                <div className="absolute inset-0 rounded-full bg-indigo-500/40 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" style={{ animationDuration: '2s' }} />
               </div>
             </motion.div>
           ) : (
@@ -579,7 +579,7 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
                         }}
                         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                       >
-                        <div className="w-full h-full rounded-full bg-indigo-500/30" />
+                        <div className="w-full h-full rounded-full bg-primary/30" />
                       </motion.div>
                     )}
                   </motion.div>
@@ -603,17 +603,17 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
               transition={{ delay: 0.1, ...animationConfig.spring }}
               className="relative inline-flex items-center justify-center w-28 h-28 mb-8"
             >
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-amber-500/20 animate-pulse" style={{ animationDuration: '3s' }} />
-              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-amber-500/10" />
-              <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-amber-500 flex items-center justify-center shadow-xl shadow-indigo-500/30">
-                <Sparkles className="h-8 w-8 text-white" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 via-accent/15 to-primary/20 animate-pulse" style={{ animationDuration: '3s' }} />
+              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10" />
+              <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-primary via-primary/90 to-accent flex items-center justify-center shadow-xl shadow-primary/25">
+                <Sparkles className="h-8 w-8 text-primary-foreground" />
               </div>
             </motion.div>
             <motion.h3 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-2xl font-bold mb-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-600 bg-clip-text text-transparent"
+              className="text-2xl font-bold mb-3 text-foreground"
             >
               开启您的历史编年
             </motion.h3>
@@ -635,7 +635,7 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
                 onClick={() => setShowAddEraModal(true)} 
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                className="px-6 py-3 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-amber-500/25 transition-all duration-200 flex items-center gap-2 font-semibold"
+                className="px-6 py-3 bg-gradient-to-br from-accent to-accent/90 text-accent-foreground rounded-xl hover:shadow-lg hover:shadow-accent/20 transition-all duration-200 flex items-center gap-2 font-semibold"
               >
                 <Clock className="h-4 w-4" />
                 创建第一个时代
@@ -644,7 +644,7 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
                 onClick={() => setShowAddEventModal(true)} 
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                className="px-6 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 flex items-center gap-2 font-semibold"
+                className="px-6 py-3 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all duration-200 flex items-center gap-2 font-semibold"
               >
                 <Plus className="h-4 w-4" />
                 记录第一个事件
@@ -898,14 +898,14 @@ export const HistoryView = ({ moduleId }: HistoryViewProps) => {
                 {finalFilteredEras.length > 0 && (
                   <div className="mb-8 flex items-center gap-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 shadow-sm shadow-slate-400/30" />
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-muted-foreground/60 to-muted-foreground/40 shadow-sm shadow-muted-foreground/20" />
                       <span className="text-sm font-semibold text-muted-foreground tracking-wide">独立事件</span>
                     </div>
                     <div className="h-px flex-1 bg-gradient-to-r from-border via-border/50 to-transparent" />
                   </div>
                 )}
                 <motion.div 
-                  className="flex flex-wrap gap-4 p-6 rounded-2xl bg-gradient-to-br from-slate-500/5 to-slate-600/5 border border-slate-400/15"
+                  className="flex flex-wrap gap-4 p-6 rounded-2xl bg-gradient-to-br from-muted/30 to-muted/20 border border-border/40"
                   initial="hidden"
                   animate="visible"
                   variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
