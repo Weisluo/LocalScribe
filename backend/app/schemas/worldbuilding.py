@@ -1,8 +1,65 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from uuid import UUID
 from enum import Enum
+
+
+# 世界观类型枚举
+class WorldviewType(str, Enum):
+    XIANXIA = "xianxia"
+    HISTORICAL = "historical"
+    WESTERN = "western"
+    MODERN = "modern"
+    SCIFI = "scifi"
+    APOCALYPSE = "apocalypse"
+    CUSTOM = "custom"
+
+
+# 时间尺度
+class TimeScale(str, Enum):
+    ANCIENT = "ancient"
+    MEDIEVAL = "medieval"
+    RENAISSANCE = "renaissance"
+    INDUSTRIAL = "industrial"
+    MODERN = "modern"
+    FUTURE = "future"
+
+
+# 科技水平
+class TechLevel(str, Enum):
+    PRIMITIVE = "primitive"
+    MEDIEVAL = "medieval"
+    INDUSTRIAL = "industrial"
+    INFORMATION = "information"
+    ADVANCED = "advanced"
+    TRANSCENDENT = "transcendent"
+
+
+# 魔法水平
+class MagicLevel(str, Enum):
+    NONE = "none"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    DIVINE = "divine"
+
+
+# 复杂度等级
+class ComplexityLevel(str, Enum):
+    SIMPLE = "simple"
+    COMPLEX = "complex"
+    HIGHLY_COMPLEX = "highly_complex"
+
+
+# 经济系统类型
+class EconomicSystemType(str, Enum):
+    BARTER = "barter"
+    FEUDAL = "feudal"
+    MERCANTILE = "mercantile"
+    CAPITALIST = "capitalist"
+    SOCIALIST = "socialist"
+    POST_SCARCITY = "post_scarcity"
+
 
 # 枚举定义
 class ModuleType(str, Enum):
@@ -14,27 +71,30 @@ class ModuleType(str, Enum):
     SYSTEMS = "systems"
     SPECIAL = "special"
 
+
 # 基础 Schema
 class WorldBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="世界名称")
     description: Optional[str] = Field(None, max_length=1000, description="世界描述")
     cover_image: Optional[str] = Field(None, max_length=500, description="封面图片 URL")
     tags: Optional[List[str]] = Field(None, max_length=10, description="标签列表")
-    
-    @field_validator('tags')
+
+    @field_validator("tags")
     @classmethod
     def validate_tags(cls, v):
         if v:
             for tag in v:
                 if tag and len(tag) > 20:
-                    raise ValueError('每个标签长度不能超过 20 个字符')
+                    raise ValueError("每个标签长度不能超过 20 个字符")
         return v
+
 
 # 世界模板 Schema
 class WorldTemplateCreate(WorldBase):
     is_public: bool = False
     is_system_template: bool = False
     project_id: Optional[str] = None
+
 
 class WorldTemplateUpdate(BaseModel):
     name: Optional[str] = None
@@ -44,6 +104,7 @@ class WorldTemplateUpdate(BaseModel):
     is_public: Optional[bool] = None
     is_system_template: Optional[bool] = None
     project_id: Optional[str] = None
+
 
 class WorldTemplateResponse(WorldBase):
     model_config = ConfigDict(from_attributes=True)
@@ -58,6 +119,7 @@ class WorldTemplateResponse(WorldBase):
     module_count: int = 0
     instance_count: int = 0
 
+
 # 世界模块 Schema
 class WorldModuleBase(BaseModel):
     module_type: ModuleType = Field(..., description="模块类型")
@@ -68,20 +130,25 @@ class WorldModuleBase(BaseModel):
     is_collapsible: bool = Field(True, description="是否可折叠")
     is_required: bool = Field(False, description="是否必需")
 
+
 class WorldModuleCreate(WorldModuleBase):
     pass
 
+
 class WorldModuleUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="模块名称")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=255, description="模块名称"
+    )
     description: Optional[str] = Field(None, max_length=1000, description="模块描述")
     icon: Optional[str] = Field(None, max_length=100, description="模块图标")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
     is_collapsible: Optional[bool] = Field(None, description="是否可折叠")
     is_required: Optional[bool] = Field(None, description="是否必需")
 
+
 class WorldModuleResponse(WorldModuleBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     template_id: str
     created_at: datetime
@@ -89,34 +156,47 @@ class WorldModuleResponse(WorldModuleBase):
     submodule_count: int = 0
     item_count: int = 0
 
+
 # 子模块 Schema
 class WorldSubmoduleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="子模块名称")
     description: Optional[str] = Field(None, max_length=1000, description="子模块描述")
     order_index: int = Field(0, ge=0, description="排序索引")
-    color: Optional[str] = Field(None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）")
+    color: Optional[str] = Field(
+        None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）"
+    )
     icon: Optional[str] = Field(None, max_length=100, description="图标")
-    parent_id: Optional[str] = Field(None, description="父级子模块ID（用于时代-事件层级）")
+    parent_id: Optional[str] = Field(
+        None, description="父级子模块ID（用于时代-事件层级）"
+    )
+
 
 class WorldSubmoduleCreate(WorldSubmoduleBase):
     pass
 
+
 class WorldSubmoduleUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="子模块名称")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=255, description="子模块名称"
+    )
     description: Optional[str] = Field(None, max_length=1000, description="子模块描述")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
-    color: Optional[str] = Field(None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）")
+    color: Optional[str] = Field(
+        None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）"
+    )
     icon: Optional[str] = Field(None, max_length=100, description="图标")
     parent_id: Optional[str] = Field(None, description="父级子模块ID")
 
+
 class WorldSubmoduleResponse(WorldSubmoduleBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     module_id: str
     created_at: datetime
     updated_at: datetime
     item_count: int = 0
+
 
 # 模块项 Schema
 class WorldModuleItemBase(BaseModel):
@@ -124,86 +204,102 @@ class WorldModuleItemBase(BaseModel):
     content: Dict[str, Any] = Field(..., description="结构化内容")
     order_index: int = Field(0, ge=0, description="排序索引")
     is_published: bool = Field(True, description="是否发布")
-    
-    @field_validator('content')
+
+    @field_validator("content")
     @classmethod
     def validate_content(cls, v):
         if not isinstance(v, dict):
-            raise ValueError('内容必须是字典格式')
+            raise ValueError("内容必须是字典格式")
         if len(v) > 50:
-            raise ValueError('内容字段数量不能超过 50 个')
+            raise ValueError("内容字段数量不能超过 50 个")
         for key, value in v.items():
             if len(key) > 100:
-                raise ValueError('内容键名长度不能超过 100 个字符')
+                raise ValueError("内容键名长度不能超过 100 个字符")
             if isinstance(value, str) and len(value) > 5000:
-                raise ValueError('内容值长度不能超过 5000 个字符')
+                raise ValueError("内容值长度不能超过 5000 个字符")
         return v
+
 
 class WorldModuleItemCreate(WorldModuleItemBase):
     submodule_id: Optional[str] = Field(None, description="子模块ID")
 
+
 class WorldModuleItemUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="项名称")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=255, description="项名称"
+    )
     content: Optional[Dict[str, Any]] = Field(None, description="结构化内容")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
     is_published: Optional[bool] = Field(None, description="是否发布")
     submodule_id: Optional[str] = Field(None, description="子模块ID")
 
+
 class WorldModuleItemResponse(WorldModuleItemBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     module_id: str
     submodule_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
+
 # 世界实例 Schema
 class WorldInstanceBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="实例名称")
     description: Optional[str] = Field(None, max_length=1000, description="实例描述")
     custom_data: Optional[Dict[str, Any]] = Field(None, description="自定义数据")
-    
-    @field_validator('custom_data')
+
+    @field_validator("custom_data")
     @classmethod
     def validate_custom_data(cls, v):
         if v and len(v) > 100:
-            raise ValueError('自定义数据字段数量不能超过 100 个')
+            raise ValueError("自定义数据字段数量不能超过 100 个")
         return v
+
 
 class WorldInstanceCreate(WorldInstanceBase):
     template_id: str = Field(..., description="模板ID")
     project_id: str = Field(..., description="项目ID")
 
+
 class WorldInstanceUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="实例名称")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=255, description="实例名称"
+    )
     description: Optional[str] = Field(None, max_length=1000, description="实例描述")
     custom_data: Optional[Dict[str, Any]] = Field(None, description="自定义数据")
 
+
 class WorldInstanceResponse(WorldInstanceBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
     template_id: str
     project_id: str
     created_at: datetime
     updated_at: datetime
 
+
 # 嵌套响应 Schema
 class WorldModuleWithItems(WorldModuleResponse):
     submodules: List[WorldSubmoduleResponse] = []
     items: List[WorldModuleItemResponse] = []
 
+
 class WorldSubmoduleWithItems(WorldSubmoduleResponse):
     items: List[WorldModuleItemResponse] = []
 
+
 class WorldTemplateWithModules(WorldTemplateResponse):
     modules: List[WorldModuleWithItems] = []
+
 
 # 导入/导出 Schema
 class WorldTemplateExport(BaseModel):
     template: WorldTemplateResponse
     modules: List[WorldModuleWithItems]
+
 
 class WorldTemplateImport(BaseModel):
     name: str
@@ -211,31 +307,42 @@ class WorldTemplateImport(BaseModel):
     project_id: Optional[str] = None
     modules: List[WorldModuleWithItems]
 
+
 # 批量操作 Schema
 class BatchDeleteRequest(BaseModel):
-    ids: List[str] = Field(..., min_length=1, max_length=100, description="要删除的 ID 列表")
-    
-    @field_validator('ids')
+    ids: List[str] = Field(
+        ..., min_length=1, max_length=100, description="要删除的 ID 列表"
+    )
+
+    @field_validator("ids")
     @classmethod
     def validate_ids(cls, v):
         if len(v) > 100:
-            raise ValueError('批量删除数量不能超过 100 个')
+            raise ValueError("批量删除数量不能超过 100 个")
         return v
 
+
 class BatchUpdateOrderRequest(BaseModel):
-    items: List[Dict[str, Any]] = Field(..., min_length=1, max_length=100, description="排序项列表")
-    
-    @field_validator('items')
+    items: List[Dict[str, Any]] = Field(
+        ..., min_length=1, max_length=100, description="排序项列表"
+    )
+
+    @field_validator("items")
     @classmethod
     def validate_items(cls, v):
         if len(v) > 100:
-            raise ValueError('批量排序数量不能超过 100 个')
+            raise ValueError("批量排序数量不能超过 100 个")
         for item in v:
-            if not isinstance(item, dict) or 'id' not in item or 'order_index' not in item:
-                raise ValueError('每个排序项必须包含 id 和 order_index 字段')
-            if not isinstance(item['order_index'], int) or item['order_index'] < 0:
-                raise ValueError('order_index 必须是大于等于 0 的整数')
+            if (
+                not isinstance(item, dict)
+                or "id" not in item
+                or "order_index" not in item
+            ):
+                raise ValueError("每个排序项必须包含 id 和 order_index 字段")
+            if not isinstance(item["order_index"], int) or item["order_index"] < 0:
+                raise ValueError("order_index 必须是大于等于 0 的整数")
         return v
+
 
 # 搜索和筛选 Schema
 class WorldTemplateFilter(BaseModel):
@@ -245,3 +352,169 @@ class WorldTemplateFilter(BaseModel):
     is_system_template: Optional[bool] = None
     created_by: Optional[str] = None
     project_id: Optional[str] = None
+
+
+# ============= 世界观配置 Schema =============
+
+
+class WorldviewEventType(BaseModel):
+    type: str
+    label: str
+    icon: str
+    color: str
+
+
+class WorldviewEraTheme(BaseModel):
+    theme: str
+    label: str
+    color: str
+
+
+class WorldviewPoliticalEntityType(BaseModel):
+    type: str
+    label: str
+    icon: str
+    color: str
+
+
+class WorldviewGovernmentType(BaseModel):
+    type: str
+    label: str
+
+
+class WorldviewEconomicEntityType(BaseModel):
+    type: str
+    label: str
+    icon: str
+    color: str
+
+
+class WorldviewCurrencyType(BaseModel):
+    type: str
+    label: str
+
+
+class WorldviewResourceType(BaseModel):
+    type: str
+    label: str
+
+
+class WorldviewTradeMethod(BaseModel):
+    type: str
+    label: str
+
+
+class HistoryModuleConfig(BaseModel):
+    timeUnit: str = "year"
+    eventTypes: List[WorldviewEventType] = []
+    eraThemes: List[WorldviewEraTheme] = []
+    timelineStyle: str = "linear"
+    recordingMethod: str = "chronicle"
+
+
+class PoliticsModuleConfig(BaseModel):
+    entityTypes: List[WorldviewPoliticalEntityType] = []
+    governmentTypes: List[WorldviewGovernmentType] = []
+    alignmentSystem: str = "modern"
+    powerStructure: str = "centralized"
+
+
+class EconomyModuleConfig(BaseModel):
+    entityTypes: List[WorldviewEconomicEntityType] = []
+    currencyTypes: List[WorldviewCurrencyType] = []
+    resourceTypes: List[WorldviewResourceType] = []
+    tradeMethods: List[WorldviewTradeMethod] = []
+
+
+class MapModuleConfig(BaseModel):
+    mapTypes: List[str] = []
+    projectionStyles: List[str] = []
+
+
+class RacesModuleConfig(BaseModel):
+    raceTypes: List[Dict[str, Any]] = []
+    traitSystems: List[str] = []
+
+
+class SystemsModuleConfig(BaseModel):
+    systemTypes: List[Dict[str, Any]] = []
+    customRules: List[str] = []
+
+
+class ModuleConfigs(BaseModel):
+    history: HistoryModuleConfig = HistoryModuleConfig()
+    politics: PoliticsModuleConfig = PoliticsModuleConfig()
+    economy: EconomyModuleConfig = EconomyModuleConfig()
+    map: MapModuleConfig = MapModuleConfig()
+    races: RacesModuleConfig = RacesModuleConfig()
+    systems: SystemsModuleConfig = SystemsModuleConfig()
+
+
+class WorldviewTheme(BaseModel):
+    primaryColor: str = "#6366f1"
+    secondaryColor: str = "#8b5cf6"
+    accentColor: str = "#f59e0b"
+    backgroundGradient: str = "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)"
+    fontFamily: str = "system-ui, sans-serif"
+
+
+class WorldviewAdaptationRule(BaseModel):
+    sourceModule: str
+    targetModule: str
+    relationType: str
+    description: str
+    confidence: float = 0.8
+
+
+class WorldviewPreset(BaseModel):
+    id: str
+    name: str
+    description: str
+    icon: str
+
+
+class WorldviewConfigBase(BaseModel):
+    type: WorldviewType
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=1000)
+    timeScale: TimeScale = TimeScale.MEDIEVAL
+    techLevel: TechLevel = TechLevel.MEDIEVAL
+    magicLevel: MagicLevel = MagicLevel.NONE
+    politicalComplexity: ComplexityLevel = ComplexityLevel.COMPLEX
+    economicSystem: EconomicSystemType = EconomicSystemType.FEUDAL
+    moduleConfigs: ModuleConfigs = ModuleConfigs()
+    theme: WorldviewTheme = WorldviewTheme()
+    adaptationRules: List[WorldviewAdaptationRule] = []
+    presets: List[WorldviewPreset] = []
+
+
+class WorldviewConfigCreate(WorldviewConfigBase):
+    pass
+
+
+class WorldviewConfigUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = Field(None, max_length=1000)
+    timeScale: Optional[TimeScale] = None
+    techLevel: Optional[TechLevel] = None
+    magicLevel: Optional[MagicLevel] = None
+    politicalComplexity: Optional[ComplexityLevel] = None
+    economicSystem: Optional[EconomicSystemType] = None
+    moduleConfigs: Optional[ModuleConfigs] = None
+    theme: Optional[WorldviewTheme] = None
+    adaptationRules: Optional[List[WorldviewAdaptationRule]] = None
+    presets: Optional[List[WorldviewPreset]] = None
+
+
+class WorldviewConfigResponse(WorldviewConfigBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    is_system: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class WorldviewAdaptationsResponse(BaseModel):
+    worldview_type: WorldviewType
+    module_configs: ModuleConfigs
+    adaptation_rules: List[WorldviewAdaptationRule]

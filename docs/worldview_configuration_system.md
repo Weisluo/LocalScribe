@@ -12,14 +12,15 @@
 
 ### 1.2 支持的世界观类型
 
-| 世界观类型 | 中文名称 | 核心特征 | 典型示例 |
-|-----------|---------|---------|---------|
-| `xianxia` | 仙侠 | 修真修仙、门派斗争、法宝丹药 | 《凡人修仙传》、《诛仙》 |
-| `historical` | 历史 | 真实历史背景、王朝更迭 | 《三国演义》、《大明王朝》 |
-| `western` | 西幻 | 魔法、骑士、龙与地下城 | 《指环王》、《冰与火之歌》 |
-| `modern` | 现代 | 当代社会、科技文明 | 现实世界、近未来设定 |
-| `scifi` | 科幻 | 高科技、星际文明、人工智能 | 《三体》、《星际迷航》 |
-| `apocalypse` | 末世 | 灾难后世界、生存斗争 | 《辐射》、《最后生还者》 |
+| 世界观类型 | 中文名称 | 核心特征 | 典型示例 | 是否系统预设 |
+|-----------|---------|---------|---------|-------------|
+| `xianxia` | 仙侠 | 修真修仙、门派斗争、法宝丹药 | 《凡人修仙传》、《诛仙》 | ✅ 系统预设 |
+| `historical` | 历史 | 真实历史背景、王朝更迭 | 《三国演义》、《大明王朝》 | ✅ 系统预设 |
+| `western` | 西幻 | 魔法、骑士、龙与地下城 | 《指环王》、《冰与火之歌》 | ✅ 系统预设 |
+| `modern` | 现代 | 当代社会、科技文明 | 现实世界、近未来设定 | ✅ 系统预设 |
+| `scifi` | 科幻 | 高科技、星际文明、人工智能 | 《三体》、《星际迷航》 | ✅ 系统预设 |
+| `apocalypse` | 末世 | 灾难后世界、生存斗争 | 《辐射》、《最后生还者》 | ✅ 系统预设 |
+| `custom` | 自定义 | 用户自定义的世界观类型 | 用户自定义设定 | ❌ 用户创建 |
 
 ---
 
@@ -69,7 +70,8 @@ export type WorldviewType =
   | 'western'     // 西幻
   | 'modern'      // 现代
   | 'scifi'       // 科幻
-  | 'apocalypse'; // 末世
+  | 'apocalypse'  // 末世
+  | 'custom';     // 自定义
 
 // 时间尺度
 export type TimeScale = 
@@ -550,14 +552,318 @@ export const WorldviewProvider: React.FC<{ children: ReactNode }> = ({ children 
 
 ---
 
-## 六、总结
+## 六、自定义世界观支持
+
+### 6.1 自定义世界观配置接口
+
+```typescript
+// 自定义世界观配置接口
+export interface CustomWorldviewConfig extends WorldviewConfig {
+  type: 'custom';
+  isSystem: false;
+  createdBy: string;                    // 创建者ID
+  createdAt: string;                   // 创建时间
+  lastModified: string;                 // 最后修改时间
+  isPublic: boolean;                   // 是否公开
+  tags: string[];                      // 标签
+  basedOn?: WorldviewType;             // 基于哪个系统世界观
+  
+  // 自定义配置扩展
+  customAttributes: Record<string, any>;  // 自定义属性
+  validationRules: ValidationRule[];       // 验证规则
+  templateVariables: TemplateVariable[];   // 模板变量
+}
+
+// 自定义世界观创建请求
+export interface CustomWorldviewCreateRequest {
+  name: string;
+  description?: string;
+  basedOn?: WorldviewType;             // 基于现有世界观创建
+  baseConfig?: Partial<WorldviewConfig>; // 基础配置
+  customAttributes?: Record<string, any>;
+  isPublic?: boolean;
+  tags?: string[];
+}
+
+// 自定义世界观更新请求
+export interface CustomWorldviewUpdateRequest {
+  name?: string;
+  description?: string;
+  moduleConfigs?: Partial<ModuleConfigs>;
+  theme?: Partial<WorldviewTheme>;
+  customAttributes?: Record<string, any>;
+  isPublic?: boolean;
+  tags?: string[];
+}
+
+// 验证规则
+export interface ValidationRule {
+  field: string;
+  validator: 'required' | 'minLength' | 'maxLength' | 'pattern' | 'custom';
+  value?: any;
+  message: string;
+}
+
+// 模板变量
+export interface TemplateVariable {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'select' | 'color';
+  defaultValue: any;
+  options?: string[];                   // 选择类型的选项
+  description: string;
+}
+```
+
+### 6.2 自定义世界观管理器
+
+```typescript
+// 自定义世界观管理器
+export class CustomWorldviewManager {
+  private customConfigs: Map<string, CustomWorldviewConfig> = new Map();
+  
+  // 创建自定义世界观
+  async createCustomWorldview(
+    request: CustomWorldviewCreateRequest,
+    creatorId: string
+  ): Promise<CustomWorldviewConfig> {
+    // 验证名称唯一性
+    await this.validateNameUniqueness(request.name);
+    
+    // 基于系统世界观创建基础配置
+    const baseConfig = request.basedOn 
+      ? await this.getSystemWorldviewConfig(request.basedOn)
+      : this.getDefaultConfig();
+    
+    const customConfig: CustomWorldviewConfig = {
+      ...baseConfig,
+      ...request.baseConfig,
+      id: this.generateCustomId(),
+      type: 'custom',
+      name: request.name,
+      description: request.description || '',
+      isSystem: false,
+      createdBy: creatorId,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      isPublic: request.isPublic || false,
+      tags: request.tags || [],
+      basedOn: request.basedOn,
+      customAttributes: request.customAttributes || {},
+      validationRules: [],
+      templateVariables: []
+    };
+    
+    // 保存配置
+    await this.saveCustomConfig(customConfig);
+    return customConfig;
+  }
+  
+  // 更新自定义世界观
+  async updateCustomWorldview(
+    configId: string,
+    request: CustomWorldviewUpdateRequest
+  ): Promise<CustomWorldviewConfig> {
+    const existingConfig = await this.getCustomConfig(configId);
+    if (!existingConfig) {
+      throw new Error(`自定义世界观配置不存在: ${configId}`);
+    }
+    
+    const updatedConfig: CustomWorldviewConfig = {
+      ...existingConfig,
+      ...request,
+      lastModified: new Date().toISOString()
+    };
+    
+    await this.saveCustomConfig(updatedConfig);
+    return updatedConfig;
+  }
+  
+  // 获取用户的自定义世界观
+  async getUserCustomWorldviews(userId: string): Promise<CustomWorldviewConfig[]> {
+    const configs = await this.loadAllCustomConfigs();
+    return configs.filter(config => 
+      config.createdBy === userId || config.isPublic
+    );
+  }
+  
+  // 基于系统世界观创建模板
+  async createFromSystemTemplate(
+    systemWorldview: WorldviewType,
+    customName: string,
+    creatorId: string
+  ): Promise<CustomWorldviewConfig> {
+    const systemConfig = await this.getSystemWorldviewConfig(systemWorldview);
+    
+    return this.createCustomWorldview({
+      name: customName,
+      basedOn: systemWorldview,
+      baseConfig: {
+        ...systemConfig,
+        name: customName,
+        description: `基于${systemConfig.name}的自定义世界观`
+      }
+    }, creatorId);
+  }
+}
+```
+
+### 6.3 自定义世界观适配器
+
+```typescript
+// 自定义世界观适配器
+export class CustomWorldviewAdapter extends WorldviewAdapter {
+  private customConfig: CustomWorldviewConfig;
+  
+  constructor(customConfig: CustomWorldviewConfig) {
+    super('custom');
+    this.customConfig = customConfig;
+  }
+  
+  // 重写适配方法以支持自定义配置
+  override adaptEventTypes(baseTypes: EventType[]): WorldviewEventType[] {
+    // 优先使用自定义配置
+    if (this.customConfig.moduleConfigs.history.eventTypes.length > 0) {
+      return this.customConfig.moduleConfigs.history.eventTypes;
+    }
+    
+    // 回退到基于系统世界观的适配
+    if (this.customConfig.basedOn) {
+      const systemAdapter = new WorldviewAdapter(this.customConfig.basedOn);
+      return systemAdapter.adaptEventTypes(baseTypes);
+    }
+    
+    // 最后使用默认适配
+    return super.adaptEventTypes(baseTypes);
+  }
+  
+  // 获取自定义图标
+  override getIcon(entityType: string, defaultIcon: string): string {
+    // 检查自定义配置中是否有特定图标
+    const customIcon = this.findCustomIcon(entityType);
+    if (customIcon) return customIcon;
+    
+    // 回退到系统适配
+    return super.getIcon(entityType, defaultIcon);
+  }
+  
+  // 支持自定义模板变量替换
+  processTemplateVariables(content: string): string {
+    let processed = content;
+    this.customConfig.templateVariables.forEach(variable => {
+      const pattern = new RegExp(`{{${variable.name}}}`, 'g');
+      processed = processed.replace(pattern, variable.defaultValue);
+    });
+    return processed;
+  }
+}
+```
+
+### 6.4 自定义世界观前端组件
+
+```tsx
+// 自定义世界观创建向导
+const CustomWorldviewWizard: React.FC<{
+  onComplete: (config: CustomWorldviewConfig) => void;
+  onCancel: () => void;
+}> = ({ onComplete, onCancel }) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [config, setConfig] = useState<Partial<CustomWorldviewCreateRequest>>({});
+  
+  const steps = [
+    {
+      title: '基础信息',
+      component: <BasicInfoStep config={config} onChange={setConfig} />
+    },
+    {
+      title: '选择模板',
+      component: <TemplateSelectionStep config={config} onChange={setConfig} />
+    },
+    {
+      title: '模块配置',
+      component: <ModuleConfigurationStep config={config} onChange={setConfig} />
+    },
+    {
+      title: '视觉主题',
+      component: <ThemeConfigurationStep config={config} onChange={setConfig} />
+    }
+  ];
+  
+  return (
+    <div className="custom-worldview-wizard">
+      <WizardHeader steps={steps} currentStep={currentStep} />
+      
+      <div className="wizard-content">
+        {steps[currentStep].component}
+      </div>
+      
+      <WizardFooter 
+        currentStep={currentStep}
+        totalSteps={steps.length}
+        onNext={() => setCurrentStep(prev => prev + 1)}
+        onBack={() => setCurrentStep(prev => prev - 1)}
+        onComplete={() => onComplete(config as CustomWorldviewConfig)}
+        onCancel={onCancel}
+      />
+    </div>
+  );
+};
+
+// 自定义世界观管理面板
+const CustomWorldviewManagerPanel: React.FC = () => {
+  const [customWorldviews, setCustomWorldviews] = useState<CustomWorldviewConfig[]>([]);
+  const [showWizard, setShowWizard] = useState(false);
+  
+  useEffect(() => {
+    loadCustomWorldviews();
+  }, []);
+  
+  const loadCustomWorldviews = async () => {
+    const worldviews = await customWorldviewManager.getUserCustomWorldviews(currentUserId);
+    setCustomWorldviews(worldviews);
+  };
+  
+  return (
+    <div className="custom-worldview-manager">
+      <div className="manager-header">
+        <h2>自定义世界观管理</h2>
+        <Button onClick={() => setShowWizard(true)}>
+          + 创建自定义世界观
+        </Button>
+      </div>
+      
+      <div className="worldview-grid">
+        {customWorldviews.map(worldview => (
+          <CustomWorldviewCard 
+            key={worldview.id}
+            worldview={worldview}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
+      
+      {showWizard && (
+        <CustomWorldviewWizard
+          onComplete={handleWizardComplete}
+          onCancel={() => setShowWizard(false)}
+        />
+      )}
+    </div>
+  );
+};
+```
+
+---
+
+## 七、总结
 
 本世界观配置系统为 LocalScribe 提供了：
 
-1. **全面的世界观支持**：覆盖六种主要世界观类型
-2. **灵活的配置架构**：支持模块级别的深度定制
+1. **全面的世界观支持**：覆盖六种主要世界观类型和自定义世界观
+2. **灵活的配置架构**：支持模块级别的深度定制和自定义扩展
 3. **智能的内容适配**：根据世界观类型动态调整界面内容
 4. **统一的视觉主题**：为不同世界观提供独特的视觉体验
 5. **强大的关联能力**：支持世界观特定的关联规则
+6. **自定义扩展能力**：用户可创建和管理自己的世界观配置
 
-通过此系统，用户可以轻松创建和切换不同的世界观设定，享受更加个性化和沉浸式的世界观构建体验。
+通过此系统，用户可以轻松创建、切换和自定义不同的世界观设定，享受更加个性化和沉浸式的世界观构建体验。

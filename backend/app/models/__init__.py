@@ -18,6 +18,6 @@ Base.metadata = metadata
 from .project import Project
 from .folder import Folder
 from .note import Note
-from .worldbuilding import WorldTemplate, WorldModule, WorldSubmodule, WorldModuleItem, WorldInstance
+from .worldbuilding import WorldTemplate, WorldModule, WorldSubmodule, WorldModuleItem, WorldInstance, CustomWorldviewConfig
 
-__all__ = ["Base", "Project", "Folder", "Note", "WorldTemplate", "WorldModule", "WorldSubmodule", "WorldModuleItem", "WorldInstance"]
+__all__ = ["Base", "Project", "Folder", "Note", "WorldTemplate", "WorldModule", "WorldSubmodule", "WorldModuleItem", "WorldInstance", "CustomWorldviewConfig"]
