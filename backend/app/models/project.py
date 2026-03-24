@@ -1,9 +1,12 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from sqlalchemy import String, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from . import Base
+
+if TYPE_CHECKING:
+    from .relation import BidirectionalRelation
 
 class Project(Base):
     __tablename__ = "projects"
@@ -24,6 +27,9 @@ class Project(Base):
     notes: Mapped[List["Note"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     world_instances: Mapped[List["WorldInstance"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     world_templates: Mapped[List["WorldTemplate"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    relations: Mapped[List["BidirectionalRelation"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", lazy="select"
+    )
 
     def __repr__(self) -> str:
         return f"<Project {self.title}>"

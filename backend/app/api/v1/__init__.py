@@ -7,6 +7,7 @@ from .ai import router as ai_router
 from .analysis import router as analysis_router
 from .worldbuilding import router as worldbuilding_router
 from .upload import router as upload_router
+from .relations import router as relations_router
 
 api_router = APIRouter()
 
@@ -17,3 +18,4 @@ api_router.include_router(ai_router, prefix="/ai", tags=["AI Assistant"])
 api_router.include_router(analysis_router, prefix="/analysis", tags=["Text Analysis"])
 api_router.include_router(worldbuilding_router, prefix="/worldbuilding", tags=["World Building"])
 api_router.include_router(upload_router, prefix="/upload", tags=["File Upload"])
+api_router.include_router(relations_router, prefix="/relations", tags=["Cross-Module Relations"])
