@@ -1,4 +1,3 @@
-// frontend/src/pages/TrashPage.tsx
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/utils/request';
@@ -18,26 +17,24 @@ import {
 
 type NoteResponse = components['schemas']['NoteResponse'];
 
-interface TrashPageProps {
-  embedded?: boolean; // 是否为嵌入模式（替换编辑区域）
+interface TrashViewProps {
+  embedded?: boolean;
 }
 
-export const TrashPage = ({ embedded = false }: TrashPageProps) => {
+export const TrashView = ({ embedded = true }: TrashViewProps) => {
   const { currentProjectId } = useProjectStore();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirmClear, setShowConfirmClear] = useState(false);
-  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact'); // 视图模式
-  const [isClearAllMode, setIsClearAllMode] = useState(false); // 是否为清空全部模式
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
+  const [isClearAllMode, setIsClearAllMode] = useState(false);
 
-  // 获取回收站中的笔记
   const { data: deletedNotes, isLoading, refetch } = useQuery({
     queryKey: ['deletedNotes', currentProjectId],
     queryFn: () => api.get<NoteResponse[]>(`/notes/deleted?project_id=${currentProjectId}`),
     enabled: !!currentProjectId,
   });
 
-  // 恢复单个笔记
   const restoreMutation = useMutation({
     mutationFn: (noteId: string) => api.post(`/notes/${noteId}/restore`),
     onSuccess: () => {
@@ -46,7 +43,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
     },
   });
 
-  // 永久删除单个笔记
   const permanentDeleteMutation = useMutation({
     mutationFn: (noteId: string) => api.delete(`/notes/${noteId}`, { params: { permanent: true } }),
     onSuccess: () => {
@@ -54,7 +50,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
     },
   });
 
-  // 批量恢复
   const batchRestoreMutation = useMutation({
     mutationFn: (ids: string[]) => api.post('/notes/batch-restore', { ids }),
     onSuccess: () => {
@@ -64,7 +59,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
     },
   });
 
-  // 批量永久删除
   const batchPermanentDeleteMutation = useMutation({
     mutationFn: (ids: string[]) => api.post('/notes/batch-delete', { ids }, { params: { permanent: true } }),
     onSuccess: () => {
@@ -140,7 +134,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
     });
   };
 
-  // 提取纯文本内容（移除 HTML 标签）
   const extractPlainText = (html: string | null | undefined, maxLength: number = 200) => {
     if (!html) return '';
     const tmp = document.createElement('div');
@@ -149,7 +142,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
     return text.trim().length > maxLength ? text.trim().substring(0, maxLength) + '...' : text.trim();
   };
 
-  // 切换视图模式
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'compact' ? 'detailed' : 'compact');
   };
@@ -167,7 +159,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
 
   return (
     <div className={`h-full flex flex-col bg-background ${embedded ? '' : 'container mx-auto px-4 py-8'}`}>
-      {/* 操作工具栏 */}
       {deletedNotes && deletedNotes.length > 0 && (
         <div className={`border-b border-border bg-muted/30 ${embedded ? '' : '-mx-4 -mt-4 px-4 py-3'}`}>
           <div className={embedded ? 'px-6 py-3' : ''}>
@@ -243,7 +234,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
         </div>
       )}
 
-      {/* 内容区域 */}
       <div className={`flex-1 overflow-y-auto ${embedded ? 'px-6 py-4' : 'container mx-auto px-4 py-8'}`}>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -256,7 +246,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
             <p className="text-muted-foreground">暂无已删除的笔记</p>
           </div>
         ) : viewMode === 'compact' ? (
-          /* 缩略视图模式 - 列表布局 */
           <div className="grid gap-3">
             {deletedNotes.map((note, index) => (
               <div
@@ -271,7 +260,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                 `}
                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
-                {/* 复选框 */}
                 <button
                   onClick={() => handleToggleSelect(note.id)}
                   className={`
@@ -285,12 +273,10 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                   {selectedIds.has(note.id) && <Check className="h-3.5 w-3.5" />}
                 </button>
 
-                {/* 图标 */}
                 <div className="p-2 rounded-lg bg-muted/50">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                 </div>
 
-                {/* 信息 */}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-foreground truncate">
                     {note.title || '无标题'}
@@ -306,7 +292,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                   </div>
                 </div>
 
-                {/* 操作按钮 */}
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleRestore(note.id)}
@@ -331,7 +316,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
             ))}
           </div>
         ) : (
-          /* 详细视图模式 - 卡片布局显示内容预览 */
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {deletedNotes.map((note, index) => (
               <div
@@ -346,7 +330,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                 `}
                 style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
               >
-                {/* 卡片头部 */}
                 <div className="flex items-start gap-3 p-4 border-b border-border/50">
                   <button
                     onClick={() => handleToggleSelect(note.id)}
@@ -376,14 +359,12 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
                   </div>
                 </div>
 
-                {/* 内容预览 */}
                 <div className="flex-1 p-4">
                   <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
                     {extractPlainText(note.content, 300)}
                   </p>
                 </div>
 
-                {/* 卡片底部操作栏 */}
                 <div className="flex items-center gap-2 p-3 bg-muted/30 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleRestore(note.id)}
@@ -410,7 +391,6 @@ export const TrashPage = ({ embedded = false }: TrashPageProps) => {
         )}
       </div>
 
-      {/* 确认清空对话框 */}
       {showConfirmClear && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">

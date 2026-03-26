@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { preloadModules } from '@/hooks/useIdlePreload';
 
 const Export = lazy(() => import('@/components/Export/Export').then(m => ({ default: m.Export })));
-const TrashPage = lazy(() => import('@/pages/TrashPage').then(m => ({ default: m.TrashPage })));
+const TrashView = lazy(() => import('@/components/Trash').then(m => ({ default: m.TrashView })));
 const WorldbuildingView = lazy(() => import('@/components/Worldbuilding').then(m => ({ default: m.WorldbuildingView })));
 const WritingCalendar = lazy(() => import('@/components/WritingCalendar').then(m => ({ default: m.WritingCalendar })));
 
@@ -675,7 +675,7 @@ export const EditorPage = () => {
             {/* 回收站内容区域 */}
             <div className="flex-1 overflow-hidden">
               <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-                <TrashPage embedded={true} />
+                <TrashView />
               </Suspense>
             </div>
           </div>

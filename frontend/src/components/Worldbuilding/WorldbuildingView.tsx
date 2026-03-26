@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { worldbuildingApi, WorldModule, WorldSubmodule, WorldModuleItem } from '@/services/worldbuildingApi';
 import { useProjectStore } from '@/stores/projectStore';
@@ -1108,25 +1108,33 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
 
 export const WorldbuildingView = () => {
   const [activeTab, setActiveTab] = useState<TabType>('map');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
-  const [editingTemplateName, setEditingTemplateName] = useState('');
   const { currentProjectId } = useProjectStore();
-
-  // 弹窗状态
-  const [showInitialChoice, setShowInitialChoice] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const queryClient = useQueryClient();
 
+  // 获取 templates 数据，用于恢复 selectedTemplateId
   const { data: templates = [], isLoading: templatesLoading, isFetching: templatesFetching } = useQuery({
     queryKey: ['worldbuilding', 'templates', currentProjectId],
     queryFn: () => worldbuildingApi.getTemplates({ project_id: currentProjectId ?? undefined }),
     enabled: !!currentProjectId,
     staleTime: 300,
   });
+
+  // 从 templates 缓存中恢复 selectedTemplateId
+  const selectedTemplateId = useMemo(() => {
+    if (templates.length > 0) {
+      return templates[0].id;
+    }
+    return null;
+  }, [templates]);
+
+  const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
+  const [editingTemplateName, setEditingTemplateName] = useState('');
+
+  // 弹窗状态
+  const [showInitialChoice, setShowInitialChoice] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data: currentTemplate, isLoading: templateLoading } = useQuery({
     queryKey: ['worldbuilding', 'template', selectedTemplateId],
@@ -1154,7 +1162,6 @@ export const WorldbuildingView = () => {
         })
       );
       await Promise.all(modulePromises);
-      setSelectedTemplateId(newTemplate.id);
       setShowCreateModal(false);
       setShowInitialChoice(false); // 关闭初始选择弹窗
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
@@ -1171,8 +1178,7 @@ export const WorldbuildingView = () => {
         project_id: currentProjectId ?? undefined,
       });
     },
-    onSuccess: (newTemplate) => {
-      setSelectedTemplateId(newTemplate.id);
+    onSuccess: () => {
       setShowImportModal(false);
       setShowInitialChoice(false);
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
@@ -1182,7 +1188,6 @@ export const WorldbuildingView = () => {
   const deleteTemplateMutation = useMutation({
     mutationFn: (templateId: string) => worldbuildingApi.deleteTemplate(templateId),
     onSuccess: () => {
-      setSelectedTemplateId(null);
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
     },
   });
@@ -1198,13 +1203,6 @@ export const WorldbuildingView = () => {
   });
 
   useEffect(() => {
-    if (!selectedTemplateId && templates.length > 0) {
-      setSelectedTemplateId(templates[0].id);
-    }
-  }, [templates, selectedTemplateId]);
-
-  useEffect(() => {
-    setSelectedTemplateId(null);
     setActiveTab('map');
     setShowInitialChoice(false);
     setShowCreateModal(false);
@@ -1376,7 +1374,7 @@ export const WorldbuildingView = () => {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
-          {!currentTemplate && !templatesLoading && (
+          {!currentTemplate && !templatesLoading && templates.length === 0 && (
             <div className="px-6 py-4">
               <div className="mt-4 flex flex-col items-center justify-center py-8 text-center">
                 <Globe2 className="h-12 w-12 text-muted-foreground/50 mb-3" />

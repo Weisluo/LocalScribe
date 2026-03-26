@@ -1,10 +1,8 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { preloadModules } from '@/hooks/useIdlePreload';
 
 const EditorPage = lazy(() => import('./pages/EditorPage/EditorPage').then(m => ({ default: m.EditorPage })));
-const TrashPage = lazy(() => import('./pages/TrashPage').then(m => ({ default: m.TrashPage })));
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen bg-background">
@@ -16,15 +14,6 @@ const LoadingFallback = () => (
 );
 
 function App() {
-  useEffect(() => {
-    preloadModules(
-      [
-        () => import('./pages/TrashPage'),
-      ],
-      2000
-    );
-  }, []);
-
   return (
     <BrowserRouter>
       <Toaster 
@@ -46,7 +35,6 @@ function App() {
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route path="/" element={<EditorPage />} />
-          <Route path="/trash" element={<TrashPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
