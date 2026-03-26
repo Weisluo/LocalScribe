@@ -117,6 +117,24 @@ When creating new Alembic migrations, follow these best practices to ensure SQLi
 #### 1. Always Use Batch Mode for SQLite
 SQLite has limited ALTER TABLE support. Always use `batch_alter_table` for schema changes:
 
+**Important SQLite Limitations:**
+- SQLite does **NOT** support direct `ALTER TABLE` for constraints (ADD/DROP CONSTRAINT)
+- SQLite does **NOT** support `ALTER TABLE` for dropping columns in most cases
+- SQLite does **NOT** support changing column types or nullability directly
+- All schema changes must use `batch_alter_table` which recreates the table behind the scenes
+
+**Common Errors to Avoid:**
+```python
+# ❌ WRONG - Will fail with "No support for ALTER of constraints in SQLite dialect"
+op.drop_constraint('fk_name', 'table_name', type_='foreignkey')
+op.create_foreign_key('fk_name', 'table_name', ['col'], ['ref_col'])
+
+# ✅ CORRECT - Use batch_alter_table
+with op.batch_alter_table('table_name', schema=None) as batch_op:
+    batch_op.drop_constraint('fk_name', type_='foreignkey')
+    batch_op.create_foreign_key('fk_name', 'ref_table', ['col'], ['ref_col'])
+```
+
 ```python
 def upgrade() -> None:
     with op.batch_alter_table('table_name', schema=None) as batch_op:

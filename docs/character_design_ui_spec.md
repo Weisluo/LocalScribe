@@ -1020,3 +1020,517 @@ GET    /api/v1/projects/:projectId/artifacts
 - 小卡片: Trello 卡片 / Notion 页面
 - 详情页: Craft 文档编辑器
 
+---
+
+## 14. 后端实现
+
+### 14.1 数据库架构
+
+#### 14.1.1 表结构设计
+
+**人物主表 (characters)**
+```sql
+CREATE TABLE characters (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    gender VARCHAR(20) DEFAULT 'unknown',
+    birth_date VARCHAR(100),
+    birthplace VARCHAR(255),
+    level VARCHAR(20) DEFAULT 'minor',
+    quote TEXT,
+    avatar VARCHAR(500),
+    full_image VARCHAR(500),
+    first_appearance_volume VARCHAR(100),
+    first_appearance_act VARCHAR(100),
+    first_appearance_chapter VARCHAR(100),
+    order_index INTEGER DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    INDEX idx_characters_project (project_id),
+    INDEX idx_characters_name (name),
+    INDEX idx_characters_level (level)
+);
+```
+
+**别名表 (character_aliases)**
+```sql
+CREATE TABLE character_aliases (
+    id VARCHAR(36) PRIMARY KEY,
+    character_id VARCHAR(36) NOT NULL,
+    alias_type VARCHAR(50) NOT NULL,
+    content VARCHAR(255) NOT NULL,
+    order_index INTEGER DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    INDEX idx_aliases_character (character_id)
+);
+```
+
+**信息小卡片表 (character_cards)**
+```sql
+CREATE TABLE character_cards (
+    id VARCHAR(36) PRIMARY KEY,
+    character_id VARCHAR(36) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    icon VARCHAR(100),
+    content JSON,
+    order_index INTEGER DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    INDEX idx_cards_character (character_id)
+);
+```
+
+**人物关系表 (character_relationships)**
+```sql
+CREATE TABLE character_relationships (
+    id VARCHAR(36) PRIMARY KEY,
+    character_id VARCHAR(36) NOT NULL,
+    target_character_id VARCHAR(36),
+    target_name VARCHAR(255),
+    relation_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    strength INTEGER DEFAULT 50,
+    is_bidirectional BOOLEAN DEFAULT TRUE,
+    reverse_description TEXT,
+    order_index INTEGER DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_character_id) REFERENCES characters(id) ON DELETE SET NULL,
+    INDEX idx_relationships_character (character_id),
+    INDEX idx_relationships_target (target_character_id)
+);
+```
+
+**器物表 (character_artifacts)**
+```sql
+CREATE TABLE character_artifacts (
+    id VARCHAR(36) PRIMARY KEY,
+    character_id VARCHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    artifact_type VARCHAR(100),
+    image VARCHAR(500),
+    order_index INTEGER DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    INDEX idx_artifacts_character (character_id)
+);
+```
+
+#### 14.1.2 枚举类型
+
+**角色等级 (CharacterLevel)**
+```python
+class CharacterLevel(str, Enum):
+    PROTAGONIST = "protagonist"      # 主角
+    MAJOR_SUPPORT = "major_support"  # 重要配角
+    SUPPORT = "support"              # 配角
+    MINOR = "minor"                  # 小角色
+```
+
+**性别 (CharacterGender)**
+```python
+class CharacterGender(str, Enum):
+    MALE = "male"          # 男
+    FEMALE = "female"      # 女
+    OTHER = "other"        # 其他
+    UNKNOWN = "unknown"    # 未知
+```
+
+**别名类型 (AliasType)**
+```python
+class AliasType(str, Enum):
+    ZI = "zi"              # 字
+    HAO = "hao"            # 号
+    NICKNAME = "nickname"  # 外号
+    TITLE = "title"        # 称号
+    OTHER = "other"        # 其他
+```
+
+**关系类型 (RelationType)**
+```python
+class RelationType(str, Enum):
+    FAMILY = "family"      # 亲情
+    LOVE = "love"          # 爱情
+    FRIEND = "friend"      # 友情
+    MENTOR = "mentor"      # 师徒
+    ENEMY = "enemy"        # 敌对
+    OTHER = "other"        # 其他
+```
+
+**器物类型 (ArtifactType)**
+```python
+class ArtifactType(str, Enum):
+    WEAPON = "weapon"      # 武器
+    ARMOR = "armor"        # 防具
+    ACCESSORY = "accessory"  # 饰品
+    TREASURE = "treasure"  # 法宝
+    OTHER = "other"        # 其他
+```
+
+### 14.2 API 接口设计
+
+#### 14.2.1 RESTful 端点清单
+
+**人物主接口**
+```
+GET    /api/v1/projects/{project_id}/characters
+       获取人物列表（支持筛选、搜索、排序）
+
+POST   /api/v1/projects/{project_id}/characters
+       创建新人物（含关联数据）
+
+GET    /api/v1/projects/{project_id}/characters/{character_id}
+       获取人物详情
+
+PUT    /api/v1/projects/{project_id}/characters/{character_id}
+       更新人物信息
+
+DELETE /api/v1/projects/{project_id}/characters/{character_id}
+       删除人物（级联删除关联数据）
+
+POST   /api/v1/projects/{project_id}/characters/batch-delete
+       批量删除人物
+
+POST   /api/v1/projects/{project_id}/characters/batch-update-order
+       批量更新排序
+```
+
+**别名管理**
+```
+GET    /api/v1/projects/{project_id}/characters/{character_id}/aliases
+       获取别名列表
+
+POST   /api/v1/projects/{project_id}/characters/{character_id}/aliases
+       添加别名
+
+PUT    /api/v1/projects/{project_id}/characters/{character_id}/aliases/{alias_id}
+       更新别名
+
+DELETE /api/v1/projects/{project_id}/characters/{character_id}/aliases/{alias_id}
+       删除别名
+```
+
+**卡片管理**
+```
+GET    /api/v1/projects/{project_id}/characters/{character_id}/cards
+       获取卡片列表
+
+POST   /api/v1/projects/{project_id}/characters/{character_id}/cards
+       添加卡片
+
+PUT    /api/v1/projects/{project_id}/characters/{character_id}/cards/{card_id}
+       更新卡片
+
+DELETE /api/v1/projects/{project_id}/characters/{character_id}/cards/{card_id}
+       删除卡片
+```
+
+**关系管理**
+```
+GET    /api/v1/projects/{project_id}/characters/{character_id}/relationships
+       获取关系列表
+
+POST   /api/v1/projects/{project_id}/characters/{character_id}/relationships
+       添加关系
+
+PUT    /api/v1/projects/{project_id}/characters/{character_id}/relationships/{relationship_id}
+       更新关系
+
+DELETE /api/v1/projects/{project_id}/characters/{character_id}/relationships/{relationship_id}
+       删除关系
+```
+
+**器物管理**
+```
+GET    /api/v1/projects/{project_id}/characters/{character_id}/artifacts
+       获取器物列表
+
+POST   /api/v1/projects/{project_id}/characters/{character_id}/artifacts
+       添加器物
+
+PUT    /api/v1/projects/{project_id}/characters/{character_id}/artifacts/{artifact_id}
+       更新器物
+
+DELETE /api/v1/projects/{project_id}/characters/{character_id}/artifacts/{artifact_id}
+       删除器物
+```
+
+**统计接口**
+```
+GET    /api/v1/projects/{project_id}/characters/stats
+       获取人物统计数据（总数、按等级统计、按性别统计）
+```
+
+**选择器接口**
+```
+GET    /api/v1/projects/{project_id}/characters/simple
+       获取人物简要列表（用于关系选择器）
+       参数：exclude_id - 排除的人物ID
+```
+
+#### 14.2.2 请求/响应示例
+
+**创建人物请求**
+```json
+{
+  "name": "张三",
+  "gender": "male",
+  "birth_date": "甲子年三月初三",
+  "birthplace": "江南水乡",
+  "level": "protagonist",
+  "quote": "一剑霜寒十四州",
+  "avatar": "/uploads/avatars/zhangsan.jpg",
+  "first_appearance_volume": "卷一",
+  "first_appearance_act": "幕一",
+  "first_appearance_chapter": "章三",
+  "order_index": 0,
+  "aliases": [
+    {
+      "alias_type": "zi",
+      "content": "子明",
+      "order_index": 0
+    },
+    {
+      "alias_type": "hao",
+      "content": "青莲居士",
+      "order_index": 1
+    }
+  ],
+  "cards": [
+    {
+      "title": "基础信息",
+      "icon": "📋",
+      "content": [
+        {"key": "姓名", "value": "张三", "type": "text"},
+        {"key": "字", "value": "子明", "type": "text"}
+      ],
+      "order_index": 0
+    }
+  ],
+  "relationships": [
+    {
+      "target_character_id": "char-uuid-2",
+      "relation_type": "friend",
+      "description": "生死之交",
+      "strength": 90,
+      "is_bidirectional": true,
+      "order_index": 0
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "青莲剑",
+      "description": "上古神兵",
+      "artifact_type": "weapon",
+      "image": "/uploads/artifacts/qinglian.jpg",
+      "order_index": 0
+    }
+  ]
+}
+```
+
+**人物详情响应**
+```json
+{
+  "id": "char-uuid-1",
+  "project_id": "proj-uuid-1",
+  "name": "张三",
+  "gender": "male",
+  "birth_date": "甲子年三月初三",
+  "birthplace": "江南水乡",
+  "level": "protagonist",
+  "quote": "一剑霜寒十四州",
+  "avatar": "/uploads/avatars/zhangsan.jpg",
+  "full_image": "/uploads/full/zhangsan.jpg",
+  "first_appearance_volume": "卷一",
+  "first_appearance_act": "幕一",
+  "first_appearance_chapter": "章三",
+  "order_index": 0,
+  "aliases": [
+    {
+      "id": "alias-uuid-1",
+      "character_id": "char-uuid-1",
+      "alias_type": "zi",
+      "content": "子明",
+      "order_index": 0,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "cards": [...],
+  "relationships": [...],
+  "artifacts": [...],
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### 14.3 性能优化
+
+#### 14.3.1 数据库查询优化
+
+**预加载关联数据**
+```python
+# 使用 selectinload 避免 N+1 查询
+query = db.query(Character).options(
+    selectinload(Character.aliases),
+    selectinload(Character.cards),
+    selectinload(Character.artifacts),
+    selectinload(Character.relationships).selectinload(
+        CharacterRelationship.target_character
+    )
+)
+```
+
+**搜索优化**
+```python
+# 使用子查询避免 JOIN 导致的重复记录
+search_pattern = f"%{search}%"
+alias_subquery = (
+    db.query(CharacterAlias.character_id)
+    .filter(CharacterAlias.content.ilike(search_pattern))
+    .subquery()
+)
+query = query.filter(
+    or_(
+        Character.name.ilike(search_pattern),
+        Character.id.in_(alias_subquery),
+    )
+)
+```
+
+#### 14.3.2 索引策略
+
+**关键字段索引**
+- `characters.project_id` - 项目查询
+- `characters.name` - 姓名搜索
+- `characters.level` - 等级筛选
+- `character_aliases.character_id` - 别名关联
+- `character_relationships.character_id` - 关系查询
+- `character_relationships.target_character_id` - 反向关系查询
+
+### 14.4 数据验证
+
+#### 14.4.1 Pydantic Schema 验证
+
+**字段长度验证**
+```python
+name: str = Field(..., min_length=1, max_length=255, description="姓名")
+content: str = Field(..., min_length=1, max_length=255, description="别名内容")
+```
+
+**数值范围验证**
+```python
+strength: int = Field(50, ge=0, le=100, description="关系强度 0-100")
+order_index: int = Field(0, ge=0, description="排序索引")
+```
+
+**枚举值验证**
+```python
+level: CharacterLevel = Field(CharacterLevel.MINOR, description="角色等级")
+gender: CharacterGender = Field(CharacterGender.UNKNOWN, description="性别")
+```
+
+### 14.5 级联删除策略
+
+**删除人物时自动删除**
+- 所有别名 (`cascade="all, delete-orphan"`)
+- 所有卡片 (`cascade="all, delete-orphan"`)
+- 所有人物关系 (`cascade="all, delete-orphan"`)
+- 所有器物 (`cascade="all, delete-orphan"`)
+
+**删除目标人物时**
+- 关系记录保留，`target_character_id` 设为 NULL (`ondelete='SET NULL'`)
+- `target_name` 字段保留，确保关系描述仍然有效
+
+### 14.6 错误处理
+
+**标准错误响应**
+```json
+{
+  "detail": "人物不存在: char-uuid-1"
+}
+```
+
+**HTTP 状态码**
+- `200 OK` - 成功
+- `201 Created` - 创建成功
+- `204 No Content` - 删除成功
+- `400 Bad Request` - 请求参数错误
+- `404 Not Found` - 资源不存在
+- `500 Internal Server Error` - 服务器错误
+
+### 14.7 日志记录
+
+**关键操作日志**
+```python
+logger.info(f"创建人物成功: {character.name} (ID: {character.id})")
+logger.info(f"更新人物成功: {character.name} (ID: {character.id})")
+logger.info(f"删除人物成功: {character_id}")
+logger.error(f"创建人物失败: {str(e)}")
+```
+
+### 14.8 实现文件清单
+
+**后端文件**
+```
+backend/app/
+├── models/
+│   └── character.py          # 数据库模型
+├── schemas/
+│   └── character.py          # Pydantic Schemas
+├── api/v1/
+│   └── characters.py         # API 路由
+└── migrations/versions/
+    └── xxx_add_character_system_tables.py  # 数据库迁移
+```
+
+**前端文件（待实现）**
+```
+frontend/src/
+├── components/
+│   ├── CharacterSidebar.tsx      # 左侧人物栏
+│   ├── CharacterBarCard.tsx      # 条形人物卡片
+│   ├── CharacterDetail.tsx       # 右侧详情区
+│   ├── InfoCard.tsx              # 信息小卡片
+│   ├── AliasEditor.tsx           # 别名编辑器
+│   ├── RelationshipList.tsx      # 关系列表
+│   └── ArtifactList.tsx          # 器物列表
+├── services/
+│   └── characterApi.ts           # API 客户端
+├── stores/
+│   └── characterStore.ts         # 状态管理
+└── types/
+    └── character.ts              # TypeScript 类型
+```
+
+---
+
+**后端**
+- FastAPI 0.104+
+- SQLAlchemy 2.0+
+- Pydantic 2.0+
+- Alembic (数据库迁移)
+- SQLite (开发环境)
+
+**前端（计划）**
+- React 18+
+- TypeScript 5+
+- TanStack Query (React Query)
+- Zustand (状态管理)
+- Tailwind CSS
+- Radix UI (组件库)
+

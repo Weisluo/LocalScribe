@@ -20,5 +20,23 @@ from .folder import Folder
 from .note import Note
 from .worldbuilding import WorldTemplate, WorldModule, WorldSubmodule, WorldModuleItem, WorldInstance, CustomWorldviewConfig
 from .relation import BidirectionalRelation
+from .character import Character, CharacterAlias, CharacterCard, CharacterRelationship, CharacterArtifact
 
-__all__ = ["Base", "Project", "Folder", "Note", "WorldTemplate", "WorldModule", "WorldSubmodule", "WorldModuleItem", "WorldInstance", "CustomWorldviewConfig", "BidirectionalRelation"]
+__all__ = [
+    "Base",
+    "Project",
+    "Folder",
+    "Note",
+    "WorldTemplate",
+    "WorldModule",
+    "WorldSubmodule",
+    "WorldModuleItem",
+    "WorldInstance",
+    "CustomWorldviewConfig",
+    "BidirectionalRelation",
+    "Character",
+    "CharacterAlias",
+    "CharacterCard",
+    "CharacterRelationship",
+    "CharacterArtifact",
+]
