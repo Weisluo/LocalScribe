@@ -11,7 +11,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from sqlalchemy import asc, desc, func, or_
 from sqlalchemy.orm import Session, selectinload
 
@@ -39,7 +39,6 @@ from app.schemas.character import (
     CharacterCardUpdate,
     CharacterCreate,
     CharacterDetailResponse,
-    CharacterFilter,
     CharacterLevel,
     CharacterListItem,
     CharacterRelationshipCreate,
@@ -55,6 +54,7 @@ router = APIRouter()
 
 
 # ==================== 辅助函数 ====================
+
 
 def get_character_or_404(
     db: Session, character_id: str, project_id: str, load_relations: bool = False
@@ -105,6 +105,7 @@ def build_character_query(db: Session, project_id: str):
 
 # ==================== 人物主接口 ====================
 
+
 @router.get(
     "/projects/{project_id}/characters",
     response_model=List[CharacterListItem],
@@ -125,10 +126,19 @@ def build_character_query(db: Session, project_id: str):
     """,
 )
 def list_characters(
-    project_id: str = Query(..., description="项目ID"),
-    level: Optional[CharacterLevel] = Query(None, description="角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色)"),
+    project_id: str = Path(..., description="项目ID"),
+    level: Optional[CharacterLevel] = Query(
+        None,
+        description="角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色)",
+    ),
     search: Optional[str] = Query(None, description="搜索关键词，匹配姓名或别名"),
-    sort_by: str = Query("order_index", description="排序字段：order_index(默认), name, created_at, updated_at"),
+    volume: Optional[str] = Query(None, description="筛选卷"),
+    act: Optional[str] = Query(None, description="筛选幕"),
+    chapter: Optional[str] = Query(None, description="筛选章"),
+    sort_by: str = Query(
+        "order_index",
+        description="排序字段：order_index(默认), name, created_at, updated_at",
+    ),
     sort_order: str = Query("asc", description="排序方向：asc(升序), desc(降序)"),
     db: Session = Depends(get_db),
 ):
@@ -168,6 +178,14 @@ def list_characters(
                 Character.id.in_(alias_subquery),
             )
         )
+
+    # 按出场章节筛选
+    if volume:
+        query = query.filter(Character.first_appearance_volume == volume)
+    if act:
+        query = query.filter(Character.first_appearance_act == act)
+    if chapter:
+        query = query.filter(Character.first_appearance_chapter == chapter)
 
     # 预加载关联数据（在分页/排序前应用）
     query = query.options(selectinload(Character.aliases))
@@ -210,8 +228,8 @@ def list_characters(
     """,
 )
 def create_character(
-    project_id: str = Query(..., description="项目ID"),
-    character_data: CharacterCreate = Query(..., description="人物创建数据"),
+    project_id: str,
+    character_data: CharacterCreate,
     db: Session = Depends(get_db),
 ):
     """
@@ -289,7 +307,11 @@ def create_character(
                 character_id=character.id,
                 name=artifact_data.name,
                 description=artifact_data.description,
-                artifact_type=artifact_data.artifact_type.value if artifact_data.artifact_type else None,
+                artifact_type=(
+                    artifact_data.artifact_type.value
+                    if artifact_data.artifact_type
+                    else None
+                ),
                 image=artifact_data.image,
                 order_index=artifact_data.order_index,
             )
@@ -330,8 +352,8 @@ def create_character(
     """,
 )
 def get_character(
-    project_id: str = Query(..., description="项目ID"),
-    character_id: str = Query(..., description="人物ID"),
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
     db: Session = Depends(get_db),
 ):
     """获取人物详情"""
@@ -370,9 +392,9 @@ def get_character(
     """,
 )
 def update_character(
-    project_id: str = Query(..., description="项目ID"),
-    character_id: str = Query(..., description="人物ID"),
-    character_data: CharacterUpdate = Query(..., description="人物更新数据"),
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
+    character_data: CharacterUpdate = Body(..., description="人物更新数据"),
     db: Session = Depends(get_db),
 ):
     """更新人物信息"""
@@ -418,8 +440,8 @@ def update_character(
     """,
 )
 def delete_character(
-    project_id: str = Query(..., description="项目ID"),
-    character_id: str = Query(..., description="人物ID"),
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
     db: Session = Depends(get_db),
 ):
     """删除人物"""
@@ -433,6 +455,7 @@ def delete_character(
 
 
 # ==================== 批量操作接口 ====================
+
 
 @router.post(
     "/projects/{project_id}/characters/batch-delete",
@@ -460,8 +483,8 @@ def delete_character(
     """,
 )
 def batch_delete_characters(
-    project_id: str = Query(..., description="项目ID"),
-    request: BatchDeleteRequest = Query(..., description="批量删除请求"),
+    project_id: str = Path(..., description="项目ID"),
+    request: BatchDeleteRequest = Body(..., description="批量删除请求"),
     db: Session = Depends(get_db),
 ):
     """批量删除人物"""
@@ -512,8 +535,8 @@ def batch_delete_characters(
     """,
 )
 def batch_update_character_order(
-    project_id: str = Query(..., description="项目ID"),
-    request: BatchUpdateOrderRequest = Query(..., description="批量更新排序请求"),
+    project_id: str = Path(..., description="项目ID"),
+    request: BatchUpdateOrderRequest = Body(..., description="批量更新排序请求"),
     db: Session = Depends(get_db),
 ):
     """批量更新人物排序"""
@@ -541,7 +564,11 @@ def batch_update_character_order(
 
 # ==================== 别名管理接口 ====================
 
-@router.get("/projects/{project_id}/characters/{character_id}/aliases", response_model=List[CharacterAliasResponse])
+
+@router.get(
+    "/projects/{project_id}/characters/{character_id}/aliases",
+    response_model=List[CharacterAliasResponse],
+)
 def list_aliases(
     project_id: str,
     character_id: str,
@@ -552,7 +579,10 @@ def list_aliases(
     return character.aliases
 
 
-@router.post("/projects/{project_id}/characters/{character_id}/aliases", response_model=CharacterAliasResponse)
+@router.post(
+    "/projects/{project_id}/characters/{character_id}/aliases",
+    response_model=CharacterAliasResponse,
+)
 def create_alias(
     project_id: str,
     character_id: str,
@@ -592,7 +622,9 @@ def update_alias(
 
     alias = (
         db.query(CharacterAlias)
-        .filter(CharacterAlias.id == alias_id, CharacterAlias.character_id == character_id)
+        .filter(
+            CharacterAlias.id == alias_id, CharacterAlias.character_id == character_id
+        )
         .first()
     )
     if not alias:
@@ -628,7 +660,9 @@ def delete_alias(
 
     alias = (
         db.query(CharacterAlias)
-        .filter(CharacterAlias.id == alias_id, CharacterAlias.character_id == character_id)
+        .filter(
+            CharacterAlias.id == alias_id, CharacterAlias.character_id == character_id
+        )
         .first()
     )
     if not alias:
@@ -644,7 +678,11 @@ def delete_alias(
 
 # ==================== 卡片管理接口 ====================
 
-@router.get("/projects/{project_id}/characters/{character_id}/cards", response_model=List[CharacterCardResponse])
+
+@router.get(
+    "/projects/{project_id}/characters/{character_id}/cards",
+    response_model=List[CharacterCardResponse],
+)
 def list_cards(
     project_id: str,
     character_id: str,
@@ -655,7 +693,10 @@ def list_cards(
     return character.cards
 
 
-@router.post("/projects/{project_id}/characters/{character_id}/cards", response_model=CharacterCardResponse)
+@router.post(
+    "/projects/{project_id}/characters/{character_id}/cards",
+    response_model=CharacterCardResponse,
+)
 def create_card(
     project_id: str,
     character_id: str,
@@ -748,6 +789,7 @@ def delete_card(
 
 # ==================== 关系管理接口 ====================
 
+
 @router.get(
     "/projects/{project_id}/characters/{character_id}/relationships",
     response_model=List[CharacterRelationshipResponse],
@@ -761,7 +803,11 @@ def list_relationships(
     character = (
         db.query(Character)
         .filter(Character.id == character_id, Character.project_id == project_id)
-        .options(selectinload(Character.relationships).selectinload(CharacterRelationship.target_character))
+        .options(
+            selectinload(Character.relationships).selectinload(
+                CharacterRelationship.target_character
+            )
+        )
         .first()
     )
 
@@ -896,6 +942,7 @@ def delete_relationship(
 
 # ==================== 器物管理接口 ====================
 
+
 @router.get(
     "/projects/{project_id}/characters/{character_id}/artifacts",
     response_model=List[CharacterArtifactResponse],
@@ -927,7 +974,9 @@ def create_artifact(
         character_id=character_id,
         name=artifact_data.name,
         description=artifact_data.description,
-        artifact_type=artifact_data.artifact_type.value if artifact_data.artifact_type else None,
+        artifact_type=(
+            artifact_data.artifact_type.value if artifact_data.artifact_type else None
+        ),
         image=artifact_data.image,
         order_index=artifact_data.order_index,
     )
@@ -1013,6 +1062,7 @@ def delete_artifact(
 
 # ==================== 统计接口 ====================
 
+
 @router.get("/projects/{project_id}/characters/stats", response_model=CharacterStats)
 def get_character_stats(
     project_id: str,
@@ -1057,7 +1107,11 @@ def get_character_stats(
 
 # ==================== 选择器接口 ====================
 
-@router.get("/projects/{project_id}/characters/simple", response_model=List[CharacterSimpleResponse])
+
+@router.get(
+    "/projects/{project_id}/characters/simple",
+    response_model=List[CharacterSimpleResponse],
+)
 def list_characters_simple(
     project_id: str,
     exclude_id: Optional[str] = Query(None, description="排除的人物ID（用于关系选择）"),

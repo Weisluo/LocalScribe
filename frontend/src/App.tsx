@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { ToastContainer } from '@/components/common/ToastContainer';
 
 const EditorPage = lazy(() => import('./pages/EditorPage/EditorPage').then(m => ({ default: m.EditorPage })));
 
@@ -32,6 +33,7 @@ function App() {
           },
         }}
       />
+      <ToastContainer />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route path="/" element={<EditorPage />} />

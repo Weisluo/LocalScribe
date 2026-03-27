@@ -673,7 +673,7 @@ export interface paths {
         post?: never;
         /**
          * Delete World Submodule
-         * @description 删除子模块
+         * @description 删除子模块（级联删除关联的项）
          */
         delete: operations["delete_world_submodule_api_v1_worldbuilding_submodules__submodule_id__delete"];
         options?: never;
@@ -865,6 +865,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/worldbuilding/worldviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get All Worldviews
+         * @description 获取所有世界观配置
+         */
+        get: operations["get_all_worldviews_api_v1_worldbuilding_worldviews_get"];
+        put?: never;
+        /**
+         * Create Worldview
+         * @description 创建自定义世界观配置
+         */
+        post: operations["create_worldview_api_v1_worldbuilding_worldviews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worldviews/{worldview_type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Worldview By Type
+         * @description 获取特定世界观配置
+         */
+        get: operations["get_worldview_by_type_api_v1_worldbuilding_worldviews__worldview_type__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worldviews/{worldview_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Worldview
+         * @description 更新自定义世界观配置
+         */
+        put: operations["update_worldview_api_v1_worldbuilding_worldviews__worldview_id__put"];
+        post?: never;
+        /**
+         * Delete Worldview
+         * @description 删除自定义世界观配置（软删除）
+         */
+        delete: operations["delete_worldview_api_v1_worldbuilding_worldviews__worldview_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worldviews/{worldview_type}/adaptations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Worldview Adaptations
+         * @description 获取世界观适配规则
+         */
+        get: operations["get_worldview_adaptations_api_v1_worldbuilding_worldviews__worldview_type__adaptations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/upload/images": {
         parameters: {
             query?: never;
@@ -904,6 +992,652 @@ export interface paths {
          * @description 删除已上传的文件
          */
         delete: operations["delete_uploaded_file_api_v1_upload_files__folder___filename__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Relation
+         * @description 创建双向关联
+         *
+         *     创建两个实体之间的关联关系。如果关联已存在，则返回已存在的关联。
+         *
+         *     Args:
+         *         relation_data: 关联创建数据
+         *
+         *     Returns:
+         *         创建的关联对象
+         */
+        post: operations["create_relation_api_v1_relations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relations/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Create Relations
+         * @description 批量创建关联
+         *
+         *     一次性创建多个关联关系，使用事务确保原子性。
+         *
+         *     Args:
+         *         batch_data: 批量关联创建数据
+         *
+         *     Returns:
+         *         创建的关联对象列表
+         */
+        post: operations["batch_create_relations_api_v1_relations_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relations/project/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Relations
+         * @description 获取项目的所有关联
+         *
+         *     支持按源模块、目标模块、关系类型过滤。
+         *
+         *     Args:
+         *         project_id: 项目ID
+         *         source_module: 源模块过滤
+         *         target_module: 目标模块过滤
+         *         relation_type: 关系类型过滤
+         *
+         *     Returns:
+         *         关联列表
+         */
+        get: operations["get_project_relations_api_v1_relations_project__project_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relations/entity/{entity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Entity Relation Network
+         * @description 获取实体的关联网络
+         *
+         *     返回指定实体的所有关联关系，按方向分类（入向、出向、双向）。
+         *
+         *     Args:
+         *         entity_id: 实体ID
+         *         project_id: 项目ID
+         *         module: 模块类型过滤
+         *
+         *     Returns:
+         *         实体关联网络
+         */
+        get: operations["get_entity_relation_network_api_v1_relations_entity__entity_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relations/discover/{entity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discover Relations
+         * @description 关联发现
+         *
+         *     基于预置规则，从项目现有实体中推荐可能存在的关联。
+         *     排除已存在的关联。
+         *
+         *     Args:
+         *         entity_id: 实体ID
+         *         project_id: 项目ID
+         *         module: 实体所属模块
+         *         entity_type: 实体类型
+         *         entity_name: 实体名称
+         *
+         *     Returns:
+         *         关联发现结果，包含推荐列表
+         */
+        get: operations["discover_relations_api_v1_relations_discover__entity_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relations/{relation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Relation
+         * @description 删除关联
+         *
+         *     删除指定的关联关系。
+         *
+         *     Args:
+         *         relation_id: 关联ID
+         *         project_id: 项目ID（用于验证）
+         *
+         *     Returns:
+         *         无内容（204）
+         */
+        delete: operations["delete_relation_api_v1_relations__relation_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Relation
+         * @description 更新关联
+         *
+         *     更新指定关联的部分字段（关系类型、双向状态、强度、元数据）。
+         *
+         *     Args:
+         *         relation_id: 关联ID
+         *         update_data: 更新数据
+         *         project_id: 项目ID（用于验证）
+         *
+         *     Returns:
+         *         更新后的关联对象
+         */
+        patch: operations["update_relation_api_v1_relations__relation_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/relations/project/{project_id}/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Relation Statistics
+         * @description 获取项目关联统计
+         *
+         *     返回项目的关联统计信息，包括总数、各模块分布、关系类型分布等。
+         *
+         *     Args:
+         *         project_id: 项目ID
+         *
+         *     Returns:
+         *         关联统计信息
+         */
+        get: operations["get_project_relation_statistics_api_v1_relations_project__project_id__statistics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取人物列表
+         * @description 获取指定项目下的人物列表，支持多种筛选和排序方式。
+         *
+         *     **功能特性：**
+         *     - 按角色等级筛选（主角/重要配角/配角/小角色）
+         *     - 按姓名或别名模糊搜索
+         *     - 自定义排序字段和排序方向
+         *     - 预加载别名数据，避免 N+1 查询问题
+         *
+         *     **典型使用场景：**
+         *     1. 左侧人物栏展示：按排序索引升序排列
+         *     2. 搜索功能：通过 search 参数模糊匹配
+         *     3. 等级筛选：通过 level 参数筛选特定等级角色
+         */
+        get: operations["list_characters_api_v1_projects__project_id__characters_get"];
+        put?: never;
+        /**
+         * 创建新人物
+         * @description 创建一个新的人物角色，支持一次性创建所有关联数据。
+         *
+         *     **功能特性：**
+         *     - 创建人物基础信息（姓名、性别、等级等）
+         *     - 同时创建别名（字、号、外号、称号）
+         *     - 同时创建信息小卡片（基础信息、外貌特征等）
+         *     - 同时创建人物关系（亲情、爱情、友情等）
+         *     - 同时创建器物（武器、法宝等）
+         *
+         *     **数据验证：**
+         *     - 姓名：必填，1-255字符
+         *     - 性别：male(男), female(女), other(其他), unknown(未知)
+         *     - 等级：protagonist(主角), major_support(重要配角), support(配角), minor(小角色)
+         *     - 关系强度：0-100 整数
+         *
+         *     **使用建议：**
+         *     - 首次创建时可仅填写基础信息，后续逐步完善
+         *     - 关系目标可以是已创建的人物ID，也可以是名称（待后续创建）
+         */
+        post: operations["create_character_api_v1_projects__project_id__characters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取人物详情
+         * @description 获取指定人物的完整信息，包括所有关联数据。
+         *
+         *     **返回数据包含：**
+         *     - 人物基础信息（姓名、性别、等级、头像等）
+         *     - 别名列表（字、号、外号、称号）
+         *     - 信息小卡片列表（基础信息、外貌特征等）
+         *     - 人物关系列表（亲情、爱情、友情等）
+         *     - 器物列表（武器、法宝等）
+         *
+         *     **性能优化：**
+         *     - 使用 selectinload 预加载所有关联数据
+         *     - 避免多次数据库查询
+         */
+        get: operations["get_character_api_v1_projects__project_id__characters__character_id__get"];
+        /**
+         * 更新人物信息
+         * @description 更新人物的基础信息，不包括关联数据。
+         *
+         *     **可更新字段：**
+         *     - 姓名、性别、生辰、出生地
+         *     - 角色等级、判词/引言
+         *     - 头像、全身形象图片
+         *     - 首次出场信息（卷/幕/章）
+         *     - 排序索引
+         *
+         *     **注意：**
+         *     - 别名、卡片、关系、器物需要通过各自的接口单独管理
+         *     - 仅更新请求中包含的字段（部分更新）
+         */
+        put: operations["update_character_api_v1_projects__project_id__characters__character_id__put"];
+        post?: never;
+        /**
+         * 删除人物
+         * @description 删除指定人物及其所有关联数据。
+         *
+         *     **级联删除：**
+         *     - 人物主记录
+         *     - 所有别名（字、号、外号、称号）
+         *     - 所有信息小卡片
+         *     - 所有人物关系（作为发起人的关系）
+         *     - 所有器物
+         *
+         *     **警告：**
+         *     - 此操作不可逆
+         *     - 相关的人物关系会被级联删除
+         *     - 建议删除前先确认
+         */
+        delete: operations["delete_character_api_v1_projects__project_id__characters__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/batch-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 批量删除人物
+         * @description 批量删除多个人物及其关联数据。
+         *
+         *     **功能特性：**
+         *     - 一次性删除多个人物
+         *     - 级联删除所有关联数据
+         *     - 原子操作，要么全部成功，要么全部失败
+         *
+         *     **请求体示例：**
+         *     ```json
+         *     {
+         *       "ids": ["char-uuid-1", "char-uuid-2", "char-uuid-3"]
+         *     }
+         *     ```
+         *
+         *     **注意事项：**
+         *     - 仅删除属于指定项目的人物
+         *     - 如果某个ID不存在，会被忽略
+         *     - 返回实际删除的数量
+         */
+        post: operations["batch_delete_characters_api_v1_projects__project_id__characters_batch_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/batch-update-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 批量更新人物排序
+         * @description 批量更新多个人物的排序索引。
+         *
+         *     **功能特性：**
+         *     - 支持拖拽排序后的批量更新
+         *     - 仅更新排序索引，不影响其他字段
+         *
+         *     **请求体示例：**
+         *     ```json
+         *     {
+         *       "orders": {
+         *         "char-uuid-1": 0,
+         *         "char-uuid-2": 1,
+         *         "char-uuid-3": 2
+         *       }
+         *     }
+         *     ```
+         *
+         *     **使用场景：**
+         *     - 左侧人物栏拖拽排序
+         *     - 批量调整人物显示顺序
+         */
+        post: operations["batch_update_character_order_api_v1_projects__project_id__characters_batch_update_order_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Aliases
+         * @description 获取人物别名列表
+         */
+        get: operations["list_aliases_api_v1_projects__project_id__characters__character_id__aliases_get"];
+        put?: never;
+        /**
+         * Create Alias
+         * @description 添加人物别名
+         */
+        post: operations["create_alias_api_v1_projects__project_id__characters__character_id__aliases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/aliases/{alias_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Alias
+         * @description 更新人物别名
+         */
+        put: operations["update_alias_api_v1_projects__project_id__characters__character_id__aliases__alias_id__put"];
+        post?: never;
+        /**
+         * Delete Alias
+         * @description 删除人物别名
+         */
+        delete: operations["delete_alias_api_v1_projects__project_id__characters__character_id__aliases__alias_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cards
+         * @description 获取人物卡片列表
+         */
+        get: operations["list_cards_api_v1_projects__project_id__characters__character_id__cards_get"];
+        put?: never;
+        /**
+         * Create Card
+         * @description 添加人物信息卡片
+         */
+        post: operations["create_card_api_v1_projects__project_id__characters__character_id__cards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/cards/{card_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Card
+         * @description 更新人物信息卡片
+         */
+        put: operations["update_card_api_v1_projects__project_id__characters__character_id__cards__card_id__put"];
+        post?: never;
+        /**
+         * Delete Card
+         * @description 删除人物信息卡片
+         */
+        delete: operations["delete_card_api_v1_projects__project_id__characters__character_id__cards__card_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Relationships
+         * @description 获取人物关系列表
+         */
+        get: operations["list_relationships_api_v1_projects__project_id__characters__character_id__relationships_get"];
+        put?: never;
+        /**
+         * Create Relationship
+         * @description 添加人物关系
+         */
+        post: operations["create_relationship_api_v1_projects__project_id__characters__character_id__relationships_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/relationships/{relationship_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Relationship
+         * @description 更新人物关系
+         */
+        put: operations["update_relationship_api_v1_projects__project_id__characters__character_id__relationships__relationship_id__put"];
+        post?: never;
+        /**
+         * Delete Relationship
+         * @description 删除人物关系
+         */
+        delete: operations["delete_relationship_api_v1_projects__project_id__characters__character_id__relationships__relationship_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Artifacts
+         * @description 获取人物器物列表
+         */
+        get: operations["list_artifacts_api_v1_projects__project_id__characters__character_id__artifacts_get"];
+        put?: never;
+        /**
+         * Create Artifact
+         * @description 添加人物器物
+         */
+        post: operations["create_artifact_api_v1_projects__project_id__characters__character_id__artifacts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/artifacts/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Artifact
+         * @description 更新人物器物
+         */
+        put: operations["update_artifact_api_v1_projects__project_id__characters__character_id__artifacts__artifact_id__put"];
+        post?: never;
+        /**
+         * Delete Artifact
+         * @description 删除人物器物
+         */
+        delete: operations["delete_artifact_api_v1_projects__project_id__characters__character_id__artifacts__artifact_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Character Stats
+         * @description 获取人物统计数据
+         */
+        get: operations["get_character_stats_api_v1_projects__project_id__characters_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/simple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Characters Simple
+         * @description 获取人物简要列表（用于选择器）
+         *
+         *     - 返回ID、名称、等级、头像
+         *     - 可排除特定人物（避免选择自己作为关系目标）
+         */
+        get: operations["list_characters_simple_api_v1_projects__project_id__characters_simple_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -991,6 +1725,26 @@ export interface components {
              */
             children: components["schemas"]["NoteNode"][];
         };
+        /**
+         * AliasType
+         * @description 别名类型
+         * @enum {string}
+         */
+        AliasType: "zi" | "hao" | "nickname" | "title" | "other";
+        /**
+         * ArtifactType
+         * @description 器物类型
+         * @enum {string}
+         */
+        ArtifactType: "weapon" | "armor" | "accessory" | "treasure" | "other";
+        /**
+         * BatchRelationCreate
+         * @description 批量创建关联请求Schema
+         */
+        BatchRelationCreate: {
+            /** Relations */
+            relations: components["schemas"]["RelationCreate"][];
+        };
         /** BatchUpdateOrderRequest */
         BatchUpdateOrderRequest: {
             /**
@@ -1022,6 +1776,651 @@ export interface components {
              * @default images
              */
             folder: string | null;
+        };
+        /**
+         * CardContentItem
+         * @description 卡片内容项
+         */
+        CardContentItem: {
+            /**
+             * Key
+             * @description 字段名
+             */
+            key: string;
+            /**
+             * Value
+             * @description 字段值
+             */
+            value: unknown;
+            /**
+             * Type
+             * @description 字段类型: text|rich_text|list|image|number|boolean
+             * @default text
+             */
+            type: string;
+        };
+        /**
+         * CharacterAliasCreate
+         * @description 创建别名 Schema
+         */
+        CharacterAliasCreate: {
+            alias_type: components["schemas"]["AliasType"];
+            /**
+             * Content
+             * @description 别名内容
+             */
+            content: string;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+        };
+        /**
+         * CharacterAliasResponse
+         * @description 别名响应 Schema
+         */
+        CharacterAliasResponse: {
+            alias_type: components["schemas"]["AliasType"];
+            /**
+             * Content
+             * @description 别名内容
+             */
+            content: string;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterAliasUpdate
+         * @description 更新别名 Schema
+         */
+        CharacterAliasUpdate: {
+            alias_type?: components["schemas"]["AliasType"] | null;
+            /** Content */
+            content?: string | null;
+            /** Order Index */
+            order_index?: number | null;
+        };
+        /**
+         * CharacterArtifactCreate
+         * @description 创建器物 Schema
+         */
+        CharacterArtifactCreate: {
+            /**
+             * Name
+             * @description 器物名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 器物描述
+             */
+            description?: string | null;
+            /** @description 器物类型 */
+            artifact_type?: components["schemas"]["ArtifactType"] | null;
+            /**
+             * Image
+             * @description 器物图片URL
+             */
+            image?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+        };
+        /**
+         * CharacterArtifactResponse
+         * @description 器物响应 Schema
+         */
+        CharacterArtifactResponse: {
+            /**
+             * Name
+             * @description 器物名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 器物描述
+             */
+            description?: string | null;
+            /** @description 器物类型 */
+            artifact_type?: components["schemas"]["ArtifactType"] | null;
+            /**
+             * Image
+             * @description 器物图片URL
+             */
+            image?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterArtifactUpdate
+         * @description 更新器物 Schema
+         */
+        CharacterArtifactUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            artifact_type?: components["schemas"]["ArtifactType"] | null;
+            /** Image */
+            image?: string | null;
+            /** Order Index */
+            order_index?: number | null;
+        };
+        /**
+         * CharacterCardCreate
+         * @description 创建卡片 Schema
+         */
+        CharacterCardCreate: {
+            /**
+             * Title
+             * @description 卡片标题
+             */
+            title: string;
+            /**
+             * Icon
+             * @description 卡片图标
+             */
+            icon?: string | null;
+            /**
+             * Content
+             * @description 卡片内容
+             */
+            content?: components["schemas"]["CardContentItem"][];
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+        };
+        /**
+         * CharacterCardResponse
+         * @description 卡片响应 Schema
+         */
+        CharacterCardResponse: {
+            /**
+             * Title
+             * @description 卡片标题
+             */
+            title: string;
+            /**
+             * Icon
+             * @description 卡片图标
+             */
+            icon?: string | null;
+            /**
+             * Content
+             * @description 卡片内容
+             */
+            content?: components["schemas"]["CardContentItem"][];
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterCardUpdate
+         * @description 更新卡片 Schema
+         */
+        CharacterCardUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Content */
+            content?: components["schemas"]["CardContentItem"][] | null;
+            /** Order Index */
+            order_index?: number | null;
+        };
+        /**
+         * CharacterDetailResponse
+         * @description 人物详情响应 Schema
+         */
+        CharacterDetailResponse: {
+            /**
+             * Name
+             * @description 姓名
+             */
+            name: string;
+            /**
+             * @description 性别
+             * @default unknown
+             */
+            gender: components["schemas"]["CharacterGender"];
+            /**
+             * Birth Date
+             * @description 生辰
+             */
+            birth_date?: string | null;
+            /**
+             * Birthplace
+             * @description 出生地
+             */
+            birthplace?: string | null;
+            /** @default minor */
+            level: components["schemas"]["CharacterLevel"];
+            /**
+             * Quote
+             * @description 判词/引言
+             */
+            quote?: string | null;
+            /**
+             * Avatar
+             * @description 头像URL
+             */
+            avatar?: string | null;
+            /**
+             * Full Image
+             * @description 全身形象图片URL
+             */
+            full_image?: string | null;
+            /**
+             * First Appearance Volume
+             * @description 首次出场卷
+             */
+            first_appearance_volume?: string | null;
+            /**
+             * First Appearance Act
+             * @description 首次出场幕
+             */
+            first_appearance_act?: string | null;
+            /**
+             * First Appearance Chapter
+             * @description 首次出场章
+             */
+            first_appearance_chapter?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Aliases
+             * @default []
+             */
+            aliases: components["schemas"]["CharacterAliasResponse"][];
+            /**
+             * Cards
+             * @default []
+             */
+            cards: components["schemas"]["CharacterCardResponse"][];
+            /**
+             * Relationships
+             * @default []
+             */
+            relationships: components["schemas"]["CharacterRelationshipResponse"][];
+            /**
+             * Artifacts
+             * @default []
+             */
+            artifacts: components["schemas"]["CharacterArtifactResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterGender
+         * @description 角色性别
+         * @enum {string}
+         */
+        CharacterGender: "male" | "female" | "other" | "unknown";
+        /**
+         * CharacterLevel
+         * @description 角色等级
+         * @enum {string}
+         */
+        CharacterLevel: "protagonist" | "major_support" | "support" | "minor";
+        /**
+         * CharacterListItem
+         * @description 人物列表项 Schema（用于左侧人物栏）
+         */
+        CharacterListItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Gender */
+            gender: string;
+            /** Level */
+            level: string;
+            /** Quote */
+            quote?: string | null;
+            /** Avatar */
+            avatar?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
+            /** First Appearance Volume */
+            first_appearance_volume?: string | null;
+            /** First Appearance Act */
+            first_appearance_act?: string | null;
+            /** First Appearance Chapter */
+            first_appearance_chapter?: string | null;
+            /** Order Index */
+            order_index: number;
+            /**
+             * Aliases
+             * @default []
+             */
+            aliases: components["schemas"]["CharacterAliasResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterRelationshipCreate
+         * @description 创建关系 Schema
+         */
+        CharacterRelationshipCreate: {
+            /**
+             * Target Character Id
+             * @description 目标人物ID
+             */
+            target_character_id?: string | null;
+            /**
+             * Target Name
+             * @description 目标人物名称
+             */
+            target_name?: string | null;
+            relation_type: components["schemas"]["app__schemas__character__RelationType"];
+            /**
+             * Description
+             * @description 关系描述
+             */
+            description?: string | null;
+            /**
+             * Strength
+             * @description 关系强度 0-100
+             * @default 50
+             */
+            strength: number;
+            /**
+             * Is Bidirectional
+             * @description 是否为双向关系
+             * @default true
+             */
+            is_bidirectional: boolean;
+            /**
+             * Reverse Description
+             * @description 反向关系描述
+             */
+            reverse_description?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+        };
+        /**
+         * CharacterRelationshipResponse
+         * @description 关系响应 Schema
+         */
+        CharacterRelationshipResponse: {
+            /**
+             * Target Character Id
+             * @description 目标人物ID
+             */
+            target_character_id?: string | null;
+            /**
+             * Target Name
+             * @description 目标人物名称
+             */
+            target_name?: string | null;
+            relation_type: components["schemas"]["app__schemas__character__RelationType"];
+            /**
+             * Description
+             * @description 关系描述
+             */
+            description?: string | null;
+            /**
+             * Strength
+             * @description 关系强度 0-100
+             * @default 50
+             */
+            strength: number;
+            /**
+             * Is Bidirectional
+             * @description 是否为双向关系
+             * @default true
+             */
+            is_bidirectional: boolean;
+            /**
+             * Reverse Description
+             * @description 反向关系描述
+             */
+            reverse_description?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /** Target Character */
+            target_character?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterRelationshipUpdate
+         * @description 更新关系 Schema
+         */
+        CharacterRelationshipUpdate: {
+            /** Target Character Id */
+            target_character_id?: string | null;
+            /** Target Name */
+            target_name?: string | null;
+            relation_type?: components["schemas"]["app__schemas__character__RelationType"] | null;
+            /** Description */
+            description?: string | null;
+            /** Strength */
+            strength?: number | null;
+            /** Is Bidirectional */
+            is_bidirectional?: boolean | null;
+            /** Reverse Description */
+            reverse_description?: string | null;
+            /** Order Index */
+            order_index?: number | null;
+        };
+        /**
+         * CharacterSimpleResponse
+         * @description 人物简要响应 Schema（用于关系选择）
+         */
+        CharacterSimpleResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Level */
+            level: string;
+            /** Avatar */
+            avatar?: string | null;
+        };
+        /**
+         * CharacterStats
+         * @description 人物统计 Schema
+         */
+        CharacterStats: {
+            /**
+             * Total
+             * @description 人物总数
+             */
+            total: number;
+            /**
+             * By Level
+             * @description 按等级统计
+             */
+            by_level?: {
+                [key: string]: number;
+            };
+            /**
+             * By Gender
+             * @description 按性别统计
+             */
+            by_gender?: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * ComplexityLevel
+         * @enum {string}
+         */
+        ComplexityLevel: "simple" | "complex" | "highly_complex";
+        /**
+         * DiscoveredRelation
+         * @description 发现的潜在关联Schema
+         */
+        DiscoveredRelation: {
+            source_module: components["schemas"]["app__schemas__relation__ModuleType"];
+            /** Source Entity Type */
+            source_entity_type: string;
+            /** Source Entity Id */
+            source_entity_id: string;
+            /** Source Entity Name */
+            source_entity_name: string;
+            target_module: components["schemas"]["app__schemas__relation__ModuleType"];
+            /** Target Entity Type */
+            target_entity_type: string;
+            /** Target Entity Id */
+            target_entity_id: string;
+            /** Target Entity Name */
+            target_entity_name: string;
+            relation_type: components["schemas"]["app__schemas__relation__RelationType"];
+            strength: components["schemas"]["StrengthType"];
+            /** Confidence */
+            confidence: number;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * EconomicSystemType
+         * @enum {string}
+         */
+        EconomicSystemType: "barter" | "feudal" | "mercantile" | "capitalist" | "socialist" | "post_scarcity";
+        /** EconomyModuleConfig */
+        EconomyModuleConfig: {
+            /**
+             * Entitytypes
+             * @default []
+             */
+            entityTypes: components["schemas"]["WorldviewEconomicEntityType"][];
+            /**
+             * Currencytypes
+             * @default []
+             */
+            currencyTypes: components["schemas"]["WorldviewCurrencyType"][];
+            /**
+             * Resourcetypes
+             * @default []
+             */
+            resourceTypes: components["schemas"]["WorldviewResourceType"][];
+            /**
+             * Trademethods
+             * @default []
+             */
+            tradeMethods: components["schemas"]["WorldviewTradeMethod"][];
+        };
+        /**
+         * EntityReference
+         * @description 实体引用信息
+         */
+        EntityReference: {
+            module: components["schemas"]["app__schemas__relation__ModuleType"];
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Name */
+            entity_name: string;
         };
         /** FolderCreate */
         FolderCreate: {
@@ -1079,6 +2478,34 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HistoryModuleConfig */
+        HistoryModuleConfig: {
+            /**
+             * Timeunit
+             * @default year
+             */
+            timeUnit: string;
+            /**
+             * Eventtypes
+             * @default []
+             */
+            eventTypes: components["schemas"]["WorldviewEventType"][];
+            /**
+             * Erathemes
+             * @default []
+             */
+            eraThemes: components["schemas"]["WorldviewEraTheme"][];
+            /**
+             * Timelinestyle
+             * @default linear
+             */
+            timelineStyle: string;
+            /**
+             * Recordingmethod
+             * @default chronicle
+             */
+            recordingMethod: string;
+        };
         /**
          * KeywordExtractRequest
          * @description 关键词提取请求
@@ -1130,10 +2557,127 @@ export interface components {
             weight?: number | null;
         };
         /**
-         * ModuleType
+         * MagicLevel
          * @enum {string}
          */
-        ModuleType: "map" | "history" | "politics" | "economy" | "races" | "systems" | "special";
+        MagicLevel: "none" | "low" | "medium" | "high" | "divine";
+        /** MapModuleConfig */
+        MapModuleConfig: {
+            /**
+             * Maptypes
+             * @default []
+             */
+            mapTypes: string[];
+            /**
+             * Projectionstyles
+             * @default []
+             */
+            projectionStyles: string[];
+        };
+        /** ModuleConfigs */
+        "ModuleConfigs-Input": {
+            /**
+             * @default {
+             *       "timeUnit": "year",
+             *       "eventTypes": [],
+             *       "eraThemes": [],
+             *       "timelineStyle": "linear",
+             *       "recordingMethod": "chronicle"
+             *     }
+             */
+            history: components["schemas"]["HistoryModuleConfig"];
+            /**
+             * @default {
+             *       "entityTypes": [],
+             *       "governmentTypes": [],
+             *       "alignmentSystem": "modern",
+             *       "powerStructure": "centralized"
+             *     }
+             */
+            politics: components["schemas"]["PoliticsModuleConfig"];
+            /**
+             * @default {
+             *       "entityTypes": [],
+             *       "currencyTypes": [],
+             *       "resourceTypes": [],
+             *       "tradeMethods": []
+             *     }
+             */
+            economy: components["schemas"]["EconomyModuleConfig"];
+            /**
+             * @default {
+             *       "mapTypes": [],
+             *       "projectionStyles": []
+             *     }
+             */
+            map: components["schemas"]["MapModuleConfig"];
+            /**
+             * @default {
+             *       "raceTypes": [],
+             *       "traitSystems": []
+             *     }
+             */
+            races: components["schemas"]["RacesModuleConfig"];
+            /**
+             * @default {
+             *       "systemTypes": [],
+             *       "customRules": []
+             *     }
+             */
+            systems: components["schemas"]["SystemsModuleConfig"];
+        };
+        /** ModuleConfigs */
+        "ModuleConfigs-Output": {
+            /**
+             * @default {
+             *       "timeUnit": "year",
+             *       "eventTypes": [],
+             *       "eraThemes": [],
+             *       "timelineStyle": "linear",
+             *       "recordingMethod": "chronicle"
+             *     }
+             */
+            history: components["schemas"]["HistoryModuleConfig"];
+            /**
+             * @default {
+             *       "entityTypes": [],
+             *       "governmentTypes": [],
+             *       "alignmentSystem": "modern",
+             *       "powerStructure": "centralized"
+             *     }
+             */
+            politics: components["schemas"]["PoliticsModuleConfig"];
+            /**
+             * @default {
+             *       "entityTypes": [],
+             *       "currencyTypes": [],
+             *       "resourceTypes": [],
+             *       "tradeMethods": []
+             *     }
+             */
+            economy: components["schemas"]["EconomyModuleConfig"];
+            /**
+             * @default {
+             *       "mapTypes": [],
+             *       "projectionStyles": []
+             *     }
+             */
+            map: components["schemas"]["MapModuleConfig"];
+            /**
+             * @default {
+             *       "raceTypes": [],
+             *       "traitSystems": []
+             *     }
+             */
+            races: components["schemas"]["RacesModuleConfig"];
+            /**
+             * @default {
+             *       "systemTypes": [],
+             *       "customRules": []
+             *     }
+             */
+            systems: components["schemas"]["SystemsModuleConfig"];
+        };
         /** MoveFolderRequest */
         MoveFolderRequest: {
             /** Target Parent Id */
@@ -1252,6 +2796,29 @@ export interface components {
             tags?: string[] | null;
             status?: components["schemas"]["NoteStatus"] | null;
         };
+        /** PoliticsModuleConfig */
+        PoliticsModuleConfig: {
+            /**
+             * Entitytypes
+             * @default []
+             */
+            entityTypes: components["schemas"]["WorldviewPoliticalEntityType"][];
+            /**
+             * Governmenttypes
+             * @default []
+             */
+            governmentTypes: components["schemas"]["WorldviewGovernmentType"][];
+            /**
+             * Alignmentsystem
+             * @default modern
+             */
+            alignmentSystem: string;
+            /**
+             * Powerstructure
+             * @default centralized
+             */
+            powerStructure: string;
+        };
         /** ProjectCreate */
         ProjectCreate: {
             /** Title */
@@ -1297,6 +2864,21 @@ export interface components {
             /** Cover */
             cover?: string | null;
         };
+        /** RacesModuleConfig */
+        RacesModuleConfig: {
+            /**
+             * Racetypes
+             * @default []
+             */
+            raceTypes: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Traitsystems
+             * @default []
+             */
+            traitSystems: string[];
+        };
         /**
          * RawSegmentationResponse
          * @description 原始分词结果响应
@@ -1307,6 +2889,158 @@ export interface components {
              * @description 分词结果列表，每项包含词语和可选的词性标注
              */
             segmented: components["schemas"]["SegmentedWordItem"][];
+        };
+        /**
+         * RelationCreate
+         * @description 创建关联请求Schema
+         */
+        RelationCreate: {
+            source_module: components["schemas"]["app__schemas__relation__ModuleType"];
+            /** Source Entity Type */
+            source_entity_type: string;
+            /** Source Entity Id */
+            source_entity_id: string;
+            /** Source Entity Name */
+            source_entity_name: string;
+            target_module: components["schemas"]["app__schemas__relation__ModuleType"];
+            /** Target Entity Type */
+            target_entity_type: string;
+            /** Target Entity Id */
+            target_entity_id: string;
+            /** Target Entity Name */
+            target_entity_name: string;
+            relation_type: components["schemas"]["app__schemas__relation__RelationType"];
+            /**
+             * Bidirectional
+             * @default true
+             */
+            bidirectional: boolean;
+            /** @default medium */
+            strength: components["schemas"]["StrengthType"];
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Project Id */
+            project_id: string;
+        };
+        /**
+         * RelationDiscoveryResponse
+         * @description 关联发现响应Schema
+         */
+        RelationDiscoveryResponse: {
+            entity: components["schemas"]["EntityReference"];
+            /** Discoveries */
+            discoveries: components["schemas"]["DiscoveredRelation"][];
+            /** Total Count */
+            total_count: number;
+        };
+        /**
+         * RelationNetworkResponse
+         * @description 实体关联网络响应Schema
+         *
+         *     返回指定实体的所有关联关系，按方向分类。
+         */
+        RelationNetworkResponse: {
+            entity: components["schemas"]["EntityReference"];
+            /** Incoming */
+            incoming: components["schemas"]["RelationResponse"][];
+            /** Outgoing */
+            outgoing: components["schemas"]["RelationResponse"][];
+            /** Bidirectional */
+            bidirectional: components["schemas"]["RelationResponse"][];
+            /** Total Count */
+            total_count: number;
+        };
+        /**
+         * RelationResponse
+         * @description 关联响应Schema
+         */
+        RelationResponse: {
+            /** Id */
+            id: string;
+            /** Source Module */
+            source_module: string;
+            /** Source Entity Type */
+            source_entity_type: string;
+            /** Source Entity Id */
+            source_entity_id: string;
+            /** Source Entity Name */
+            source_entity_name: string;
+            /** Target Module */
+            target_module: string;
+            /** Target Entity Type */
+            target_entity_type: string;
+            /** Target Entity Id */
+            target_entity_id: string;
+            /** Target Entity Name */
+            target_entity_name: string;
+            /** Relation Type */
+            relation_type: string;
+            /** Bidirectional */
+            bidirectional: boolean;
+            /** Strength */
+            strength: string;
+            /** Metadata Json */
+            metadata_json?: {
+                [key: string]: unknown;
+            } | null;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RelationStatistics
+         * @description 关联统计信息Schema
+         */
+        RelationStatistics: {
+            /** Total Relations */
+            total_relations: number;
+            /** Bidirectional Count */
+            bidirectional_count: number;
+            /** By Module */
+            by_module: {
+                [key: string]: number;
+            };
+            /** By Relation Type */
+            by_relation_type: {
+                [key: string]: number;
+            };
+            /** By Strength */
+            by_strength: {
+                [key: string]: number;
+            };
+            /** Cross Module Relations */
+            cross_module_relations: number;
+            /** Top Connected Entities */
+            top_connected_entities: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * RelationUpdate
+         * @description 更新关联请求Schema
+         *
+         *     所有字段均为可选，只更新提供的字段。
+         */
+        RelationUpdate: {
+            relation_type?: components["schemas"]["app__schemas__relation__RelationType"] | null;
+            /** Bidirectional */
+            bidirectional?: boolean | null;
+            strength?: components["schemas"]["StrengthType"] | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** RestoreNoteRequest */
         RestoreNoteRequest: {
@@ -1386,6 +3120,32 @@ export interface components {
              */
             pos?: string | null;
         };
+        /**
+         * StrengthType
+         * @description 关联强度枚举
+         * @enum {string}
+         */
+        StrengthType: "strong" | "medium" | "weak";
+        /** SystemsModuleConfig */
+        SystemsModuleConfig: {
+            /**
+             * Systemtypes
+             * @default []
+             */
+            systemTypes: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Customrules
+             * @default []
+             */
+            customRules: string[];
+        };
+        /**
+         * TechLevel
+         * @enum {string}
+         */
+        TechLevel: "primitive" | "medieval" | "industrial" | "information" | "advanced" | "transcendent";
         /**
          * TextSimilarityRequest
          * @description 文本相似度比较请求
@@ -1475,6 +3235,11 @@ export interface components {
              */
             avg_word_length: number;
         };
+        /**
+         * TimeScale
+         * @enum {string}
+         */
+        TimeScale: "ancient" | "medieval" | "renaissance" | "industrial" | "modern" | "future";
         /**
          * UploadError
          * @description 上传错误响应
@@ -1665,7 +3430,7 @@ export interface components {
         /** WorldModuleCreate */
         WorldModuleCreate: {
             /** @description 模块类型 */
-            module_type: components["schemas"]["ModuleType"];
+            module_type: components["schemas"]["app__schemas__worldbuilding__ModuleType"];
             /**
              * Name
              * @description 模块名称
@@ -1808,7 +3573,7 @@ export interface components {
         /** WorldModuleResponse */
         WorldModuleResponse: {
             /** @description 模块类型 */
-            module_type: components["schemas"]["ModuleType"];
+            module_type: components["schemas"]["app__schemas__worldbuilding__ModuleType"];
             /**
              * Name
              * @description 模块名称
@@ -1903,7 +3668,7 @@ export interface components {
         /** WorldModuleWithItems */
         WorldModuleWithItems: {
             /** @description 模块类型 */
-            module_type: components["schemas"]["ModuleType"];
+            module_type: components["schemas"]["app__schemas__worldbuilding__ModuleType"];
             /**
              * Name
              * @description 模块名称
@@ -1992,7 +3757,7 @@ export interface components {
             order_index: number;
             /**
              * Color
-             * @description 颜色标识
+             * @description 颜色标识（支持十六进制或语义化颜色名称）
              */
             color?: string | null;
             /**
@@ -2000,6 +3765,11 @@ export interface components {
              * @description 图标
              */
             icon?: string | null;
+            /**
+             * Parent Id
+             * @description 父级子模块ID（用于时代-事件层级）
+             */
+            parent_id?: string | null;
         };
         /** WorldSubmoduleResponse */
         WorldSubmoduleResponse: {
@@ -2021,7 +3791,7 @@ export interface components {
             order_index: number;
             /**
              * Color
-             * @description 颜色标识
+             * @description 颜色标识（支持十六进制或语义化颜色名称）
              */
             color?: string | null;
             /**
@@ -2029,6 +3799,11 @@ export interface components {
              * @description 图标
              */
             icon?: string | null;
+            /**
+             * Parent Id
+             * @description 父级子模块ID（用于时代-事件层级）
+             */
+            parent_id?: string | null;
             /** Id */
             id: string;
             /** Module Id */
@@ -2068,7 +3843,7 @@ export interface components {
             order_index?: number | null;
             /**
              * Color
-             * @description 颜色标识
+             * @description 颜色标识（支持十六进制或语义化颜色名称）
              */
             color?: string | null;
             /**
@@ -2076,6 +3851,11 @@ export interface components {
              * @description 图标
              */
             icon?: string | null;
+            /**
+             * Parent Id
+             * @description 父级子模块ID
+             */
+            parent_id?: string | null;
         };
         /** WorldTemplateCreate */
         WorldTemplateCreate: {
@@ -2109,6 +3889,8 @@ export interface components {
              * @default false
              */
             is_system_template: boolean;
+            /** Project Id */
+            project_id?: string | null;
         };
         /** WorldTemplateExport */
         WorldTemplateExport: {
@@ -2128,6 +3910,8 @@ export interface components {
             is_system_template?: boolean | null;
             /** Created By */
             created_by?: string | null;
+            /** Project Id */
+            project_id?: string | null;
         };
         /** WorldTemplateImport */
         WorldTemplateImport: {
@@ -2135,6 +3919,8 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
+            /** Project Id */
+            project_id?: string | null;
             /** Modules */
             modules: components["schemas"]["WorldModuleWithItems"][];
         };
@@ -2166,6 +3952,8 @@ export interface components {
             is_public: boolean;
             /** Is System Template */
             is_system_template: boolean;
+            /** Project Id */
+            project_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2203,6 +3991,8 @@ export interface components {
             is_public?: boolean | null;
             /** Is System Template */
             is_system_template?: boolean | null;
+            /** Project Id */
+            project_id?: string | null;
         };
         /** WorldTemplateWithModules */
         WorldTemplateWithModules: {
@@ -2232,6 +4022,8 @@ export interface components {
             is_public: boolean;
             /** Is System Template */
             is_system_template: boolean;
+            /** Project Id */
+            project_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2260,11 +4052,343 @@ export interface components {
              */
             modules: components["schemas"]["WorldModuleWithItems"][];
         };
+        /** WorldviewAdaptationRule */
+        WorldviewAdaptationRule: {
+            /** Sourcemodule */
+            sourceModule: string;
+            /** Targetmodule */
+            targetModule: string;
+            /** Relationtype */
+            relationType: string;
+            /** Description */
+            description: string;
+            /**
+             * Confidence
+             * @default 0.8
+             */
+            confidence: number;
+        };
+        /** WorldviewAdaptationsResponse */
+        WorldviewAdaptationsResponse: {
+            worldview_type: components["schemas"]["WorldviewType"];
+            module_configs: components["schemas"]["ModuleConfigs-Output"];
+            /** Adaptation Rules */
+            adaptation_rules: components["schemas"]["WorldviewAdaptationRule"][];
+        };
+        /** WorldviewConfigCreate */
+        WorldviewConfigCreate: {
+            type: components["schemas"]["WorldviewType"];
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** @default medieval */
+            timeScale: components["schemas"]["TimeScale"];
+            /** @default medieval */
+            techLevel: components["schemas"]["TechLevel"];
+            /** @default none */
+            magicLevel: components["schemas"]["MagicLevel"];
+            /** @default complex */
+            politicalComplexity: components["schemas"]["ComplexityLevel"];
+            /** @default feudal */
+            economicSystem: components["schemas"]["EconomicSystemType"];
+            /**
+             * @default {
+             *       "history": {
+             *         "eraThemes": [],
+             *         "eventTypes": [],
+             *         "recordingMethod": "chronicle",
+             *         "timeUnit": "year",
+             *         "timelineStyle": "linear"
+             *       },
+             *       "politics": {
+             *         "alignmentSystem": "modern",
+             *         "entityTypes": [],
+             *         "governmentTypes": [],
+             *         "powerStructure": "centralized"
+             *       },
+             *       "economy": {
+             *         "currencyTypes": [],
+             *         "entityTypes": [],
+             *         "resourceTypes": [],
+             *         "tradeMethods": []
+             *       },
+             *       "map": {
+             *         "mapTypes": [],
+             *         "projectionStyles": []
+             *       },
+             *       "races": {
+             *         "raceTypes": [],
+             *         "traitSystems": []
+             *       },
+             *       "systems": {
+             *         "customRules": [],
+             *         "systemTypes": []
+             *       }
+             *     }
+             */
+            moduleConfigs: components["schemas"]["ModuleConfigs-Input"];
+            /**
+             * @default {
+             *       "primaryColor": "#6366f1",
+             *       "secondaryColor": "#8b5cf6",
+             *       "accentColor": "#f59e0b",
+             *       "backgroundGradient": "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+             *       "fontFamily": "system-ui, sans-serif"
+             *     }
+             */
+            theme: components["schemas"]["WorldviewTheme"];
+            /**
+             * Adaptationrules
+             * @default []
+             */
+            adaptationRules: components["schemas"]["WorldviewAdaptationRule"][];
+            /**
+             * Presets
+             * @default []
+             */
+            presets: components["schemas"]["WorldviewPreset"][];
+        };
+        /** WorldviewConfigResponse */
+        WorldviewConfigResponse: {
+            type: components["schemas"]["WorldviewType"];
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** @default medieval */
+            timeScale: components["schemas"]["TimeScale"];
+            /** @default medieval */
+            techLevel: components["schemas"]["TechLevel"];
+            /** @default none */
+            magicLevel: components["schemas"]["MagicLevel"];
+            /** @default complex */
+            politicalComplexity: components["schemas"]["ComplexityLevel"];
+            /** @default feudal */
+            economicSystem: components["schemas"]["EconomicSystemType"];
+            /**
+             * @default {
+             *       "history": {
+             *         "eraThemes": [],
+             *         "eventTypes": [],
+             *         "recordingMethod": "chronicle",
+             *         "timeUnit": "year",
+             *         "timelineStyle": "linear"
+             *       },
+             *       "politics": {
+             *         "alignmentSystem": "modern",
+             *         "entityTypes": [],
+             *         "governmentTypes": [],
+             *         "powerStructure": "centralized"
+             *       },
+             *       "economy": {
+             *         "currencyTypes": [],
+             *         "entityTypes": [],
+             *         "resourceTypes": [],
+             *         "tradeMethods": []
+             *       },
+             *       "map": {
+             *         "mapTypes": [],
+             *         "projectionStyles": []
+             *       },
+             *       "races": {
+             *         "raceTypes": [],
+             *         "traitSystems": []
+             *       },
+             *       "systems": {
+             *         "customRules": [],
+             *         "systemTypes": []
+             *       }
+             *     }
+             */
+            moduleConfigs: components["schemas"]["ModuleConfigs-Output"];
+            /**
+             * @default {
+             *       "primaryColor": "#6366f1",
+             *       "secondaryColor": "#8b5cf6",
+             *       "accentColor": "#f59e0b",
+             *       "backgroundGradient": "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+             *       "fontFamily": "system-ui, sans-serif"
+             *     }
+             */
+            theme: components["schemas"]["WorldviewTheme"];
+            /**
+             * Adaptationrules
+             * @default []
+             */
+            adaptationRules: components["schemas"]["WorldviewAdaptationRule"][];
+            /**
+             * Presets
+             * @default []
+             */
+            presets: components["schemas"]["WorldviewPreset"][];
+            /** Id */
+            id: string;
+            /**
+             * Is System
+             * @default false
+             */
+            is_system: boolean;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** WorldviewConfigUpdate */
+        WorldviewConfigUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            timeScale?: components["schemas"]["TimeScale"] | null;
+            techLevel?: components["schemas"]["TechLevel"] | null;
+            magicLevel?: components["schemas"]["MagicLevel"] | null;
+            politicalComplexity?: components["schemas"]["ComplexityLevel"] | null;
+            economicSystem?: components["schemas"]["EconomicSystemType"] | null;
+            moduleConfigs?: components["schemas"]["ModuleConfigs-Input"] | null;
+            theme?: components["schemas"]["WorldviewTheme"] | null;
+            /** Adaptationrules */
+            adaptationRules?: components["schemas"]["WorldviewAdaptationRule"][] | null;
+            /** Presets */
+            presets?: components["schemas"]["WorldviewPreset"][] | null;
+        };
+        /** WorldviewCurrencyType */
+        WorldviewCurrencyType: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+        };
+        /** WorldviewEconomicEntityType */
+        WorldviewEconomicEntityType: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+            /** Icon */
+            icon: string;
+            /** Color */
+            color: string;
+        };
+        /** WorldviewEraTheme */
+        WorldviewEraTheme: {
+            /** Theme */
+            theme: string;
+            /** Label */
+            label: string;
+            /** Color */
+            color: string;
+        };
+        /** WorldviewEventType */
+        WorldviewEventType: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+            /** Icon */
+            icon: string;
+            /** Color */
+            color: string;
+        };
+        /** WorldviewGovernmentType */
+        WorldviewGovernmentType: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+        };
+        /** WorldviewPoliticalEntityType */
+        WorldviewPoliticalEntityType: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+            /** Icon */
+            icon: string;
+            /** Color */
+            color: string;
+        };
+        /** WorldviewPreset */
+        WorldviewPreset: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Icon */
+            icon: string;
+        };
+        /** WorldviewResourceType */
+        WorldviewResourceType: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+        };
+        /** WorldviewTheme */
+        WorldviewTheme: {
+            /**
+             * Primarycolor
+             * @default #6366f1
+             */
+            primaryColor: string;
+            /**
+             * Secondarycolor
+             * @default #8b5cf6
+             */
+            secondaryColor: string;
+            /**
+             * Accentcolor
+             * @default #f59e0b
+             */
+            accentColor: string;
+            /**
+             * Backgroundgradient
+             * @default linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)
+             */
+            backgroundGradient: string;
+            /**
+             * Fontfamily
+             * @default system-ui, sans-serif
+             */
+            fontFamily: string;
+        };
+        /** WorldviewTradeMethod */
+        WorldviewTradeMethod: {
+            /** Type */
+            type: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * WorldviewType
+         * @enum {string}
+         */
+        WorldviewType: "xianxia" | "historical" | "western" | "modern" | "scifi" | "apocalypse" | "custom";
         /** BatchDeleteRequest */
         app__api__v1__notes__BatchDeleteRequest: {
             /** Ids */
             ids: string[];
         };
+        /**
+         * RelationType
+         * @description 关系类型
+         * @enum {string}
+         */
+        app__schemas__character__RelationType: "family" | "love" | "friend" | "mentor" | "enemy" | "other";
+        /**
+         * ModuleType
+         * @description 世界观模块类型枚举
+         * @enum {string}
+         */
+        app__schemas__relation__ModuleType: "map" | "history" | "politics" | "economy" | "races" | "systems" | "special";
+        /**
+         * RelationType
+         * @description 关联关系类型枚举
+         * @enum {string}
+         */
+        app__schemas__relation__RelationType: "causal" | "temporal" | "spatial" | "functional" | "hierarchical" | "dependency";
         /** BatchDeleteRequest */
         app__schemas__worldbuilding__BatchDeleteRequest: {
             /**
@@ -2273,6 +4397,11 @@ export interface components {
              */
             ids: string[];
         };
+        /**
+         * ModuleType
+         * @enum {string}
+         */
+        app__schemas__worldbuilding__ModuleType: "map" | "history" | "politics" | "economy" | "races" | "systems" | "special";
     };
     responses: never;
     parameters: never;
@@ -3232,6 +5361,7 @@ export interface operations {
                 name?: string | null;
                 is_public?: boolean | null;
                 is_system_template?: boolean | null;
+                project_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -3561,7 +5691,10 @@ export interface operations {
     };
     get_world_submodules_api_v1_worldbuilding_modules__module_id__submodules_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 父级子模块ID，用于过滤特定父级的子模块 */
+                parent_id?: string | null;
+            };
             header?: never;
             path: {
                 module_id: string;
@@ -3629,6 +5762,7 @@ export interface operations {
         parameters: {
             query?: {
                 submodule_id?: string | null;
+                include_all?: boolean;
             };
             header?: never;
             path: {
@@ -4149,6 +6283,199 @@ export interface operations {
             };
         };
     };
+    get_all_worldviews_api_v1_worldbuilding_worldviews_get: {
+        parameters: {
+            query?: {
+                include_system?: boolean;
+                include_custom?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldviewConfigResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_worldview_api_v1_worldbuilding_worldviews_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldviewConfigCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldviewConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_worldview_by_type_api_v1_worldbuilding_worldviews__worldview_type__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                worldview_type: components["schemas"]["WorldviewType"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldviewConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_worldview_api_v1_worldbuilding_worldviews__worldview_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                worldview_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldviewConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldviewConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_worldview_api_v1_worldbuilding_worldviews__worldview_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                worldview_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_worldview_adaptations_api_v1_worldbuilding_worldviews__worldview_type__adaptations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                worldview_type: components["schemas"]["WorldviewType"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldviewAdaptationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_image_api_v1_upload_images_post: {
         parameters: {
             query?: never;
@@ -4260,6 +6587,1183 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_relation_api_v1_relations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_create_relations_api_v1_relations_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchRelationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_relations_api_v1_relations_project__project_id__get: {
+        parameters: {
+            query?: {
+                /** @description Filter by source module */
+                source_module?: string | null;
+                /** @description Filter by target module */
+                target_module?: string | null;
+                /** @description Filter by relation type */
+                relation_type?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_entity_relation_network_api_v1_relations_entity__entity_id__get: {
+        parameters: {
+            query: {
+                /** @description Project ID */
+                project_id: string;
+                /** @description Module type filter */
+                module?: string | null;
+            };
+            header?: never;
+            path: {
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationNetworkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discover_relations_api_v1_relations_discover__entity_id__get: {
+        parameters: {
+            query: {
+                /** @description Project ID */
+                project_id: string;
+                /** @description Entity module type */
+                module: components["schemas"]["app__schemas__relation__ModuleType"];
+                /** @description Entity type */
+                entity_type: string;
+                /** @description Entity name */
+                entity_name: string;
+            };
+            header?: never;
+            path: {
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDiscoveryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_relation_api_v1_relations__relation_id__delete: {
+        parameters: {
+            query: {
+                /** @description Project ID for validation */
+                project_id: string;
+            };
+            header?: never;
+            path: {
+                relation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_relation_api_v1_relations__relation_id__patch: {
+        parameters: {
+            query: {
+                /** @description Project ID for validation */
+                project_id: string;
+            };
+            header?: never;
+            path: {
+                relation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_relation_statistics_api_v1_relations_project__project_id__statistics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationStatistics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_characters_api_v1_projects__project_id__characters_get: {
+        parameters: {
+            query?: {
+                /** @description 角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色) */
+                level?: components["schemas"]["CharacterLevel"] | null;
+                /** @description 搜索关键词，匹配姓名或别名 */
+                search?: string | null;
+                /** @description 排序字段：order_index(默认), name, created_at, updated_at */
+                sort_by?: string;
+                /** @description 排序方向：asc(升序), desc(降序) */
+                sort_order?: string;
+            };
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_character_api_v1_projects__project_id__characters_post: {
+        parameters: {
+            query: {
+                /** @description 姓名 */
+                name: string;
+                /** @description 性别 */
+                gender?: components["schemas"]["CharacterGender"];
+                /** @description 生辰 */
+                birth_date?: string | null;
+                /** @description 出生地 */
+                birthplace?: string | null;
+                /** @description 角色等级 */
+                level?: components["schemas"]["CharacterLevel"];
+                /** @description 判词/引言 */
+                quote?: string | null;
+                /** @description 头像URL */
+                avatar?: string | null;
+                /** @description 全身形象图片URL */
+                full_image?: string | null;
+                /** @description 首次出场卷 */
+                first_appearance_volume?: string | null;
+                /** @description 首次出场幕 */
+                first_appearance_act?: string | null;
+                /** @description 首次出场章 */
+                first_appearance_chapter?: string | null;
+                /** @description 排序索引 */
+                order_index?: number;
+                /** @description 别名列表 */
+                aliases?: components["schemas"]["CharacterAliasCreate"][];
+                /** @description 卡片列表 */
+                cards?: components["schemas"]["CharacterCardCreate"][];
+                /** @description 关系列表 */
+                relationships?: components["schemas"]["CharacterRelationshipCreate"][];
+                /** @description 器物列表 */
+                artifacts?: components["schemas"]["CharacterArtifactCreate"][];
+            };
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_character_api_v1_projects__project_id__characters__character_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_character_api_v1_projects__project_id__characters__character_id__put: {
+        parameters: {
+            query?: {
+                name?: string | null;
+                gender?: components["schemas"]["CharacterGender"] | null;
+                birth_date?: string | null;
+                birthplace?: string | null;
+                level?: components["schemas"]["CharacterLevel"] | null;
+                quote?: string | null;
+                avatar?: string | null;
+                full_image?: string | null;
+                first_appearance_volume?: string | null;
+                first_appearance_act?: string | null;
+                first_appearance_chapter?: string | null;
+                order_index?: number | null;
+            };
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_character_api_v1_projects__project_id__characters__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_characters_api_v1_projects__project_id__characters_batch_delete_post: {
+        parameters: {
+            query: {
+                /** @description 要删除的人物ID列表 */
+                ids: string[];
+            };
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_update_character_order_api_v1_projects__project_id__characters_batch_update_order_post: {
+        parameters: {
+            query: {
+                /** @description 人物ID到排序索引的映射 */
+                orders: {
+                    [key: string]: number;
+                };
+            };
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_aliases_api_v1_projects__project_id__characters__character_id__aliases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterAliasResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_alias_api_v1_projects__project_id__characters__character_id__aliases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterAliasCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_alias_api_v1_projects__project_id__characters__character_id__aliases__alias_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                alias_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterAliasUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_alias_api_v1_projects__project_id__characters__character_id__aliases__alias_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                alias_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_cards_api_v1_projects__project_id__characters__character_id__cards_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterCardResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_card_api_v1_projects__project_id__characters__character_id__cards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterCardCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterCardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_card_api_v1_projects__project_id__characters__character_id__cards__card_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterCardUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterCardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_card_api_v1_projects__project_id__characters__character_id__cards__card_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_relationships_api_v1_projects__project_id__characters__character_id__relationships_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRelationshipResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_relationship_api_v1_projects__project_id__characters__character_id__relationships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterRelationshipCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRelationshipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_relationship_api_v1_projects__project_id__characters__character_id__relationships__relationship_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                relationship_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterRelationshipUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRelationshipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_relationship_api_v1_projects__project_id__characters__character_id__relationships__relationship_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                relationship_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_artifacts_api_v1_projects__project_id__characters__character_id__artifacts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterArtifactResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_artifact_api_v1_projects__project_id__characters__character_id__artifacts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterArtifactCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterArtifactResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_artifact_api_v1_projects__project_id__characters__character_id__artifacts__artifact_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterArtifactUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterArtifactResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_artifact_api_v1_projects__project_id__characters__character_id__artifacts__artifact_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                character_id: string;
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_character_stats_api_v1_projects__project_id__characters_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_characters_simple_api_v1_projects__project_id__characters_simple_get: {
+        parameters: {
+            query?: {
+                /** @description 排除的人物ID（用于关系选择） */
+                exclude_id?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSimpleResponse"][];
                 };
             };
             /** @description Validation Error */

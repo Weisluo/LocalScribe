@@ -15,7 +15,7 @@ import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { preloadModules } from '@/hooks/useIdlePreload';
 
@@ -23,6 +23,7 @@ const Export = lazy(() => import('@/components/Export/Export').then(m => ({ defa
 const TrashView = lazy(() => import('@/components/Trash').then(m => ({ default: m.TrashView })));
 const WorldbuildingView = lazy(() => import('@/components/Worldbuilding').then(m => ({ default: m.WorldbuildingView })));
 const WritingCalendar = lazy(() => import('@/components/WritingCalendar').then(m => ({ default: m.WritingCalendar })));
+const CharacterDesignView = lazy(() => import('@/components/CharacterDesign').then(m => ({ default: m.CharacterDesignView })));
 
 type ProjectResponse = components['schemas']['ProjectResponse'];
 
@@ -33,6 +34,7 @@ export const EditorPage = () => {
 
   const [showTrash, setShowTrash] = useState(false);
   const [showWorldbuilding, setShowWorldbuilding] = useState(false);
+  const [showCharacterDesign, setShowCharacterDesign] = useState(false);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
@@ -218,7 +220,9 @@ export const EditorPage = () => {
     setExpandedIds(new Set());
     setShowTrash(false);
     setShowWorldbuilding(false);
+    setShowCharacterDesign(false);
     queryClient.removeQueries({ queryKey: ['worldbuilding'] });
+    queryClient.removeQueries({ queryKey: ['characters'] });
   }, [currentProjectId, queryClient]);
 
   // 监听新创建的章节，自动选中
@@ -425,12 +429,15 @@ export const EditorPage = () => {
   };
 
   const handleSelectNote = (id: string, title: string) => {
-    // 如果当前在回收站或世界观设定界面，先返回编辑器
+    // 如果当前在回收站、世界观设定或人物设定界面，先返回编辑器
     if (showTrash) {
       setShowTrash(false);
     }
     if (showWorldbuilding) {
       setShowWorldbuilding(false);
+    }
+    if (showCharacterDesign) {
+      setShowCharacterDesign(false);
     }
     
     const now = Date.now();
@@ -586,19 +593,40 @@ export const EditorPage = () => {
           />
         </div>
 
-        {/* 中间功能区 - 世界观设定 */}
+        {/* 中间功能区 - 世界观设定和人物设定 */}
         <div className="flex-1 border-t border-border/60 bg-card/20 backdrop-blur-sm flex flex-col">
           <div className="p-3 flex flex-col gap-2">
             <button
               onClick={() => {
                 setShowTrash(false);
                 setShowWorldbuilding(true);
+                setShowCharacterDesign(false);
               }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${
+                showWorldbuilding
+                  ? 'bg-accent/30 text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/20'
+              }`}
               title="世界观设定"
             >
               <Globe2 className="h-4 w-4" />
               <span>世界观设定</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowTrash(false);
+                setShowWorldbuilding(false);
+                setShowCharacterDesign(true);
+              }}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${
+                showCharacterDesign
+                  ? 'bg-accent/30 text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/20'
+              }`}
+              title="人物设定"
+            >
+              <Users className="h-4 w-4" />
+              <span>人物设定</span>
             </button>
           </div>
           {/* 预留空间给后续功能 */}
@@ -609,29 +637,31 @@ export const EditorPage = () => {
         <div className="h-auto flex flex-col flex-shrink-0 border-t border-border/60 bg-card/30 backdrop-blur-sm">
           <div className="p-3 flex gap-2">
             <button
+            onClick={() => {
+              setShowTrash(false);
+              setShowWorldbuilding(false);
+              setShowCharacterDesign(false);
+              handleDeleteProject();
+            }}
+            disabled={!currentProjectId}
+            className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200 disabled:opacity-50"
+            title="删除当前项目"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+          <div className="flex-1 flex gap-2">
+            <button
               onClick={() => {
                 setShowTrash(false);
                 setShowWorldbuilding(false);
-                handleDeleteProject();
+                setShowCharacterDesign(false);
+                openModal('project');
               }}
-              disabled={!currentProjectId}
-              className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200 disabled:opacity-50"
-              title="删除当前项目"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs text-emerald-600/80 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-lg transition-all duration-200"
             >
-              <Trash2 className="h-4 w-4" />
+              <PlusCircle className="h-4 w-4" />
+              <span>新建项目</span>
             </button>
-            <div className="flex-1 flex gap-2">
-              <button
-                onClick={() => {
-                  setShowTrash(false);
-                  setShowWorldbuilding(false);
-                  openModal('project');
-                }}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs text-emerald-600/80 hover:text-emerald-700 hover:bg-emerald-100/50 rounded-lg transition-all duration-200"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>新建项目</span>
-              </button>
               {tree && tree.length > 0 && (
                 <Suspense fallback={<div className="w-20 h-9 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
                   <Export
@@ -645,6 +675,7 @@ export const EditorPage = () => {
             <button
               onClick={() => {
                 setShowWorldbuilding(false);
+                setShowCharacterDesign(false);
                 setShowTrash(true);
               }}
               className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
@@ -661,6 +692,31 @@ export const EditorPage = () => {
         {showWorldbuilding ? (
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <WorldbuildingView />
+          </Suspense>
+        ) : showCharacterDesign ? (
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <CharacterDesignView
+              projectId={currentProjectId}
+              onClose={() => setShowCharacterDesign(false)}
+              onNavigateToNote={(noteId) => {
+                setShowCharacterDesign(false);
+                // 从目录树查找章节标题
+                const findNoteTitle = (nodes: TreeNodeType[]): string => {
+                  for (const node of nodes) {
+                    if (node.type === 'note' && node.id === noteId) {
+                      return node.title;
+                    }
+                    if ('children' in node && node.children) {
+                      const found = findNoteTitle(node.children as TreeNodeType[]);
+                      if (found) return found;
+                    }
+                  }
+                  return '';
+                };
+                const title = tree ? findNoteTitle(tree) : '';
+                handleSelectNote(noteId, title);
+              }}
+            />
           </Suspense>
         ) : showTrash ? (
           /* 回收站界面 */

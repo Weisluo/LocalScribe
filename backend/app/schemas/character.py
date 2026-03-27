@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ==================== 枚举定义 ====================
+
 
 class CharacterLevel(str, Enum):
     """角色等级"""
@@ -64,6 +64,7 @@ class ArtifactType(str, Enum):
 
 # ==================== 基础 Schema ====================
 
+
 class CharacterAliasBase(BaseModel):
     """别名基础 Schema"""
 
@@ -99,12 +100,15 @@ class CharacterAliasResponse(CharacterAliasBase):
 
 # ==================== 卡片内容项 Schema ====================
 
+
 class CardContentItem(BaseModel):
     """卡片内容项"""
 
     key: str = Field(..., description="字段名")
     value: Any = Field(..., description="字段值")
-    type: str = Field("text", description="字段类型: text|rich_text|list|image|number|boolean")
+    type: str = Field(
+        "text", description="字段类型: text|rich_text|list|image|number|boolean"
+    )
 
 
 class CharacterCardBase(BaseModel):
@@ -143,6 +147,7 @@ class CharacterCardResponse(CharacterCardBase):
 
 
 # ==================== 人物关系 Schema ====================
+
 
 class CharacterRelationshipBase(BaseModel):
     """关系基础 Schema"""
@@ -190,6 +195,7 @@ class CharacterRelationshipResponse(CharacterRelationshipBase):
 
 # ==================== 器物 Schema ====================
 
+
 class CharacterArtifactBase(BaseModel):
     """器物基础 Schema"""
 
@@ -229,6 +235,7 @@ class CharacterArtifactResponse(CharacterArtifactBase):
 
 # ==================== 人物主 Schema ====================
 
+
 class CharacterBase(BaseModel):
     """人物基础 Schema"""
 
@@ -239,20 +246,36 @@ class CharacterBase(BaseModel):
     level: CharacterLevel = Field(CharacterLevel.MINOR, description="角色等级")
     quote: Optional[str] = Field(None, description="判词/引言")
     avatar: Optional[str] = Field(None, max_length=500, description="头像URL")
-    full_image: Optional[str] = Field(None, max_length=500, description="全身形象图片URL")
-    first_appearance_volume: Optional[str] = Field(None, max_length=100, description="首次出场卷")
-    first_appearance_act: Optional[str] = Field(None, max_length=100, description="首次出场幕")
-    first_appearance_chapter: Optional[str] = Field(None, max_length=100, description="首次出场章")
+    full_image: Optional[str] = Field(
+        None, max_length=500, description="全身形象图片URL"
+    )
+    first_appearance_volume: Optional[str] = Field(
+        None, max_length=100, description="首次出场卷"
+    )
+    first_appearance_act: Optional[str] = Field(
+        None, max_length=100, description="首次出场幕"
+    )
+    first_appearance_chapter: Optional[str] = Field(
+        None, max_length=100, description="首次出场章"
+    )
     order_index: int = Field(0, ge=0, description="排序索引")
 
 
 class CharacterCreate(CharacterBase):
     """创建人物 Schema"""
 
-    aliases: List[CharacterAliasCreate] = Field(default_factory=list, description="别名列表")
-    cards: List[CharacterCardCreate] = Field(default_factory=list, description="卡片列表")
-    relationships: List[CharacterRelationshipCreate] = Field(default_factory=list, description="关系列表")
-    artifacts: List[CharacterArtifactCreate] = Field(default_factory=list, description="器物列表")
+    aliases: List[CharacterAliasCreate] = Field(
+        default_factory=list, description="别名列表"
+    )
+    cards: List[CharacterCardCreate] = Field(
+        default_factory=list, description="卡片列表"
+    )
+    relationships: List[CharacterRelationshipCreate] = Field(
+        default_factory=list, description="关系列表"
+    )
+    artifacts: List[CharacterArtifactCreate] = Field(
+        default_factory=list, description="器物列表"
+    )
 
 
 class CharacterUpdate(BaseModel):
@@ -322,12 +345,16 @@ class CharacterSimpleResponse(BaseModel):
 
 # ==================== 筛选和排序 Schema ====================
 
+
 class CharacterFilter(BaseModel):
     """人物筛选 Schema"""
 
     level: Optional[CharacterLevel] = Field(None, description="角色等级筛选")
     gender: Optional[CharacterGender] = Field(None, description="性别筛选")
     search: Optional[str] = Field(None, description="搜索关键词（姓名、别名）")
+    volume: Optional[str] = Field(None, description="筛选卷")
+    act: Optional[str] = Field(None, description="筛选幕")
+    chapter: Optional[str] = Field(None, description="筛选章")
 
 
 class CharacterSort(BaseModel):
@@ -338,6 +365,7 @@ class CharacterSort(BaseModel):
 
 
 # ==================== 批量操作 Schema ====================
+
 
 class BatchUpdateOrderRequest(BaseModel):
     """批量更新排序请求"""
@@ -352,6 +380,7 @@ class BatchDeleteRequest(BaseModel):
 
 
 # ==================== 统计数据 Schema ====================
+
 
 class CharacterStats(BaseModel):
     """人物统计 Schema"""
