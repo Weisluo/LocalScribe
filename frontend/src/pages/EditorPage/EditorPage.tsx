@@ -15,7 +15,7 @@ import { CreateItemModal } from '@/components/Modals';
 import { ProjectSwitcher } from '@/components/ProjectSwitcher';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { calculateStatistics, calculateProjectStatistics, formatReadingTime, formatNumber } from '@/hooks/useTextStatistics';
-import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar, Users } from 'lucide-react';
+import { Loader2, Save, PlusCircle, Feather, BookOpen, Type, Clock, FileText, Languages, GripVertical, Trash2, ArchiveRestore, Globe2, Calendar, Users, ListTree } from 'lucide-react';
 import { format } from 'date-fns';
 import { preloadModules } from '@/hooks/useIdlePreload';
 
@@ -24,6 +24,7 @@ const TrashView = lazy(() => import('@/components/Trash').then(m => ({ default: 
 const WorldbuildingView = lazy(() => import('@/components/Worldbuilding').then(m => ({ default: m.WorldbuildingView })));
 const WritingCalendar = lazy(() => import('@/components/WritingCalendar').then(m => ({ default: m.WritingCalendar })));
 const CharacterDesignView = lazy(() => import('@/components/CharacterDesign').then(m => ({ default: m.CharacterDesignView })));
+const OutlineView = lazy(() => import('@/components/Outline').then(m => ({ default: m.OutlineView })));
 
 type ProjectResponse = components['schemas']['ProjectResponse'];
 
@@ -35,6 +36,7 @@ export const EditorPage = () => {
   const [showTrash, setShowTrash] = useState(false);
   const [showWorldbuilding, setShowWorldbuilding] = useState(false);
   const [showCharacterDesign, setShowCharacterDesign] = useState(false);
+  const [showOutline, setShowOutline] = useState(false);
 
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
@@ -221,8 +223,10 @@ export const EditorPage = () => {
     setShowTrash(false);
     setShowWorldbuilding(false);
     setShowCharacterDesign(false);
+    setShowOutline(false);
     queryClient.removeQueries({ queryKey: ['worldbuilding'] });
     queryClient.removeQueries({ queryKey: ['characters'] });
+    queryClient.removeQueries({ queryKey: ['outline'] });
   }, [currentProjectId, queryClient]);
 
   // 监听新创建的章节，自动选中
@@ -439,6 +443,9 @@ export const EditorPage = () => {
     if (showCharacterDesign) {
       setShowCharacterDesign(false);
     }
+    if (showOutline) {
+      setShowOutline(false);
+    }
     
     const now = Date.now();
     if (selectedNoteId && selectedNoteId !== id && (noteTitle || noteContent) && now - lastSaveTimeRef.current > 500 && !updateNoteMutation.isPending) {
@@ -601,6 +608,7 @@ export const EditorPage = () => {
                 setShowTrash(false);
                 setShowWorldbuilding(true);
                 setShowCharacterDesign(false);
+                setShowOutline(false);
               }}
               className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${
                 showWorldbuilding
@@ -617,6 +625,7 @@ export const EditorPage = () => {
                 setShowTrash(false);
                 setShowWorldbuilding(false);
                 setShowCharacterDesign(true);
+                setShowOutline(false);
               }}
               className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${
                 showCharacterDesign
@@ -627,6 +636,23 @@ export const EditorPage = () => {
             >
               <Users className="h-4 w-4" />
               <span>人物设定</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowTrash(false);
+                setShowWorldbuilding(false);
+                setShowCharacterDesign(false);
+                setShowOutline(true);
+              }}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${
+                showOutline
+                  ? 'bg-accent/30 text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/20'
+              }`}
+              title="大纲"
+            >
+              <ListTree className="h-4 w-4" />
+              <span>大纲</span>
             </button>
           </div>
           {/* 预留空间给后续功能 */}
@@ -676,6 +702,7 @@ export const EditorPage = () => {
               onClick={() => {
                 setShowWorldbuilding(false);
                 setShowCharacterDesign(false);
+                setShowOutline(false);
                 setShowTrash(true);
               }}
               className="flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded-lg transition-all duration-200"
@@ -717,6 +744,10 @@ export const EditorPage = () => {
                 handleSelectNote(noteId, title);
               }}
             />
+          </Suspense>
+        ) : showOutline ? (
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <OutlineView />
           </Suspense>
         ) : showTrash ? (
           /* 回收站界面 */

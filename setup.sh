@@ -118,11 +118,11 @@ check_and_fix_migrations() {
     if [ -f "$db_file" ]; then
         # 获取当前迁移版本
         local current_rev
-        current_rev=$("$BACKEND_DIR/venv/bin/alembic" current 2>/dev/null | grep -oP '[a-f0-9]{12}' | head -1)
+        current_rev=$("$BACKEND_DIR/venv/bin/alembic" current 2>/dev/null | grep -v '^INFO' | grep -v '^$' | head -1 | awk '{print $1}')
         
         # 获取最新迁移版本
         local head_rev
-        head_rev=$("$BACKEND_DIR/venv/bin/alembic" heads 2>/dev/null | grep -oP '[a-f0-9]{12}' | head -1)
+        head_rev=$("$BACKEND_DIR/venv/bin/alembic" heads 2>/dev/null | head -1 | awk '{print $1}')
         
         print_step "数据库" "当前版本: ${current_rev:-none}, 最新版本: ${head_rev:-none}"
         

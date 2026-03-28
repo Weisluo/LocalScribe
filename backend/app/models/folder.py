@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional
-from sqlalchemy import DateTime, String, Integer, ForeignKey, Enum as SA_Enum, Index
+from sqlalchemy import DateTime, String, Text, Integer, ForeignKey, Enum as SA_Enum, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from . import Base
 
@@ -23,6 +23,8 @@ class Folder(Base):
     project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, index=True, comment="所属项目ID")
 
     order: Mapped[int] = mapped_column(Integer, default=0, index=True, comment="排序序号")
+
+    outline_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None, comment="大纲内容(HTML)")
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

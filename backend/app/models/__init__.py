@@ -21,6 +21,7 @@ from .note import Note
 from .worldbuilding import WorldTemplate, WorldModule, WorldSubmodule, WorldModuleItem, WorldInstance, CustomWorldviewConfig
 from .relation import BidirectionalRelation
 from .character import Character, CharacterAlias, CharacterCard, CharacterRelationship, CharacterArtifact
+from .outline import StoryEvent, EventConnection
 
 __all__ = [
     "Base",
@@ -39,4 +40,6 @@ __all__ = [
     "CharacterCard",
     "CharacterRelationship",
     "CharacterArtifact",
+    "StoryEvent",
+    "EventConnection",
 ]

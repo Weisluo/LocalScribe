@@ -95,6 +95,11 @@ export const CreateItemModal = () => {
       if (modalType && modalType !== 'project') {
         await queryClient.invalidateQueries({ queryKey: ['directory', currentProjectId] });
         
+        // 刷新大纲视图（卷、幕和章节都会影响大纲结构）
+        if (modalType === 'volume' || modalType === 'act' || modalType === 'note') {
+          await queryClient.invalidateQueries({ queryKey: ['outline', currentProjectId] });
+        }
+        
         // 等待目录树刷新完成后再设置新章节 ID
         if (modalType === 'note' && data?.id) {
           // 延迟一下确保数据已更新

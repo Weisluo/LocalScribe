@@ -28,6 +28,10 @@ class Note(Base):
     word_count: Mapped[Optional[int]] = mapped_column(Integer, default=0, comment="字数")
     status: Mapped[NoteStatus] = mapped_column(SA_Enum(NoteStatus), default=NoteStatus.draft, index=True, comment="状态")
 
+    outline_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default=None, comment="大纲内容(HTML)")
+    scene_count: Mapped[Optional[int]] = mapped_column(Integer, default=0, comment="场景数估计")
+    outline_characters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True, comment="出场角色ID列表")
+
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True, comment="删除时间")
 
     created_at: Mapped[datetime] = mapped_column(
