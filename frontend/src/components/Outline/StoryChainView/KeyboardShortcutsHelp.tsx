@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Keyboard, X, Command } from 'lucide-react';
+import { useEffect } from 'react';
+import { X, Command, Keyboard } from 'lucide-react';
 
 interface ShortcutItem {
   keys: string[];
@@ -20,9 +20,12 @@ const SHORTCUTS: ShortcutItem[] = [
   { keys: ['Esc'], description: '取消操作', category: '通用' },
 ];
 
-export const KeyboardShortcutsHelp = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface KeyboardShortcutsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
 
+export const KeyboardShortcutsModal = ({ isOpen, onClose }: KeyboardShortcutsModalProps) => {
   const groupedShortcuts = SHORTCUTS.reduce((acc, shortcut) => {
     if (!acc[shortcut.category]) {
       acc[shortcut.category] = [];
@@ -31,82 +34,88 @@ export const KeyboardShortcutsHelp = () => {
     return acc;
   }, {} as Record<string, ShortcutItem[]>);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
   return (
-    <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground
-                 hover:text-foreground hover:bg-accent/10 rounded-lg transition-all"
-        title="键盘快捷键"
-      >
-        <Keyboard className="h-3.5 w-3.5" />
-        快捷键
-      </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-200">
+      <div
+        className="absolute inset-0 bg-background/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-200">
-          <div
-            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
-          />
-
-          <div className="relative w-full max-w-md mx-4 bg-card rounded-xl shadow-2xl ring-1 ring-border/60 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40">
-              <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-                <Keyboard className="h-4 w-4" />
-                键盘快捷键
-              </h3>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">
-              {Object.entries(groupedShortcuts).map(([category, shortcuts]) => (
-                <div key={category} className="mb-4 last:mb-0">
-                  <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-                    {category}
-                  </h4>
-                  <div className="space-y-2">
-                    {shortcuts.map((shortcut, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-sm text-foreground">{shortcut.description}</span>
-                        <div className="flex items-center gap-1">
-                          {shortcut.keys.map((key, keyIndex) => (
-                            <span key={keyIndex}>
-                              <kbd className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 
-                                            text-xs font-medium bg-muted rounded border border-border/40
-                                            text-foreground shadow-sm">
-                                {key === 'Ctrl' ? (
-                                  <Command className="h-3 w-3" />
-                                ) : key}
-                              </kbd>
-                              {keyIndex < shortcut.keys.length - 1 && (
-                                <span className="text-muted-foreground mx-0.5">+</span>
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="px-5 py-3 border-t border-border/40">
-              <p className="text-xs text-muted-foreground text-center">
-                按 <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Esc</kbd> 关闭此窗口
-              </p>
-            </div>
-          </div>
+      <div className="relative w-full max-w-sm mx-4 bg-card rounded-xl shadow-2xl ring-1 ring-border/60 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Keyboard className="h-4 w-4" />
+            键盘快捷键
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-      )}
-    </>
+
+        <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">
+          {Object.entries(groupedShortcuts).map(([category, shortcuts]) => (
+            <div key={category} className="mb-4 last:mb-0">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                {category}
+              </h4>
+              <div className="space-y-2">
+                {shortcuts.map((shortcut, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-sm text-foreground">{shortcut.description}</span>
+                    <div className="flex items-center gap-1">
+                      {shortcut.keys.map((key, keyIndex) => (
+                        <span key={keyIndex}>
+                          <kbd className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 
+                                        text-xs font-medium bg-muted rounded border border-border/40
+                                        text-foreground shadow-sm">
+                            {key === 'Ctrl' ? (
+                              <Command className="h-3 w-3" />
+                            ) : key}
+                          </kbd>
+                          {keyIndex < shortcut.keys.length - 1 && (
+                            <span className="text-muted-foreground mx-0.5">+</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-end px-5 py-3 border-t border-border/40">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg
+                     hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default KeyboardShortcutsHelp;
+export default KeyboardShortcutsModal;

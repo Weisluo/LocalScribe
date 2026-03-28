@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Move } from 'lucide-react';
 import type { StoryEvent } from '../types';
+import { useThrottle } from './usePerformance';
+import './animations.css';
 
 interface DragState {
   isDragging: boolean;
@@ -156,6 +158,8 @@ export const DraggableEvent = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
 
+  const throttledDragMove = useThrottle(onDragMove, 16);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!isDraggable || e.button !== 0) return;
     
@@ -187,7 +191,7 @@ export const DraggableEvent = ({
       newX = Math.max(0, newX);
       newY = Math.max(0, newY);
 
-      onDragMove(event.id, newX, newY);
+      throttledDragMove(event.id, newX, newY);
     };
 
     const handleMouseUp = () => {
@@ -212,19 +216,17 @@ export const DraggableEvent = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset, event.id, onDragMove, onDragEnd]);
+  }, [isDragging, dragOffset, event.id, throttledDragMove, onDragEnd]);
 
   return (
     <div
       ref={elementRef}
       data-event-id={event.id}
-      className={`absolute ${isDragging ? 'cursor-grabbing z-50' : 'cursor-grab'}`}
+      className={`absolute optimize-animations ${isDragging ? 'cursor-grabbing z-50' : 'cursor-grab'}`}
       style={{
         left: position.x,
         top: position.y,
         opacity: isDragging ? 0.9 : 1,
-        transform: isDragging ? 'scale(1.05)' : 'scale(1)',
-        transition: isDragging ? 'none' : 'transform 0.2s, opacity 0.2s',
       }}
       onMouseDown={handleMouseDown}
     >

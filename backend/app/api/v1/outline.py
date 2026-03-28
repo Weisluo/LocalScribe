@@ -12,7 +12,7 @@ from app.schemas.outline import (
     ChapterOutlineUpdate, ChapterOutlineResponse,
     StoryEventCreate, StoryEventUpdate, StoryEventResponse,
     EventConnectionCreate, EventConnectionUpdate, EventConnectionResponse,
-    ActEventsResponse,
+    ActEventsResponse, ProjectEventsResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,23 @@ def get_project_outline(project_id: str, db: Session = Depends(get_db)):
         ))
 
     return ProjectOutlineResponse(volumes=result_volumes)
+
+
+@router.get("/projects/{project_id}/events", response_model=ProjectEventsResponse)
+def get_project_events(project_id: str, db: Session = Depends(get_db)):
+    """获取项目的所有事件（用于搜索）"""
+    events = (
+        db.query(StoryEvent)
+        .filter(StoryEvent.project_id == project_id)
+        .options(joinedload(StoryEvent.outgoing_connections))
+        .order_by(StoryEvent.order)
+        .all()
+    )
+
+    return ProjectEventsResponse(
+        project_id=project_id,
+        events=[StoryEventResponse.model_validate(e) for e in events],
+    )
 
 
 # ======== Volume Outline ========

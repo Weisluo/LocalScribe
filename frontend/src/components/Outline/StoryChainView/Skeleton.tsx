@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import './animations.css';
 
 interface SkeletonProps {
   className?: string;
@@ -10,7 +11,7 @@ export const Skeleton = ({ className = '', animate = 'shimmer' }: SkeletonProps)
   
   return (
     <div 
-      className={`bg-muted/30 rounded ${animationClass} ${className}`}
+      className={`bg-muted/30 rounded ${animationClass} optimize-animations ${className}`}
     />
   );
 };

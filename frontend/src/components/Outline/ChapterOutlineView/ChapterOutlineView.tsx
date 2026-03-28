@@ -1,10 +1,11 @@
 // frontend/src/components/Outline/ChapterOutlineView/ChapterOutlineView.tsx
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { ChevronDown, BookOpen, Layers, FileText, Plus } from 'lucide-react';
 import { useOutlineStore } from '../hooks/useOutlineStore';
 import { useUpdateChapterOutline } from '../hooks/useOutline';
 import { ChapterOutlineItem } from './ChapterOutlineItem';
 import { useUIStore } from '@/stores/uiStore';
+import { useSearchHighlight } from '../hooks/useSearchHighlight';
 import type { ProjectOutline } from '../types';
 
 interface ChapterOutlineViewProps {
@@ -24,9 +25,69 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
   } = useOutlineStore();
   
   const openModal = useUIStore(state => state.openModal);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const updateMutation = useUpdateChapterOutline(projectId);
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    const handleOutlineSearch = (e: CustomEvent<{ keyword: string }>) => {
+      setSearchKeyword(e.detail.keyword);
+    };
+
+    window.addEventListener('outlineSearch', handleOutlineSearch as EventListener);
+    return () => window.removeEventListener('outlineSearch', handleOutlineSearch as EventListener);
+  }, []);
+
+  const searchResults = useMemo(() => {
+    if (!searchKeyword.trim()) return [];
+    
+    const results: { volumeId: string; actId: string; chapterId: string; chapterTitle: string }[] = [];
+    const searchKey = searchKeyword.toLowerCase();
+
+    outlineData.volumes.forEach(volume => {
+      volume.acts.forEach(act => {
+        act.chapters.forEach(chapter => {
+          const titleMatch = chapter.title.toLowerCase().includes(searchKey);
+          const contentMatch = chapter.outline_content?.toLowerCase().includes(searchKey);
+          
+          if (titleMatch || contentMatch) {
+            results.push({
+              volumeId: volume.id,
+              actId: act.id,
+              chapterId: chapter.id,
+              chapterTitle: chapter.title,
+            });
+          }
+        });
+      });
+    });
+
+    return results;
+  }, [searchKeyword, outlineData.volumes]);
+
+  useEffect(() => {
+    const event = new CustomEvent('outlineSearchResults', { 
+      detail: { total: searchResults.length } 
+    });
+    window.dispatchEvent(event);
+  }, [searchResults.length]);
+
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      searchResults.forEach(result => {
+        if (!expandedVolumeIds.has(result.volumeId)) {
+          toggleVolume(result.volumeId);
+        }
+        if (!expandedActIds.has(result.actId)) {
+          toggleAct(result.actId);
+        }
+        if (!expandedChapterIds.has(result.chapterId)) {
+          toggleChapter(result.chapterId);
+        }
+      });
+    }
+  }, [searchResults, expandedVolumeIds, expandedActIds, expandedChapterIds, toggleVolume, toggleAct, toggleChapter]);
 
   const handleContentChange = useCallback(
     (noteId: string, html: string) => {
@@ -56,6 +117,24 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
     openModal('note', actId);
   };
 
+  const VolumeTitle = ({ name, index }: { name: string; index: number }) => {
+    const highlightedName = useSearchHighlight(name, searchKeyword);
+    return (
+      <span className="text-lg font-semibold text-foreground">
+        第{index + 1}卷：{highlightedName}
+      </span>
+    );
+  };
+
+  const ActTitle = ({ name, index }: { name: string; index: number }) => {
+    const highlightedName = useSearchHighlight(name, searchKeyword);
+    return (
+      <span className="text-base font-medium text-foreground">
+        第{index + 1}幕：{highlightedName}
+      </span>
+    );
+  };
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto py-6 px-6 space-y-4">
@@ -77,9 +156,7 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <BookOpen className="h-4 w-4 text-primary/60" />
-                <span className="text-lg font-semibold text-foreground">
-                  第{vIndex + 1}卷：{volume.name}
-                </span>
+                <VolumeTitle name={volume.name} index={vIndex} />
                 <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                   {volume.acts.reduce((acc, act) => acc + act.chapters.length, 0)} 章
                 </span>
@@ -114,9 +191,7 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
                             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                           </div>
                           <Layers className="h-3.5 w-3.5 text-accent/60" />
-                          <span className="text-base font-medium text-foreground">
-                            第{aIndex + 1}幕：{act.name}
-                          </span>
+                          <ActTitle name={act.name} index={aIndex} />
                           <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                             {act.chapters.length} 章
                           </span>

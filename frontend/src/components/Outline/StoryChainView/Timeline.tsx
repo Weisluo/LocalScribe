@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { StoryEvent } from '../types';
+import './animations.css';
 
 interface TimelineProps {
   events: StoryEvent[];
@@ -74,7 +75,7 @@ export const Timeline = ({ events, eventPositions, zoom }: TimelineProps) => {
 
   return (
     <div 
-      className="absolute left-0 top-0 bottom-0 w-24 pointer-events-none"
+      className="absolute left-0 top-0 bottom-0 w-24 pointer-events-none optimize-animations"
       style={{ height: timelineHeight * zoom }}
     >
       <div className="relative h-full">
@@ -86,10 +87,11 @@ export const Timeline = ({ events, eventPositions, zoom }: TimelineProps) => {
         {timelineNodes.map((node, index) => (
           <div
             key={`${node.eventId}-${index}`}
-            className="absolute left-0 flex items-center gap-2 pointer-events-auto"
+            className="absolute left-0 flex items-center gap-2 pointer-events-auto timeline-node-enter"
             style={{ 
               top: node.y * zoom,
               transform: 'translateY(-50%)',
+              animationDelay: `${index * 50}ms`,
             }}
           >
             <div className="w-16 text-right pr-2">
@@ -103,8 +105,7 @@ export const Timeline = ({ events, eventPositions, zoom }: TimelineProps) => {
             <div className="relative flex items-center justify-center">
               <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30 border-2 border-background
                               shadow-sm" />
-              <div className="absolute w-4 h-4 rounded-full bg-primary/10 animate-pulse" 
-                   style={{ animationDuration: '2s' }} />
+              <div className="absolute w-4 h-4 rounded-full bg-primary/10 timeline-pulse" />
             </div>
           </div>
         ))}

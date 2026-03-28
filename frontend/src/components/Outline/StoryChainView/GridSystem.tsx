@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { GridConfig } from '../types';
+import './animations.css';
 
 interface GridOverlayProps {
   config: GridConfig;
@@ -72,7 +73,7 @@ export const AlignmentLines = ({
 }: AlignmentLinesProps) => {
   return (
     <svg
-      className="absolute inset-0 pointer-events-none z-10"
+      className="absolute inset-0 pointer-events-none z-10 optimize-animations"
       style={{ width: canvasWidth, height: canvasHeight }}
     >
       {showHorizontal && (
@@ -84,7 +85,8 @@ export const AlignmentLines = ({
           stroke="hsl(var(--destructive))"
           strokeWidth={1}
           strokeDasharray="4 2"
-          opacity={0.6}
+          opacity={0.8}
+          className="alignment-line-horizontal"
         />
       )}
       {showVertical && (
@@ -96,7 +98,8 @@ export const AlignmentLines = ({
           stroke="hsl(var(--destructive))"
           strokeWidth={1}
           strokeDasharray="4 2"
-          opacity={0.6}
+          opacity={0.8}
+          className="alignment-line-vertical"
         />
       )}
     </svg>

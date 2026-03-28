@@ -132,6 +132,11 @@ export interface ActEvents {
   connections: EventConnection[];
 }
 
+export interface ProjectEvents {
+  project_id: string;
+  events: StoryEvent[];
+}
+
 // ======== 事件详情弹窗 ========
 export interface EventModalData {
   event?: StoryEvent;

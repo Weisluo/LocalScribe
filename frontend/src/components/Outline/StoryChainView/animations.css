@@ -1,0 +1,539 @@
+/* ============================================
+   高性能动画系统 - 大纲界面专用
+   ============================================ */
+
+/* 硬件加速基础类 */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ============================================
+   入场动画 - 交错效果
+   ============================================ */
+
+@keyframes eventNodeEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes eventNodeEnterFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(4px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes eventNodeEnterFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-4px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.event-node-enter {
+  animation: eventNodeEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.event-node-enter-from-left {
+  animation: eventNodeEnterFromLeft 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.event-node-enter-from-right {
+  animation: eventNodeEnterFromRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* 交错动画延迟 */
+.event-node-stagger-1 { animation-delay: 0.05s; }
+.event-node-stagger-2 { animation-delay: 0.1s; }
+.event-node-stagger-3 { animation-delay: 0.15s; }
+.event-node-stagger-4 { animation-delay: 0.2s; }
+.event-node-stagger-5 { animation-delay: 0.25s; }
+.event-node-stagger-6 { animation-delay: 0.3s; }
+.event-node-stagger-7 { animation-delay: 0.35s; }
+.event-node-stagger-8 { animation-delay: 0.4s; }
+
+/* ============================================
+   连接线动画
+   ============================================ */
+
+@keyframes connectionLineDraw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes connectionLineFlow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -20;
+  }
+}
+
+.connection-line-draw {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: connectionLineDraw 0.8s ease-out forwards;
+  will-change: stroke-dashoffset;
+}
+
+.connection-line-flow {
+  stroke-dasharray: 10 5;
+  animation: connectionLineFlow 1s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+/* ============================================
+   微交互效果
+   ============================================ */
+
+/* 拖拽状态 */
+@keyframes dragPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(var(--primary-rgb), 0);
+  }
+}
+
+.dragging-active {
+  animation: dragPulse 1.5s ease-in-out infinite;
+  cursor: grabbing !important;
+  z-index: 1000;
+  transform: scale(1.05) rotate(2deg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  will-change: transform, box-shadow;
+}
+
+/* 连接模式高亮 */
+@keyframes connectionModeGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(var(--primary-rgb), 0);
+  }
+}
+
+.connection-mode-active {
+  animation: connectionModeGlow 2s ease-in-out infinite;
+}
+
+/* 操作成功动画 */
+@keyframes successCheck {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(-45deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-45deg);
+    opacity: 1;
+  }
+}
+
+@keyframes successRipple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.success-animation {
+  position: relative;
+}
+
+.success-animation::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, transparent 70%);
+  animation: successRipple 0.6s ease-out;
+  pointer-events: none;
+}
+
+/* ============================================
+   对齐线动画
+   ============================================ */
+
+@keyframes alignmentLineShow {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 0.8;
+    transform: scaleX(1);
+  }
+}
+
+.alignment-line-horizontal {
+  animation: alignmentLineShow 0.2s ease-out;
+  transform-origin: left center;
+  will-change: transform, opacity;
+}
+
+.alignment-line-vertical {
+  animation: alignmentLineShow 0.2s ease-out;
+  transform-origin: center top;
+  will-change: transform, opacity;
+}
+
+/* ============================================
+   批量选择动画
+   ============================================ */
+
+@keyframes batchSelectPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.2);
+  }
+}
+
+.batch-selected {
+  animation: batchSelectPulse 2s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+/* ============================================
+   搜索高亮动画
+   ============================================ */
+
+@keyframes searchHighlight {
+  0%, 100% {
+    background-color: rgba(250, 204, 21, 0.2);
+  }
+  50% {
+    background-color: rgba(250, 204, 21, 0.4);
+  }
+}
+
+.search-highlight {
+  animation: searchHighlight 1.5s ease-in-out infinite;
+  will-change: background-color;
+}
+
+/* ============================================
+   展开折叠动画
+   ============================================ */
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collapseOut {
+  from {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.expand-animation {
+  animation: expandIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  overflow: hidden;
+  will-change: max-height, opacity, transform;
+}
+
+.collapse-animation {
+  animation: collapseOut 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  overflow: hidden;
+  will-change: max-height, opacity, transform;
+}
+
+/* ============================================
+   浮动操作栏动画
+   ============================================ */
+
+@keyframes floatingBarEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes floatingBarExit {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px) scale(0.9);
+  }
+}
+
+.floating-bar-enter {
+  animation: floatingBarEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.floating-bar-exit {
+  animation: floatingBarExit 0.2s ease-in forwards;
+  will-change: transform, opacity;
+}
+
+/* ============================================
+   时间轴动画
+   ============================================ */
+
+@keyframes timelineNodeEnter {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes timelinePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.timeline-node-enter {
+  animation: timelineNodeEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.timeline-pulse {
+  animation: timelinePulse 2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* ============================================
+   性能优化 - 减少重绘
+   ============================================ */
+
+.optimize-performance {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+.optimize-animations {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ============================================
+   响应式动画（减少运动）
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   悬停效果优化
+   ============================================ */
+
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease;
+  will-change: transform, box-shadow;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* ============================================
+   加载状态动画
+   ============================================ */
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  will-change: background-position;
+}
+
+/* ============================================
+   弹性动画
+   ============================================ */
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.bounce-animation {
+  animation: bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+/* ============================================
+   淡入淡出
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+  will-change: opacity;
+}
+
+.fade-out {
+  animation: fadeOut 0.2s ease-in;
+  will-change: opacity;
+}
+
+/* ============================================
+   缩放动画
+   ============================================ */
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zoomOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.zoom-in {
+  animation: zoomIn 0.2s ease-out;
+  will-change: transform, opacity;
+}
+
+.zoom-out {
+  animation: zoomOut 0.2s ease-in;
+  will-change: transform, opacity;
+}

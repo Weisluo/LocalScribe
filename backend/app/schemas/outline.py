@@ -166,3 +166,8 @@ class ActEventsResponse(BaseModel):
     volume_id: str
     events: List[StoryEventResponse] = []
     connections: List[EventConnectionResponse] = []
+
+
+class ProjectEventsResponse(BaseModel):
+    project_id: str
+    events: List[StoryEventResponse] = []

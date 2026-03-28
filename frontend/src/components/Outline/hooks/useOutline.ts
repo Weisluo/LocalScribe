@@ -10,6 +10,7 @@ import type {
   EventConnectionCreate,
   EventConnectionUpdate,
   ActEvents,
+  ProjectEvents,
 } from '../types';
 
 // ======== 项目大纲数据 ========
@@ -18,6 +19,14 @@ export function useProjectOutline(projectId: string | undefined) {
   return useQuery({
     queryKey: ['outline', projectId],
     queryFn: () => api.get<ProjectOutline>(`/outline/projects/${projectId}/outline`),
+    enabled: !!projectId,
+  });
+}
+
+export function useProjectEvents(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['project-events', projectId],
+    queryFn: () => api.get<ProjectEvents>(`/outline/projects/${projectId}/events`),
     enabled: !!projectId,
   });
 }

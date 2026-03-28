@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Pencil, Link2, Copy, Palette, Trash2 } from 'lucide-react';
 import type { EventType, ConnectionType } from '../types';
+import './animations.css';
 
 interface FloatingActionBarProps {
   selectedEventId: string;
@@ -76,7 +77,7 @@ export const FloatingActionBar = ({
 
   return (
     <div
-      className="fixed z-50 animate-in fade-in zoom-in-95 duration-200"
+      className="fixed z-50 floating-bar-enter optimize-animations"
       style={{
         left: position.x,
         top: position.y - 8,
@@ -88,7 +89,7 @@ export const FloatingActionBar = ({
           onClick={onDeselect}
           className="p-1.5 rounded-full bg-card shadow-lg border border-border/60
                      hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                     transition-all duration-200"
+                     hover-scale"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -97,7 +98,7 @@ export const FloatingActionBar = ({
           <button
             onClick={onEdit}
             className="group relative p-2 rounded-full hover:bg-accent/20
-                       text-muted-foreground hover:text-foreground transition-all duration-200"
+                       text-muted-foreground hover:text-foreground hover-scale"
             title="编辑 (E)"
           >
             <Pencil className="h-4 w-4" />
@@ -106,7 +107,7 @@ export const FloatingActionBar = ({
           <div className="relative">
             <button
               onClick={() => setShowConnectMenu(!showConnectMenu)}
-              className={`p-2 rounded-full transition-all duration-200
+              className={`p-2 rounded-full hover-scale
                          ${showConnectMenu 
                            ? 'bg-accent/20 text-foreground' 
                            : 'hover:bg-accent/20 text-muted-foreground hover:text-foreground'}`}
@@ -118,14 +119,14 @@ export const FloatingActionBar = ({
             {showConnectMenu && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
                               bg-popover rounded-lg shadow-xl border border-border/60
-                              p-1.5 min-w-[140px] animate-in fade-in zoom-in-95 duration-150">
+                              p-1.5 min-w-[140px] zoom-in optimize-animations">
                 {connectionTypeOptions.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => handleConnect(opt.value)}
                     className="w-full px-3 py-1.5 text-xs text-left rounded-md
                              hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                             transition-colors"
+                             hover-scale"
                   >
                     {opt.label}
                   </button>
@@ -137,7 +138,7 @@ export const FloatingActionBar = ({
           <button
             onClick={onCopy}
             className="p-2 rounded-full hover:bg-accent/20
-                       text-muted-foreground hover:text-foreground transition-all duration-200"
+                       text-muted-foreground hover:text-foreground hover-scale"
             title="复制"
           >
             <Copy className="h-4 w-4" />
@@ -148,7 +149,7 @@ export const FloatingActionBar = ({
           <div className="relative">
             <button
               onClick={() => setShowStyleMenu(!showStyleMenu)}
-              className={`p-2 rounded-full transition-all duration-200
+              className={`p-2 rounded-full hover-scale
                          ${showStyleMenu 
                            ? 'bg-accent/20 text-foreground' 
                            : 'hover:bg-accent/20 text-muted-foreground hover:text-foreground'}`}
@@ -160,14 +161,14 @@ export const FloatingActionBar = ({
             {showStyleMenu && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
                               bg-popover rounded-lg shadow-xl border border-border/60
-                              p-2 animate-in fade-in zoom-in-95 duration-150">
+                              p-2 zoom-in optimize-animations">
                 <div className="grid grid-cols-3 gap-1.5 mb-1.5">
                   {eventTypeOptions.slice(0, 3).map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => handleStyleChange(opt.value)}
                       className={`flex flex-col items-center gap-1 px-3 py-2 rounded-md
-                               transition-all duration-200
+                               hover-scale
                                ${currentEventType === opt.value
                                  ? 'bg-accent/20 text-foreground ring-1 ring-accent/40'
                                  : 'hover:bg-accent/10 text-muted-foreground hover:text-foreground'}`}
@@ -183,7 +184,7 @@ export const FloatingActionBar = ({
                       key={opt.value}
                       onClick={() => handleStyleChange(opt.value)}
                       className={`flex flex-col items-center gap-1 px-3 py-2 rounded-md
-                               transition-all duration-200
+                               hover-scale
                                ${currentEventType === opt.value
                                  ? 'bg-accent/20 text-foreground ring-1 ring-accent/40'
                                  : 'hover:bg-accent/10 text-muted-foreground hover:text-foreground'}`}
@@ -200,7 +201,7 @@ export const FloatingActionBar = ({
           <button
             onClick={onDelete}
             className="p-2 rounded-full hover:bg-destructive/20
-                       text-muted-foreground hover:text-destructive transition-all duration-200"
+                       text-muted-foreground hover:text-destructive hover-scale"
             title="删除 (D)"
           >
             <Trash2 className="h-4 w-4" />

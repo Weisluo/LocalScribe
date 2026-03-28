@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Circle, GitBranch, Flag, History, FastForward,
   MapPin, Users, Clock,
 } from 'lucide-react';
 import type { StoryEvent, EventType } from '../types';
+import './animations.css';
 
 interface EventNodeProps {
   event: StoryEvent;
@@ -12,6 +13,8 @@ interface EventNodeProps {
   isConnectionMode: boolean;
   isSearchResult?: boolean;
   isCurrentSearchResult?: boolean;
+  isDragging?: boolean;
+  animationDelay?: number;
   onSelect: (id: string) => void;
   onDoubleClick: (id: string) => void;
   onConnectionTarget: (id: string) => void;
@@ -62,15 +65,28 @@ export const EventNode = ({
   isConnectionMode,
   isSearchResult = false,
   isCurrentSearchResult = false,
+  isDragging = false,
+  animationDelay = 0,
   onSelect,
   onDoubleClick,
   onConnectionTarget,
 }: EventNodeProps) => {
   const config = eventTypeConfig[event.event_type] || eventTypeConfig.normal;
+  const [isEntering, setIsEntering] = useState(true);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsEntering(false);
+    }, 400 + animationDelay);
+    return () => clearTimeout(timer);
+  }, [animationDelay]);
 
   const handleClick = useCallback(() => {
     if (isConnectionMode) {
       onConnectionTarget(event.id);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 600);
     } else {
       onSelect(event.id);
     }
@@ -88,15 +104,17 @@ export const EventNode = ({
       className={`
         min-w-[160px] max-w-[280px] rounded-lg p-3
         border shadow-sm bg-card cursor-pointer
-        transition-all duration-200 relative group
+        relative group optimize-animations
+        ${isEntering ? 'event-node-enter' : ''}
+        ${isDragging ? 'dragging-active' : 'hover-lift'}
         ${config.borderColor}
         ${config.bgAccent}
         ${isSelected
-          ? 'ring-2 ring-accent shadow-md scale-[1.02]'
+          ? 'ring-2 ring-accent shadow-md'
           : 'hover:border-accent/50 hover:shadow-md'
         }
         ${isConnectionSource 
-          ? 'ring-2 ring-primary shadow-lg scale-[1.05]' 
+          ? 'connection-mode-active ring-2 ring-primary shadow-lg' 
           : ''
         }
         ${isConnectionMode && !isConnectionSource 
@@ -104,14 +122,16 @@ export const EventNode = ({
           : ''
         }
         ${isSearchResult && !isCurrentSearchResult
-          ? 'bg-yellow-50/30 dark:bg-yellow-900/10'
+          ? 'search-highlight'
           : ''
         }
         ${isCurrentSearchResult
-          ? 'ring-2 ring-yellow-400 shadow-lg animate-pulse'
+          ? 'ring-2 ring-yellow-400 shadow-lg'
           : ''
         }
+        ${showSuccess ? 'success-animation' : ''}
       `}
+      style={{ animationDelay: `${animationDelay}ms` }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >

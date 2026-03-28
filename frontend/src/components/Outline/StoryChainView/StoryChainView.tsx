@@ -10,6 +10,7 @@ import {
   useUpdateEvent,
   useDeleteEvent,
   useCreateConnection,
+  useProjectEvents,
 } from '../hooks/useOutline';
 import { EventNode } from './EventNode';
 import { ConnectionLine, SvgDefs } from './ConnectionLine';
@@ -23,11 +24,13 @@ import { DraggableEvent } from './DragDrop';
 import { BatchActionBar, useBatchSelection } from './BatchSelection';
 import { StoryChainSkeleton } from './Skeleton';
 import { CanvasSettingsModal } from './CanvasSettingsModal';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsHelp';
 import { useCanvasKeyboard } from './useCanvasKeyboard';
 import type {
   ProjectOutline, StoryEvent, StoryEventCreate, StoryEventUpdate,
   EventConnection, ConnectionType, EventType, GridConfig, SearchFilters,
 } from '../types';
+import './animations.css';
 
 interface StoryChainViewProps {
   projectId: string;
@@ -480,12 +483,12 @@ const ActChainItem = ({
 
       <div 
         className={`
-          grid transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
-          ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}
+          grid optimize-animations
+          ${isExpanded ? 'grid-rows-[1fr] opacity-100 expand-animation' : 'grid-rows-[0fr] opacity-0 collapse-animation'}
         `}
       >
         <div className="overflow-hidden">
-          <div className={`transition-all duration-300 ${isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+          <div className={`${isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
           {isLoading ? (
           <StoryChainSkeleton volumeCount={1} actPerVolume={1} showProgress={false} />
         ) : events.length === 0 ? (
@@ -562,12 +565,13 @@ const ActChainItem = ({
                   })}
                 </svg>
 
-                {events.map((event) => {
+                {events.map((event, index) => {
                   const pos = finalPositions.get(event.id);
                   if (!pos) return null;
                   
                   const isSearchResult = searchResultIds.has(event.id);
                   const isCurrentSearchResult = currentSearchResultId === event.id;
+                  const animationDelay = Math.min(index * 50, 400);
                   
                   return (
                     <DraggableEvent
@@ -586,6 +590,8 @@ const ActChainItem = ({
                         isConnectionMode={connectionMode}
                         isSearchResult={isSearchResult}
                         isCurrentSearchResult={isCurrentSearchResult}
+                        isDragging={draggingEventId === event.id}
+                        animationDelay={animationDelay}
                         onSelect={(id) => {
                           const isShiftKey = (window.event as MouseEvent)?.shiftKey;
                           if (isShiftKey) {
@@ -705,6 +711,8 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
     resetConnectionMode,
   } = useOutlineStore();
 
+  const { data: projectEventsData } = useProjectEvents(projectId);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
@@ -712,31 +720,134 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
     eventTypes: [],
     caseSensitive: false,
   });
-  void searchKeyword;
-  void setSearchKeyword;
-  void searchFilters;
-  void setSearchFilters;
   const [gridConfig, setGridConfig] = useState<GridConfig>(DEFAULT_GRID_CONFIG);
   const [globalZoom, setGlobalZoom] = useState(1);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [showCanvasSettings, setShowCanvasSettings] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+
+  const actToVolumeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    outlineData.volumes.forEach(volume => {
+      volume.acts.forEach(act => {
+        map.set(act.id, volume.id);
+      });
+    });
+    return map;
+  }, [outlineData.volumes]);
 
   const allEvents = useMemo(() => {
-    const events: StoryEvent[] = [];
-    return events;
-  }, []);
+    return projectEventsData?.events || [];
+  }, [projectEventsData]);
 
   const searchResults = useMemo(() => {
     if (!searchKeyword.trim()) return [];
+    
     const results: { eventId: string; volumeId: string; actId: string }[] = [];
+    const searchKey = searchFilters.caseSensitive 
+      ? searchKeyword 
+      : searchKeyword.toLowerCase();
+
+    allEvents.forEach(event => {
+      let matched = false;
+      
+      if (searchFilters.scopes.includes('title')) {
+        const title = searchFilters.caseSensitive ? event.title : event.title.toLowerCase();
+        if (title.includes(searchKey)) {
+          matched = true;
+        }
+      }
+      
+      if (!matched && searchFilters.scopes.includes('content')) {
+        const content = searchFilters.caseSensitive ? event.content : event.content.toLowerCase();
+        if (content.includes(searchKey)) {
+          matched = true;
+        }
+      }
+      
+      if (!matched && searchFilters.scopes.includes('character') && event.characters) {
+        const characters = event.characters.map(c => 
+          searchFilters.caseSensitive ? c : c.toLowerCase()
+        );
+        if (characters.some(c => c.includes(searchKey))) {
+          matched = true;
+        }
+      }
+      
+      if (!matched && searchFilters.scopes.includes('location') && event.location) {
+        const location = searchFilters.caseSensitive ? event.location : event.location.toLowerCase();
+        if (location.includes(searchKey)) {
+          matched = true;
+        }
+      }
+      
+      if (!matched && searchFilters.scopes.includes('timestamp') && event.timestamp) {
+        const timestamp = searchFilters.caseSensitive ? event.timestamp : event.timestamp.toLowerCase();
+        if (timestamp.includes(searchKey)) {
+          matched = true;
+        }
+      }
+
+      if (matched) {
+        if (searchFilters.eventTypes && searchFilters.eventTypes.length > 0) {
+          if (!searchFilters.eventTypes.includes(event.event_type)) {
+            matched = false;
+          }
+        }
+      }
+
+      if (matched) {
+        const volumeId = actToVolumeMap.get(event.act_id) || '';
+        results.push({
+          eventId: event.id,
+          volumeId,
+          actId: event.act_id,
+        });
+      }
+    });
+
     return results;
-  }, [searchKeyword, searchFilters]);
+  }, [searchKeyword, searchFilters, allEvents, actToVolumeMap]);
 
   const searchResultIds = useMemo(() => {
     return new Set(searchResults.map(r => r.eventId));
   }, [searchResults]);
 
   const currentSearchResultId = searchResults[currentSearchIndex]?.eventId || null;
+
+  useEffect(() => {
+    const event = new CustomEvent('outlineSearchResults', { 
+      detail: { total: searchResults.length } 
+    });
+    window.dispatchEvent(event);
+  }, [searchResults.length]);
+
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      searchResults.forEach(result => {
+        if (!expandedVolumeIds.has(result.volumeId)) {
+          toggleVolume(result.volumeId);
+        }
+        if (!expandedActIds.has(result.actId)) {
+          toggleAct(result.actId);
+        }
+      });
+    }
+  }, [searchResults, expandedVolumeIds, expandedActIds, toggleVolume, toggleAct]);
+
+  useEffect(() => {
+    if (currentSearchResultId && searchResults.length > 0) {
+      const currentResult = searchResults[currentSearchIndex];
+      if (currentResult) {
+        if (!expandedVolumeIds.has(currentResult.volumeId)) {
+          toggleVolume(currentResult.volumeId);
+        }
+        if (!expandedActIds.has(currentResult.actId)) {
+          toggleAct(currentResult.actId);
+        }
+      }
+    }
+  }, [currentSearchIndex, currentSearchResultId, searchResults, expandedVolumeIds, expandedActIds, toggleVolume, toggleAct]);
 
   const handleSearchNavigate = useCallback((direction: 'next' | 'prev') => {
     if (searchResults.length === 0) return;
@@ -757,21 +868,42 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
       }
     };
 
+    const handleOutlineSearch = (e: CustomEvent<{ keyword: string; filters?: any }>) => {
+      setSearchKeyword(e.detail.keyword);
+      if (e.detail.filters) {
+        setSearchFilters(e.detail.filters);
+      }
+    };
+
+    const handleOutlineSearchNavigate = (e: CustomEvent<{ direction: 'next' | 'prev' }>) => {
+      handleSearchNavigate(e.detail.direction);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('outlineSearch', handleOutlineSearch as EventListener);
+    window.addEventListener('outlineSearchNavigate', handleOutlineSearchNavigate as EventListener);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('outlineSearch', handleOutlineSearch as EventListener);
+      window.removeEventListener('outlineSearchNavigate', handleOutlineSearchNavigate as EventListener);
+    };
+  }, [handleSearchNavigate]);
 
   // 监听来自 OutlineView 的事件
   useEffect(() => {
     const handleOpenCanvasSettings = () => setShowCanvasSettings(true);
     const handleOpenEventSearch = () => setSearchOpen(true);
+    const handleOpenKeyboardShortcuts = () => setShowKeyboardShortcuts(true);
 
     window.addEventListener('openCanvasSettings', handleOpenCanvasSettings);
     window.addEventListener('openEventSearch', handleOpenEventSearch);
+    window.addEventListener('openKeyboardShortcuts', handleOpenKeyboardShortcuts);
 
     return () => {
       window.removeEventListener('openCanvasSettings', handleOpenCanvasSettings);
       window.removeEventListener('openEventSearch', handleOpenEventSearch);
+      window.removeEventListener('openKeyboardShortcuts', handleOpenKeyboardShortcuts);
     };
   }, []);
 
@@ -882,6 +1014,10 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
         onClose={() => setShowCanvasSettings(false)}
         config={gridConfig}
         onConfigChange={setGridConfig}
+      />
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
       />
     </>
   );

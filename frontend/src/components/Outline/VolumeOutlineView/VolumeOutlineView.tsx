@@ -1,9 +1,10 @@
 // frontend/src/components/Outline/VolumeOutlineView/VolumeOutlineView.tsx
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { ChevronDown, BookOpen } from 'lucide-react';
 import { useOutlineStore } from '../hooks/useOutlineStore';
 import { useUpdateVolumeOutline } from '../hooks/useOutline';
 import { PaperEditor } from './PaperEditor';
+import { useSearchHighlight } from '../hooks/useSearchHighlight';
 import type { ProjectOutline } from '../types';
 
 interface VolumeOutlineViewProps {
@@ -14,17 +15,62 @@ interface VolumeOutlineViewProps {
 export const VolumeOutlineView = ({ projectId, outlineData }: VolumeOutlineViewProps) => {
   const { expandedVolumeIds, toggleVolume } = useOutlineStore();
   const updateMutation = useUpdateVolumeOutline(projectId);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
-  // 防抖保存
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    const handleOutlineSearch = (e: CustomEvent<{ keyword: string }>) => {
+      setSearchKeyword(e.detail.keyword);
+    };
+
+    window.addEventListener('outlineSearch', handleOutlineSearch as EventListener);
+    return () => window.removeEventListener('outlineSearch', handleOutlineSearch as EventListener);
+  }, []);
+
+  const searchResults = useMemo(() => {
+    if (!searchKeyword.trim()) return [];
+    
+    const results: { volumeId: string; volumeName: string }[] = [];
+    const searchKey = searchKeyword.toLowerCase();
+
+    outlineData.volumes.forEach(volume => {
+      const nameMatch = volume.name.toLowerCase().includes(searchKey);
+      const contentMatch = volume.outline_content?.toLowerCase().includes(searchKey);
+      
+      if (nameMatch || contentMatch) {
+        results.push({
+          volumeId: volume.id,
+          volumeName: volume.name,
+        });
+      }
+    });
+
+    return results;
+  }, [searchKeyword, outlineData.volumes]);
+
+  useEffect(() => {
+    const event = new CustomEvent('outlineSearchResults', { 
+      detail: { total: searchResults.length } 
+    });
+    window.dispatchEvent(event);
+  }, [searchResults.length]);
+
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      searchResults.forEach(result => {
+        if (!expandedVolumeIds.has(result.volumeId)) {
+          toggleVolume(result.volumeId);
+        }
+      });
+    }
+  }, [searchResults, expandedVolumeIds, toggleVolume]);
 
   const handleContentChange = useCallback(
     (volumeId: string, html: string) => {
-      // 清除之前的定时器
       if (saveTimerRef.current[volumeId]) {
         clearTimeout(saveTimerRef.current[volumeId]);
       }
-      // 1秒后自动保存
       saveTimerRef.current[volumeId] = setTimeout(() => {
         updateMutation.mutate({ volumeId, outlineContent: html });
       }, 1000);
@@ -32,12 +78,20 @@ export const VolumeOutlineView = ({ projectId, outlineData }: VolumeOutlineViewP
     [updateMutation]
   );
 
-  // 清理定时器
   useEffect(() => {
     return () => {
       Object.values(saveTimerRef.current).forEach(clearTimeout);
     };
   }, []);
+
+  const VolumeTitle = ({ name, index }: { name: string; index: number }) => {
+    const highlightedName = useSearchHighlight(name, searchKeyword);
+    return (
+      <span className="text-lg font-semibold text-foreground">
+        第{index + 1}卷：{highlightedName}
+      </span>
+    );
+  };
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -62,9 +116,7 @@ export const VolumeOutlineView = ({ projectId, outlineData }: VolumeOutlineViewP
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <BookOpen className="h-4 w-4 text-primary/60" />
-                <span className="text-lg font-semibold text-foreground">
-                  第{index + 1}卷：{volume.name}
-                </span>
+                <VolumeTitle name={volume.name} index={index} />
                 <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                   {volume.outline_content
                     ? `${volume.outline_content.replace(/<[^>]*>/g, '').length} 字`

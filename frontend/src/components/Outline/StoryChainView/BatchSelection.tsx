@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Trash2, Copy, Link2, AlignLeft, Merge, X } from 'lucide-react';
 import type { ConnectionType } from '../types';
+import './animations.css';
 
 interface BatchActionBarProps {
   selectedCount: number;
@@ -30,7 +31,7 @@ export const BatchActionBar = ({
   const [showConnectMenu, setShowConnectMenu] = useState(false);
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 zoom-in optimize-animations">
       <div className="flex items-center gap-3 px-5 py-3 bg-popover/95 backdrop-blur-sm rounded-xl shadow-2xl border border-border/60">
         <div className="flex items-center gap-2 pr-3 border-r border-border/40">
           <span className="text-sm font-medium text-foreground">
@@ -43,7 +44,7 @@ export const BatchActionBar = ({
             onClick={onAlign}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
                      hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                     transition-all duration-200"
+                     hover-scale"
             title="对齐事件"
           >
             <AlignLeft className="h-3.5 w-3.5" />
@@ -55,7 +56,7 @@ export const BatchActionBar = ({
               onClick={() => setShowConnectMenu(!showConnectMenu)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
                        hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                       transition-all duration-200"
+                       hover-scale"
               title="批量连接"
             >
               <Link2 className="h-3.5 w-3.5" />
@@ -65,7 +66,7 @@ export const BatchActionBar = ({
             {showConnectMenu && (
               <div className="absolute bottom-full left-0 mb-2 bg-popover rounded-lg shadow-xl 
                             border border-border/60 p-1.5 min-w-[120px]
-                            animate-in fade-in zoom-in-95 duration-150">
+                            zoom-in optimize-animations">
                 {connectionTypes.map(type => (
                   <button
                     key={type.value}
@@ -75,7 +76,7 @@ export const BatchActionBar = ({
                     }}
                     className="w-full px-3 py-1.5 text-xs text-left rounded-md
                              hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                             transition-colors"
+                             hover-scale"
                   >
                     {type.label}
                   </button>
@@ -88,7 +89,7 @@ export const BatchActionBar = ({
             onClick={onCopy}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
                      hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                     transition-all duration-200"
+                     hover-scale"
             title="复制事件"
           >
             <Copy className="h-3.5 w-3.5" />
@@ -99,7 +100,7 @@ export const BatchActionBar = ({
             onClick={onMerge}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
                      hover:bg-accent/20 text-muted-foreground hover:text-foreground
-                     transition-all duration-200"
+                     hover-scale"
             title="合并事件"
           >
             <Merge className="h-3.5 w-3.5" />
@@ -112,7 +113,7 @@ export const BatchActionBar = ({
             onClick={onDelete}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
                      hover:bg-destructive/20 text-muted-foreground hover:text-destructive
-                     transition-all duration-200"
+                     hover-scale"
             title="删除事件"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -123,7 +124,7 @@ export const BatchActionBar = ({
         <button
           onClick={onDeselect}
           className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground 
-                   hover:text-foreground transition-colors"
+                   hover:text-foreground hover-scale"
           title="取消选择"
         >
           <X className="h-4 w-4" />
