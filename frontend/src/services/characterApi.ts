@@ -93,9 +93,8 @@ export const getCharacterStats = (projectId: string) => {
  * 获取人物简要列表（用于选择器）
  */
 export const getCharactersSimple = (projectId: string, excludeId?: string) => {
-  return api.get<CharacterSimple[]>(`/projects/${projectId}/characters/simple`, {
-    params: { exclude_id: excludeId },
-  });
+  const config = excludeId ? { params: { exclude_id: excludeId } } : undefined;
+  return api.get<CharacterSimple[]>(`/projects/${projectId}/characters/simple`, config);
 };
 
 // ==================== 别名管理 ====================

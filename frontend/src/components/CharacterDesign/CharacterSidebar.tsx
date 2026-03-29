@@ -21,7 +21,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { characterApi } from '@/services/characterApi';
 import { api } from '@/utils/request';
 import { CharacterBarCard } from './CharacterBarCard';
-import { CharacterSkeleton } from './CharacterSkeleton';
 import { EmptyState } from './EmptyState';
 import { CreateCharacterModal } from './CreateCharacterModal';
 import { toast } from '@/stores/toastStore';
@@ -31,6 +30,7 @@ import {
   CharacterLevelLabels,
   CharacterLevelColors,
 } from '@/types/character';
+import type { ProjectOutline } from '@/components/Outline/types';
 
 interface CharacterSidebarProps {
   projectId: string;
@@ -45,16 +45,18 @@ interface SortableCharacterCardProps {
   isSelected: boolean;
   onClick: () => void;
   isSorting: boolean;
+  appearance?: {
+    first: { volume: string; act: string; chapter: string } | null;
+    last: { volume: string; act: string; chapter: string } | null;
+  };
 }
 
-/**
- * 可排序的人物卡片组件
- */
 const SortableCharacterCard = ({
   character,
   isSelected,
   onClick,
   isSorting,
+  appearance,
 }: SortableCharacterCardProps) => {
   const {
     attributes,
@@ -91,6 +93,7 @@ const SortableCharacterCard = ({
           character={character}
           isSelected={isSelected}
           onClick={onClick}
+          appearance={appearance}
         />
       </div>
     </div>
@@ -120,31 +123,28 @@ export const CharacterSidebar = ({
   const [showAppearanceFilter, setShowAppearanceFilter] = useState(false);
   const [volumeFilter, setVolumeFilter] = useState<string | null>(null);
   const [actFilter, setActFilter] = useState<string | null>(null);
-  const [chapterFilter, setChapterFilter] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const appearanceFilterRef = useRef<HTMLDivElement>(null);
 
-  // 获取项目目录树（用于出场章节筛选）
   const { data: tree } = useQuery({
     queryKey: ['directory', projectId],
     queryFn: () => api.get<VolumeNode[]>(`/projects/${projectId}/tree`),
     enabled: !!projectId,
   });
 
-  // 提取所有卷、幕、章
-  const { volumes, acts, chapters } = useMemo(() => {
+  const { data: outline } = useQuery({
+    queryKey: ['outline', projectId],
+    queryFn: () => api.get<ProjectOutline>(`/outline/projects/${projectId}/outline`),
+    enabled: !!projectId,
+  });
+
+  const { volumes } = useMemo(() => {
     const volSet = new Set<string>();
-    const actSet = new Set<string>();
-    const chapSet = new Set<string>();
 
     const processNode = (node: TreeNodeType) => {
       if (node.type === 'volume') {
         volSet.add(node.name);
-      } else if (node.type === 'act') {
-        actSet.add(node.name);
-      } else if (node.type === 'note') {
-        chapSet.add(node.title);
       }
       if ('children' in node && node.children) {
         node.children.forEach(processNode);
@@ -154,26 +154,97 @@ export const CharacterSidebar = ({
     tree?.forEach(processNode);
     return {
       volumes: Array.from(volSet),
-      acts: Array.from(actSet),
-      chapters: Array.from(chapSet),
     };
   }, [tree]);
 
-  // 获取人物列表
+  const availableActs = useMemo(() => {
+    if (!volumeFilter || !tree) return [];
+    
+    const actSet = new Set<string>();
+    
+    const findVolume = (nodes: TreeNodeType[]): TreeNodeType | null => {
+      for (const node of nodes) {
+        if (node.type === 'volume' && node.name === volumeFilter) {
+          return node;
+        }
+      }
+      return null;
+    };
+    
+    const volume = findVolume(tree);
+    if (volume && 'children' in volume && volume.children) {
+      volume.children.forEach((child) => {
+        if (child.type === 'act') {
+          actSet.add(child.name);
+        }
+      });
+    }
+    
+    return Array.from(actSet);
+  }, [tree, volumeFilter]);
+
   const { data: characters = [], isLoading } = useQuery({
-    queryKey: ['characters', projectId, levelFilter, searchKeyword, volumeFilter, actFilter, chapterFilter],
+    queryKey: ['characters', projectId, levelFilter, searchKeyword, volumeFilter, actFilter, isSorting],
     queryFn: () =>
       characterApi.getCharacters(projectId, {
         level: levelFilter || undefined,
         search: searchKeyword || undefined,
         volume: volumeFilter || undefined,
         act: actFilter || undefined,
-        chapter: chapterFilter || undefined,
-        sort_by: 'order_index',
+        sort_by: isSorting ? 'order_index' : 'default',
         sort_order: 'asc',
       }),
     enabled: !!projectId,
   });
+
+  interface AppearanceMatch {
+    volume: string;
+    act: string;
+    chapter: string;
+  }
+
+  const characterAppearances = useMemo(() => {
+    const result: Record<string, { first: AppearanceMatch | null; last: AppearanceMatch | null }> = {};
+    
+    if (!outline?.volumes || !tree) {
+      return result;
+    }
+
+    characters.forEach(char => {
+      const characterName = char.name.toLowerCase();
+      const aliases = char.aliases?.map(a => a.content.toLowerCase()) || [];
+      const searchTerms = [characterName, ...aliases];
+
+      const matches: AppearanceMatch[] = [];
+
+      const searchInText = (text: string): boolean => {
+        if (!text) return false;
+        const lowerText = text.toLowerCase();
+        return searchTerms.some(term => lowerText.includes(term));
+      };
+
+      outline.volumes.forEach(volume => {
+        volume.acts.forEach(act => {
+          act.chapters.forEach(chapter => {
+            if (chapter.outline_content && searchInText(chapter.outline_content)) {
+              matches.push({
+                volume: volume.name,
+                act: act.name,
+                chapter: chapter.title,
+              });
+            }
+          });
+        });
+      });
+
+      result[char.id] = {
+        first: matches.length > 0 ? matches[0] : null,
+        last: matches.length > 0 ? matches[matches.length - 1] : null,
+      };
+    });
+
+    return result;
+  }, [outline, tree, characters]);
 
   // 获取统计数据
   const { data: stats } = useQuery({
@@ -199,7 +270,7 @@ export const CharacterSidebar = ({
 
   // 批量更新排序
   const batchUpdateOrderMutation = useMutation({
-    mutationFn: (data: { orders: { id: string; order_index: number }[] }) =>
+    mutationFn: (data: { orders: Record<string, number> }) =>
       characterApi.batchUpdateCharacterOrder(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
@@ -228,10 +299,12 @@ export const CharacterSidebar = ({
 
       const newCharacters = arrayMove(characters, oldIndex, newIndex);
 
-      // 更新服务器排序
-      batchUpdateOrderMutation.mutate({
-        orders: newCharacters.map((c, index) => ({ id: c.id, order_index: index })),
+      // 更新服务器排序 - 转换为后端期望的格式
+      const orders: Record<string, number> = {};
+      newCharacters.forEach((c, index) => {
+        orders[c.id] = index;
       });
+      batchUpdateOrderMutation.mutate({ orders });
     }
   }, [characters, batchUpdateOrderMutation]);
 
@@ -272,15 +345,13 @@ export const CharacterSidebar = ({
   }, []);
 
   // 当搜索或筛选时，禁用排序和批量模式
-  const hasActiveFilter = levelFilter || volumeFilter || actFilter || chapterFilter;
+  const hasActiveFilter = levelFilter || volumeFilter || actFilter;
   const canSort = !searchKeyword && !hasActiveFilter && !isLoading && !isBatchMode;
   const canBatch = !searchKeyword && !hasActiveFilter && !isLoading && !isSorting;
 
-  // 处理出场章节筛选清除
   const handleClearAppearanceFilter = useCallback(() => {
     setVolumeFilter(null);
     setActFilter(null);
-    setChapterFilter(null);
     setShowAppearanceFilter(false);
   }, []);
 
@@ -512,29 +583,26 @@ export const CharacterSidebar = ({
             )}
           </div>
 
-          {/* 出场章节筛选按钮 */}
           <div className="relative flex-shrink-0" ref={appearanceFilterRef}>
             <button
               onClick={() => setShowAppearanceFilter(!showAppearanceFilter)}
               className={`flex items-center gap-1 px-2.5 py-2 text-sm rounded-lg transition-all duration-200 ${
-                volumeFilter || actFilter || chapterFilter
+                volumeFilter || actFilter
                   ? 'bg-accent text-accent-foreground'
                   : 'bg-accent/10 text-muted-foreground hover:text-foreground hover:bg-accent/20'
               }`}
               title="出场筛选"
             >
               <BookOpen className="h-3.5 w-3.5" />
-              {(volumeFilter || actFilter || chapterFilter) && (
+              {(volumeFilter || actFilter) && (
                 <span className="text-xs opacity-80">
-                  ({[volumeFilter, actFilter, chapterFilter].filter(Boolean).length})
+                  ({[volumeFilter, actFilter].filter(Boolean).length})
                 </span>
               )}
             </button>
 
-            {/* 出场章节筛选下拉菜单 */}
             {showAppearanceFilter && (
               <div className="absolute top-full right-0 mt-1 w-56 bg-card border border-border/60 rounded-lg shadow-lg z-20 py-2">
-                {/* 卷筛选 */}
                 {volumes.length > 0 && (
                   <div className="px-3 py-2">
                     <span className="text-xs text-muted-foreground block mb-1.5">卷</span>
@@ -542,7 +610,15 @@ export const CharacterSidebar = ({
                       {volumes.map((vol) => (
                         <button
                           key={vol}
-                          onClick={() => setVolumeFilter(volumeFilter === vol ? null : vol)}
+                          onClick={() => {
+                            if (volumeFilter === vol) {
+                              setVolumeFilter(null);
+                              setActFilter(null);
+                            } else {
+                              setVolumeFilter(vol);
+                              setActFilter(null);
+                            }
+                          }}
                           className={`px-2 py-0.5 text-xs rounded transition-colors ${
                             volumeFilter === vol
                               ? 'bg-primary text-primary-foreground'
@@ -556,14 +632,13 @@ export const CharacterSidebar = ({
                   </div>
                 )}
 
-                {/* 幕筛选 */}
-                {acts.length > 0 && (
+                {volumeFilter && availableActs.length > 0 && (
                   <>
                     <div className="my-1 border-t border-border/40" />
                     <div className="px-3 py-2">
                       <span className="text-xs text-muted-foreground block mb-1.5">幕</span>
                       <div className="flex flex-wrap gap-1">
-                        {acts.map((act) => (
+                        {availableActs.map((act) => (
                           <button
                             key={act}
                             onClick={() => setActFilter(actFilter === act ? null : act)}
@@ -581,40 +656,13 @@ export const CharacterSidebar = ({
                   </>
                 )}
 
-                {/* 章筛选 */}
-                {chapters.length > 0 && (
-                  <>
-                    <div className="my-1 border-t border-border/40" />
-                    <div className="px-3 py-2">
-                      <span className="text-xs text-muted-foreground block mb-1.5">章</span>
-                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                        {chapters.map((chap) => (
-                          <button
-                            key={chap}
-                            onClick={() => setChapterFilter(chapterFilter === chap ? null : chap)}
-                            className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                              chapterFilter === chap
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-accent/10 hover:bg-accent/20'
-                            }`}
-                          >
-                            {chap}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* 无数据提示 */}
-                {volumes.length === 0 && acts.length === 0 && chapters.length === 0 && (
+                {volumes.length === 0 && (
                   <div className="px-3 py-2 text-xs text-muted-foreground text-center">
                     暂无章节数据
                   </div>
                 )}
 
-                {/* 清除按钮 */}
-                {(volumeFilter || actFilter || chapterFilter) && (
+                {(volumeFilter || actFilter) && (
                   <>
                     <div className="my-1 border-t border-border/40" />
                     <div className="px-3 py-1">
@@ -630,22 +678,8 @@ export const CharacterSidebar = ({
               </div>
             )}
           </div>
-
-          {/* 清除所有筛选 */}
-          {hasActiveFilter && (
-            <button
-              onClick={() => {
-                handleLevelFilter(null);
-                handleClearAppearanceFilter();
-              }}
-              className="flex-shrink-0 text-xs text-primary hover:underline"
-            >
-              清除
-            </button>
-          )}
         </div>
 
-        {/* 排序提示 */}
         {isSorting && (
           <div className="mt-2 text-xs text-primary">
             拖拽调整顺序
@@ -653,15 +687,9 @@ export const CharacterSidebar = ({
         )}
       </div>
 
-      {/* 人物列表 */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading ? (
-          <div className="space-y-2">
-            <CharacterSkeleton level="protagonist" count={1} />
-            <CharacterSkeleton level="major_support" count={2} />
-            <CharacterSkeleton level="support" count={2} />
-            <CharacterSkeleton level="minor" count={1} />
-          </div>
+          <EmptyState type="loading" />
         ) : characters.length === 0 ? (
           <EmptyState
             type={searchKeyword ? 'no-search-results' : hasActiveFilter ? 'no-filter-results' : 'no-characters'}
@@ -686,6 +714,7 @@ export const CharacterSidebar = ({
                     isSelected={selectedCharacterId === character.id}
                     onClick={() => onSelectCharacter(character.id)}
                     isSorting={isSorting}
+                    appearance={characterAppearances[character.id]}
                   />
                 ))}
               </div>
@@ -715,18 +744,19 @@ export const CharacterSidebar = ({
                   character={character}
                   isSelected={selectedCharacterId === character.id}
                   onClick={() => {}}
+                  appearance={characterAppearances[character.id]}
                 />
               </div>
             </div>
           ))
         ) : (
-          // 普通模式 - 静态列表
           characters.map((character) => (
             <CharacterBarCard
               key={character.id}
               character={character}
               isSelected={selectedCharacterId === character.id}
               onClick={() => onSelectCharacter(character.id)}
+              appearance={characterAppearances[character.id]}
             />
           ))
         )}

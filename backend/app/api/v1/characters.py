@@ -12,7 +12,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
-from sqlalchemy import asc, desc, func, or_
+from sqlalchemy import asc, case, desc, func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.dependencies import get_db
@@ -136,8 +136,8 @@ def list_characters(
     act: Optional[str] = Query(None, description="筛选幕"),
     chapter: Optional[str] = Query(None, description="筛选章"),
     sort_by: str = Query(
-        "order_index",
-        description="排序字段：order_index(默认), name, created_at, updated_at",
+        "default",
+        description="排序字段：default(默认-按等级+出场时间), order_index(自定义排序), name, created_at, updated_at",
     ),
     sort_order: str = Query("asc", description="排序方向：asc(升序), desc(降序)"),
     db: Session = Depends(get_db),
@@ -175,7 +175,7 @@ def list_characters(
         query = query.filter(
             or_(
                 Character.name.ilike(search_pattern),
-                Character.id.in_(alias_subquery),
+                Character.id.in_(alias_subquery.select()),
             )
         )
 
@@ -191,11 +191,26 @@ def list_characters(
     query = query.options(selectinload(Character.aliases))
 
     # 应用排序
-    sort_column = getattr(Character, sort_by, Character.order_index)
-    if sort_order.lower() == "desc":
-        query = query.order_by(desc(sort_column))
+    if sort_by == "default":
+        # 默认排序：先按等级排序，同等级按出场时间排序
+        # 等级顺序：protagonist(1) > major_support(2) > support(3) > minor(4)
+        level_order = case(
+            (Character.level == "protagonist", 1),
+            (Character.level == "major_support", 2),
+            (Character.level == "support", 3),
+            (Character.level == "minor", 4),
+            else_=5,
+        )
+        if sort_order.lower() == "desc":
+            query = query.order_by(desc(level_order), desc(Character.first_appearance_volume), desc(Character.first_appearance_act), desc(Character.first_appearance_chapter))
+        else:
+            query = query.order_by(asc(level_order), asc(Character.first_appearance_volume), asc(Character.first_appearance_act), asc(Character.first_appearance_chapter))
     else:
-        query = query.order_by(asc(sort_column))
+        sort_column = getattr(Character, sort_by, Character.order_index)
+        if sort_order.lower() == "desc":
+            query = query.order_by(desc(sort_column))
+        else:
+            query = query.order_by(asc(sort_column))
 
     characters = query.all()
     return characters
@@ -253,6 +268,8 @@ def create_character(
             gender=character_data.gender.value,
             birth_date=character_data.birth_date,
             birthplace=character_data.birthplace,
+            race=character_data.race,
+            faction=character_data.faction,
             level=character_data.level.value,
             quote=character_data.quote,
             avatar=character_data.avatar,
@@ -260,6 +277,9 @@ def create_character(
             first_appearance_volume=character_data.first_appearance_volume,
             first_appearance_act=character_data.first_appearance_act,
             first_appearance_chapter=character_data.first_appearance_chapter,
+            last_appearance_volume=character_data.last_appearance_volume,
+            last_appearance_act=character_data.last_appearance_act,
+            last_appearance_chapter=character_data.last_appearance_chapter,
             order_index=character_data.order_index,
         )
         db.add(character)
@@ -306,12 +326,10 @@ def create_character(
             artifact = CharacterArtifact(
                 character_id=character.id,
                 name=artifact_data.name,
+                quote=artifact_data.quote,
                 description=artifact_data.description,
-                artifact_type=(
-                    artifact_data.artifact_type.value
-                    if artifact_data.artifact_type
-                    else None
-                ),
+                artifact_type=artifact_data.artifact_type,
+                rarity=artifact_data.rarity.value if artifact_data.rarity else None,
                 image=artifact_data.image,
                 order_index=artifact_data.order_index,
             )
@@ -330,6 +348,50 @@ def create_character(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"创建人物失败: {str(e)}",
         )
+
+
+# ==================== 选择器接口 ====================
+
+
+@router.get(
+    "/projects/{project_id}/characters/simple",
+    response_model=List[CharacterSimpleResponse],
+)
+def list_characters_simple(
+    project_id: str,
+    exclude_id: Optional[str] = Query(None, description="排除的人物ID（用于关系选择）"),
+    db: Session = Depends(get_db),
+):
+    """
+    获取人物简要列表（用于选择器）
+
+    - 返回ID、名称、等级、头像
+    - 可排除特定人物（避免选择自己作为关系目标）
+    """
+    # 检查项目是否存在
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"项目不存在: {project_id}",
+        )
+
+    query = db.query(Character).filter(Character.project_id == project_id)
+
+    if exclude_id:
+        query = query.filter(Character.id != exclude_id)
+
+    characters = query.order_by(Character.order_index, Character.name).all()
+
+    return [
+        CharacterSimpleResponse(
+            id=c.id,
+            name=c.name,
+            level=c.level,
+            avatar=c.avatar,
+        )
+        for c in characters
+    ]
 
 
 @router.get(
@@ -864,6 +926,10 @@ def create_relationship(
     db.commit()
     db.refresh(relationship)
 
+    # 加载 target_character 关系
+    if relationship.target_character_id:
+        db.refresh(relationship, ["target_character"])
+
     logger.info(f"添加关系成功: {character.name}")
     return relationship
 
@@ -973,10 +1039,10 @@ def create_artifact(
     artifact = CharacterArtifact(
         character_id=character_id,
         name=artifact_data.name,
+        quote=artifact_data.quote,
         description=artifact_data.description,
-        artifact_type=(
-            artifact_data.artifact_type.value if artifact_data.artifact_type else None
-        ),
+        artifact_type=artifact_data.artifact_type,
+        rarity=artifact_data.rarity.value if artifact_data.rarity else None,
         image=artifact_data.image,
         order_index=artifact_data.order_index,
     )
@@ -1017,8 +1083,9 @@ def update_artifact(
         )
 
     update_data = artifact_data.model_dump(exclude_unset=True)
-    if "artifact_type" in update_data and update_data["artifact_type"]:
-        update_data["artifact_type"] = update_data["artifact_type"].value
+
+    if "rarity" in update_data and update_data["rarity"] is not None:
+        update_data["rarity"] = update_data["rarity"].value
 
     for field, value in update_data.items():
         setattr(artifact, field, value)
@@ -1103,47 +1170,3 @@ def get_character_stats(
         by_level=by_level,
         by_gender=by_gender,
     )
-
-
-# ==================== 选择器接口 ====================
-
-
-@router.get(
-    "/projects/{project_id}/characters/simple",
-    response_model=List[CharacterSimpleResponse],
-)
-def list_characters_simple(
-    project_id: str,
-    exclude_id: Optional[str] = Query(None, description="排除的人物ID（用于关系选择）"),
-    db: Session = Depends(get_db),
-):
-    """
-    获取人物简要列表（用于选择器）
-
-    - 返回ID、名称、等级、头像
-    - 可排除特定人物（避免选择自己作为关系目标）
-    """
-    # 检查项目是否存在
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"项目不存在: {project_id}",
-        )
-
-    query = db.query(Character).filter(Character.project_id == project_id)
-
-    if exclude_id:
-        query = query.filter(Character.id != exclude_id)
-
-    characters = query.order_by(Character.order_index, Character.name).all()
-
-    return [
-        CharacterSimpleResponse(
-            id=c.id,
-            name=c.name,
-            level=c.level,
-            avatar=c.avatar,
-        )
-        for c in characters
-    ]

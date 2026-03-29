@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Edit2, Check, X, Plus, Trash2, AlignLeft, List, Image as ImageIcon, Type, Hash, ToggleLeft } from 'lucide-react';
 import type { CharacterCard, CardContentItem } from '@/types/character';
 
@@ -13,12 +13,6 @@ interface InfoCardProps {
   isFirst?: boolean;
   isLast?: boolean;
 }
-
-const iconOptions = [
-  '📝', '📋', '🎭', '🎨', '🗣️', '📖', '💫', '🏺', '⚔️', '🛡️',
-  '💎', '📜', '👤', '🏠', '🌍', '⏰', '💭', '❤️', '🔥', '❄️',
-  '🌟', '🌙', '☀️', '⚡', '🌊', '🌲', '🌸', '🍂', '❄️', '🔮',
-];
 
 const contentTypeIcons: Record<string, React.ReactNode> = {
   text: <Type className="h-3 w-3" />,
@@ -56,44 +50,35 @@ export const InfoCard = ({
 }: InfoCardProps) => {
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editTitle, setEditTitle] = useState(card.title);
-  const [editIcon, setEditIcon] = useState(card.icon || '📝');
   const [editContent, setEditContent] = useState<CardContentItem[]>(card.content || []);
-  const [showIconPicker, setShowIconPicker] = useState(false);
-  const iconPickerRef = useRef<HTMLDivElement>(null);
 
   // 当 autoEdit 变化时更新编辑状态
   useEffect(() => {
     if (autoEdit) {
       setIsEditing(true);
       setEditTitle(card.title);
-      setEditIcon(card.icon || '📝');
       setEditContent(card.content || []);
     }
   }, [autoEdit, card]);
 
+  // 当 isEditable 变为 false 时，退出编辑状态
+  useEffect(() => {
+    if (!isEditable && isEditing) {
+      setIsEditing(false);
+      setEditTitle(card.title);
+      setEditContent(card.content || []);
+    }
+  }, [isEditable, isEditing, card]);
+
   // 当卡片数据变化时更新本地状态
   useEffect(() => {
     setEditTitle(card.title);
-    setEditIcon(card.icon || '📝');
     setEditContent(card.content || []);
-  }, [card.id, card.title, card.icon, card.content]);
-
-  // 点击外部关闭图标选择器
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (iconPickerRef.current && !iconPickerRef.current.contains(event.target as Node)) {
-        setShowIconPicker(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [card.id, card.title, card.content]);
 
   // 开始编辑
   const handleStartEdit = useCallback(() => {
     setEditTitle(card.title);
-    setEditIcon(card.icon || '📝');
     setEditContent(card.content || []);
     setIsEditing(true);
   }, [card]);
@@ -102,20 +87,16 @@ export const InfoCard = ({
   const handleSave = useCallback(() => {
     onUpdate?.(card.id, {
       title: editTitle,
-      icon: editIcon,
       content: editContent,
     });
     setIsEditing(false);
-    setShowIconPicker(false);
-  }, [card.id, editTitle, editIcon, editContent, onUpdate]);
+  }, [card.id, editTitle, editContent, onUpdate]);
 
   // 取消编辑
   const handleCancel = useCallback(() => {
     setEditTitle(card.title);
-    setEditIcon(card.icon || '📝');
     setEditContent(card.content || []);
     setIsEditing(false);
-    setShowIconPicker(false);
   }, [card]);
 
   // 添加字段
@@ -252,54 +233,24 @@ export const InfoCard = ({
   return (
     <div className="bg-card/50 border border-border/60 rounded-xl overflow-hidden group hover:border-border/80 transition-colors">
       {/* 标题栏 */}
-      <div className="h-10 px-4 flex items-center justify-between bg-accent/5 border-b border-border/40">
+      <div className="h-10 px-4 flex items-center justify-center bg-accent/5 border-b border-border/40 relative">
         {isEditing ? (
-          <div className="flex items-center gap-2 flex-1">
-            {/* 图标选择器 */}
-            <div className="relative" ref={iconPickerRef}>
-              <button
-                onClick={() => setShowIconPicker(!showIconPicker)}
-                className="text-lg hover:bg-accent/20 rounded p-0.5 transition-colors"
-              >
-                {editIcon}
-              </button>
-              {showIconPicker && (
-                <div className="absolute top-full left-0 mt-1 p-2 bg-card border border-border/60 rounded-lg shadow-lg z-20 grid grid-cols-5 gap-1 w-48">
-                  {iconOptions.map((icon) => (
-                    <button
-                      key={icon}
-                      onClick={() => {
-                        setEditIcon(icon);
-                        setShowIconPicker(false);
-                      }}
-                      className={`p-1.5 text-lg rounded hover:bg-accent/20 transition-colors ${
-                        editIcon === icon ? 'bg-accent/30' : ''
-                      }`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-2 flex-1 max-w-md">
             <input
               type="text"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              className="flex-1 px-2 py-1 text-sm font-medium bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+              className="flex-1 px-2 py-1 text-sm font-medium bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50 text-center"
               placeholder="卡片标题"
               autoFocus
             />
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            {card.icon && <span className="text-lg">{card.icon}</span>}
-            <h4 className="text-sm font-semibold text-foreground">{card.title}</h4>
-          </div>
+          <h4 className="text-sm font-semibold text-foreground">{card.title}</h4>
         )}
 
         {isEditable && (
-          <div className="flex items-center gap-1">
+          <div className="absolute right-4 flex items-center gap-1">
             {/* 排序按钮 */}
             {!isEditing && (
               <>

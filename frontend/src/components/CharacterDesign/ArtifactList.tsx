@@ -1,31 +1,26 @@
-import { useState, useCallback } from 'react';
-import { Plus, Trash2, Sword, Shield, Gem, Scroll, Box, Upload, X } from 'lucide-react';
-import type { CharacterArtifact, ArtifactType } from '@/types/character';
-import { ArtifactTypeLabels } from '@/types/character';
+import { useState, useCallback, useEffect } from 'react';
+import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
+import type { CharacterArtifact, ArtifactRarity } from '@/types/character';
+import { ArtifactRarityLabels, ArtifactRarityColors, ArtifactRarityBgColors } from '@/types/character';
 
 interface ArtifactListProps {
   artifacts: CharacterArtifact[];
-  onAdd?: (data: { name: string; description?: string; artifact_type?: ArtifactType; image?: string }) => void;
-  onUpdate?: (artifactId: string, data: { image?: string }) => void;
+  onAdd?: (data: { name: string; quote?: string; description?: string; artifact_type?: string; rarity?: ArtifactRarity }) => void;
+  onUpdate?: (artifactId: string, data: { name?: string; quote?: string; description?: string; artifact_type?: string; rarity?: ArtifactRarity }) => void;
   onDelete?: (artifactId: string) => void;
   isEditable?: boolean;
 }
 
-const artifactTypeOptions: ArtifactType[] = ['weapon', 'armor', 'accessory', 'treasure', 'other'];
+const rarityOptions: ArtifactRarity[] = ['legendary', 'epic', 'rare', 'common'];
 
-const artifactTypeIcons: Record<ArtifactType, React.ReactNode> = {
-  weapon: <Sword className="h-4 w-4" />,
-  armor: <Shield className="h-4 w-4" />,
-  accessory: <Gem className="h-4 w-4" />,
-  treasure: <Scroll className="h-4 w-4" />,
-  other: <Box className="h-4 w-4" />,
+const getRarityStyle = (rarity?: ArtifactRarity): React.CSSProperties => {
+  if (!rarity) return {};
+  return {
+    borderColor: ArtifactRarityColors[rarity],
+    backgroundColor: ArtifactRarityBgColors[rarity],
+  };
 };
 
-/**
- * 器物列表组件
- *
- * 显示和管理人物的器物/物品，支持图片上传
- */
 export const ArtifactList = ({
   artifacts,
   onAdd,
@@ -34,40 +29,78 @@ export const ArtifactList = ({
   isEditable = true,
 }: ArtifactListProps) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  const [newQuote, setNewQuote] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newType, setNewType] = useState<ArtifactType>('other');
-  const [newImage, setNewImage] = useState<string>('');
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [newType, setNewType] = useState('');
+  const [newRarity, setNewRarity] = useState<ArtifactRarity | ''>('');
+  const [editName, setEditName] = useState('');
+  const [editQuote, setEditQuote] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editType, setEditType] = useState('');
+  const [editRarity, setEditRarity] = useState<ArtifactRarity | ''>('');
 
-  // 开始添加
+  // 当 isEditable 变为 false 时，退出编辑状态
+  useEffect(() => {
+    if (!isEditable) {
+      setIsAdding(false);
+      setEditingId(null);
+    }
+  }, [isEditable]);
+
   const handleStartAdd = useCallback(() => {
     setNewName('');
+    setNewQuote('');
     setNewDescription('');
-    setNewType('other');
-    setNewImage('');
+    setNewType('');
+    setNewRarity('');
     setIsAdding(true);
   }, []);
 
-  // 保存添加
   const handleSaveAdd = useCallback(() => {
     if (newName.trim()) {
       onAdd?.({
         name: newName.trim(),
+        quote: newQuote.trim() || undefined,
         description: newDescription.trim() || undefined,
-        artifact_type: newType,
-        image: newImage || undefined,
+        artifact_type: newType.trim() || undefined,
+        rarity: newRarity || undefined,
       });
       setIsAdding(false);
     }
-  }, [newName, newDescription, newType, newImage, onAdd]);
+  }, [newName, newQuote, newDescription, newType, newRarity, onAdd]);
 
-  // 取消添加
   const handleCancelAdd = useCallback(() => {
     setIsAdding(false);
   }, []);
 
-  // 删除器物
+  const handleStartEdit = useCallback((artifact: CharacterArtifact) => {
+    setEditingId(artifact.id);
+    setEditName(artifact.name);
+    setEditQuote(artifact.quote || '');
+    setEditDescription(artifact.description || '');
+    setEditType(artifact.artifact_type || '');
+    setEditRarity(artifact.rarity || '');
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    if (editingId && editName.trim()) {
+      onUpdate?.(editingId, {
+        name: editName.trim(),
+        quote: editQuote.trim() || undefined,
+        description: editDescription.trim() || undefined,
+        artifact_type: editType.trim() || undefined,
+        rarity: editRarity || undefined,
+      });
+      setEditingId(null);
+    }
+  }, [editingId, editName, editQuote, editDescription, editType, editRarity, onUpdate]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingId(null);
+  }, []);
+
   const handleDelete = useCallback(
     (artifactId: string) => {
       if (confirm('确定要删除这个器物吗？')) {
@@ -77,238 +110,176 @@ export const ArtifactList = ({
     [onDelete]
   );
 
-  // 处理图片上传
-  const handleImageUpload = useCallback(
-    async (artifactId: string, file: File) => {
-      if (!file) return;
-
-      setUploadingId(artifactId);
-
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error('上传失败');
-        }
-
-        const data = await response.json();
-        onUpdate?.(artifactId, { image: data.url });
-      } catch (error) {
-        console.error('图片上传失败:', error);
-        alert('图片上传失败，请重试');
-      } finally {
-        setUploadingId(null);
-      }
-    },
-    [onUpdate]
-  );
-
-  // 处理新器物图片上传
-  const handleNewImageUpload = useCallback(
-    async (file: File) => {
-      if (!file) return;
-
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error('上传失败');
-        }
-
-        const data = await response.json();
-        setNewImage(data.url);
-      } catch (error) {
-        console.error('图片上传失败:', error);
-        alert('图片上传失败，请重试');
-      }
-    },
-    []
-  );
-
-  // 删除图片
-  const handleRemoveImage = useCallback((artifactId: string) => {
-    onUpdate?.(artifactId, { image: '' });
-  }, [onUpdate]);
-
-  // 删除新器物的图片
-  const handleRemoveNewImage = useCallback(() => {
-    setNewImage('');
-  }, []);
-
   return (
     <div className="space-y-3">
-      {/* 器物列表 - 横向滚动 */}
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
         {artifacts.map((artifact) => (
           <div
             key={artifact.id}
-            className="flex-shrink-0 w-36 p-3 bg-accent/5 rounded-lg group hover:bg-accent/10 transition-colors"
+            className="w-full p-3 rounded-lg group hover:bg-accent/10 transition-colors border-2 relative"
+            style={getRarityStyle(artifact.rarity)}
           >
-            {/* 器物图标和类型 */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                {artifactTypeIcons[artifact.artifact_type || 'other']}
-                <span className="text-xs">{ArtifactTypeLabels[artifact.artifact_type || 'other']}</span>
-              </div>
-              {isEditable && (
-                <button
-                  onClick={() => handleDelete(artifact.id)}
-                  className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-
-            {/* 器物名称 */}
-            <h5 className="text-sm font-medium text-foreground truncate">{artifact.name}</h5>
-
-            {/* 器物描述 */}
-            {artifact.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{artifact.description}</p>
-            )}
-
-            {/* 器物图片 */}
-            <div className="mt-2">
-              {artifact.image ? (
-                <div className="relative rounded-md overflow-hidden group/image">
-                  <img
-                    src={artifact.image}
-                    alt={artifact.name}
-                    className="w-full h-20 object-cover"
-                  />
-                  {isEditable && (
+            {editingId === artifact.id ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">等级:</span>
+                  {rarityOptions.map((rarity) => (
                     <button
-                      onClick={() => handleRemoveImage(artifact.id)}
-                      className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity"
+                      key={rarity}
+                      onClick={() => setEditRarity(rarity)}
+                      className={`px-2 py-1 text-xs rounded transition-colors border ${
+                        editRarity === rarity
+                          ? 'text-white'
+                          : 'bg-background text-muted-foreground hover:text-foreground'
+                      }`}
+                      style={editRarity === rarity ? { backgroundColor: ArtifactRarityColors[rarity], borderColor: ArtifactRarityColors[rarity] } : { borderColor: ArtifactRarityColors[rarity] }}
                     >
-                      <X className="h-3 w-3" />
+                      {ArtifactRarityLabels[rarity]}
                     </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="器物名称"
+                  className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
+                  placeholder="器物类型（可选，如：剑、法器、丹药）"
+                  className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+                />
+                <input
+                  type="text"
+                  value={editQuote}
+                  onChange={(e) => setEditQuote(e.target.value)}
+                  placeholder="判词（可选）"
+                  className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+                />
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="器物描述（可选）"
+                  rows={2}
+                  className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/20 rounded transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="p-1.5 text-primary hover:bg-primary/10 rounded transition-colors"
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  {artifact.artifact_type && (
+                    <span className="px-1.5 py-0.5 text-[10px] rounded-sm text-muted-foreground bg-background/60 shrink-0">
+                      {artifact.artifact_type}
+                    </span>
+                  )}
+                  <h5 className="text-base font-medium text-foreground text-center flex-1 absolute left-0 right-0 pointer-events-none">{artifact.name}</h5>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {isEditable && (
+                      <>
+                        <button
+                          onClick={() => handleStartEdit(artifact)}
+                          className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(artifact.id)}
+                          className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3">
+                  {artifact.quote && (
+                    <p className="text-xs text-muted-foreground/80 italic text-center mb-1">"{artifact.quote}"</p>
+                  )}
+                  {artifact.description && (
+                    <p className="text-xs text-muted-foreground text-center">{artifact.description}</p>
                   )}
                 </div>
-              ) : isEditable ? (
-                <label className="flex flex-col items-center justify-center w-full h-20 rounded-md border-2 border-dashed border-border/60 cursor-pointer hover:border-primary/50 hover:bg-accent/5 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(artifact.id, file);
-                    }}
-                    disabled={uploadingId === artifact.id}
-                  />
-                  {uploadingId === artifact.id ? (
-                    <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 text-muted-foreground mb-1" />
-                      <span className="text-xs text-muted-foreground">上传图片</span>
-                    </>
-                  )}
-                </label>
-              ) : null}
-            </div>
+              </div>
+            )}
           </div>
         ))}
 
         {artifacts.length === 0 && !isAdding && (
-          <div className="flex-shrink-0 w-full text-center py-4 text-sm text-muted-foreground/60">
+          <div className="text-center py-4 text-sm text-muted-foreground/60">
             暂无器物
           </div>
         )}
       </div>
 
-      {/* 添加新器物 */}
       {isEditable && (
         <div>
           {isAdding ? (
-            <div className="p-3 bg-accent/5 rounded-lg space-y-3">
-              {/* 器物类型选择 */}
+            <div className="p-3 bg-accent/5 rounded-lg space-y-2 border-2 border-dashed border-border/60">
               <div className="flex items-center gap-2 flex-wrap">
-                {artifactTypeOptions.map((type) => (
+                <span className="text-xs text-muted-foreground">等级:</span>
+                {rarityOptions.map((rarity) => (
                   <button
-                    key={type}
-                    onClick={() => setNewType(type)}
-                    className={`
-                      flex items-center gap-1 px-2.5 py-1 text-xs rounded-full transition-colors
-                      ${newType === type
-                        ? 'bg-primary text-primary-foreground'
+                    key={rarity}
+                    onClick={() => setNewRarity(rarity)}
+                    className={`px-2 py-1 text-xs rounded transition-colors border ${
+                      newRarity === rarity
+                        ? 'text-white'
                         : 'bg-background text-muted-foreground hover:text-foreground'
-                      }
-                    `}
+                    }`}
+                    style={newRarity === rarity ? { backgroundColor: ArtifactRarityColors[rarity], borderColor: ArtifactRarityColors[rarity] } : { borderColor: ArtifactRarityColors[rarity] }}
                   >
-                    {artifactTypeIcons[type]}
-                    {ArtifactTypeLabels[type]}
+                    {ArtifactRarityLabels[rarity]}
                   </button>
                 ))}
               </div>
-
-              {/* 器物名称 */}
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="器物名称"
-                className="w-full px-3 py-2 text-sm bg-background border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
                 autoFocus
               />
-
-              {/* 器物描述 */}
+              <input
+                type="text"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                placeholder="器物类型（可选，如：剑、法器、丹药）"
+                className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
+              <input
+                type="text"
+                value={newQuote}
+                onChange={(e) => setNewQuote(e.target.value)}
+                placeholder="判词（可选）"
+                className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
               <textarea
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
                 placeholder="器物描述（可选）"
                 rows={2}
-                className="w-full px-3 py-2 text-sm bg-background border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
+                className="w-full px-3 py-1.5 text-sm bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
               />
-
-              {/* 器物图片上传 */}
-              <div>
-                {newImage ? (
-                  <div className="relative rounded-md overflow-hidden group/image">
-                    <img
-                      src={newImage}
-                      alt="器物预览"
-                      className="w-full h-24 object-cover"
-                    />
-                    <button
-                      onClick={handleRemoveNewImage}
-                      className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-24 rounded-md border-2 border-dashed border-border/60 cursor-pointer hover:border-primary/50 hover:bg-accent/5 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleNewImageUpload(file);
-                      }}
-                    />
-                    <Upload className="h-5 w-5 text-muted-foreground mb-1" />
-                    <span className="text-xs text-muted-foreground">上传器物图片</span>
-                  </label>
-                )}
-              </div>
-
-              {/* 操作按钮 */}
               <div className="flex items-center justify-end gap-2">
                 <button
                   onClick={handleCancelAdd}

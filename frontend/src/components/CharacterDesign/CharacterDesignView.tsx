@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CharacterSidebar } from './CharacterSidebar';
 import { CharacterDetail } from './CharacterDetail';
 import { CharacterCloudView } from './CharacterCloudView';
 import { EmptyState } from './EmptyState';
 import { api } from '@/utils/request';
+import { characterApi } from '@/services/characterApi';
 import type { VolumeNode } from '@/types';
+import type { CharacterListItem } from '@/types/character';
 
 interface CharacterDesignViewProps {
   projectId: string;
@@ -25,6 +27,7 @@ type ViewMode = 'list' | 'cloud';
 export const CharacterDesignView = ({ projectId, onNavigateToNote }: CharacterDesignViewProps) => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const hasInitializedSelection = useRef(false);
 
   // 获取项目目录树（用于出场章节跳转）
   const { data: tree } = useQuery({
@@ -32,6 +35,33 @@ export const CharacterDesignView = ({ projectId, onNavigateToNote }: CharacterDe
     queryFn: () => api.get<VolumeNode[]>(`/projects/${projectId}/tree`),
     enabled: !!projectId,
   });
+
+  // 获取人物列表（用于默认选中主角）
+  const { data: characters = [] } = useQuery<CharacterListItem[]>({
+    queryKey: ['characters', projectId, null, '', null, null, false],
+    queryFn: () =>
+      characterApi.getCharacters(projectId, {
+        sort_by: 'default',
+        sort_order: 'asc',
+      }),
+    enabled: !!projectId,
+  });
+
+  // 默认选中主角（仅初始化时执行一次）
+  useEffect(() => {
+    if (hasInitializedSelection.current || characters.length === 0) return;
+
+    hasInitializedSelection.current = true;
+
+    // 优先选择主角
+    const protagonist = characters.find((c) => c.level === 'protagonist');
+    if (protagonist) {
+      setSelectedCharacterId(protagonist.id);
+    } else {
+      // 没有主角则选择第一个角色
+      setSelectedCharacterId(characters[0].id);
+    }
+  }, [characters]);
 
   // 处理选择人物
   const handleSelectCharacter = useCallback((characterId: string) => {

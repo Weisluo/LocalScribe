@@ -9,8 +9,9 @@
 export type CharacterLevel = 'protagonist' | 'major_support' | 'support' | 'minor';
 export type CharacterGender = 'male' | 'female' | 'other' | 'unknown';
 export type AliasType = 'zi' | 'hao' | 'nickname' | 'title' | 'other';
-export type RelationType = 'family' | 'love' | 'friend' | 'mentor' | 'enemy' | 'other';
+export type RelationType = 'family' | 'love' | 'friend' | 'master' | 'apprentice' | 'enemy' | 'other';
 export type ArtifactType = 'weapon' | 'armor' | 'accessory' | 'treasure' | 'other';
+export type ArtifactRarity = 'legendary' | 'epic' | 'rare' | 'common';
 
 // 角色等级显示名称
 export const CharacterLevelLabels: Record<CharacterLevel, string> = {
@@ -23,37 +24,37 @@ export const CharacterLevelLabels: Record<CharacterLevel, string> = {
 // 角色等级颜色配置
 export const CharacterLevelColors: Record<CharacterLevel, { border: string; bg: string; bar: string; barWidth: number }> = {
   protagonist: {
-    border: 'hsl(45 90% 55%)',
-    bg: 'hsl(45 90% 97%)',
-    bar: 'hsl(45 90% 55%)',
+    border: 'hsl(0 60% 50%)',
+    bg: 'hsl(0 60% 97%)',
+    bar: 'hsl(0 60% 50%)',
     barWidth: 4,
   },
   major_support: {
-    border: 'hsl(200 60% 55%)',
-    bg: 'hsl(200 60% 97%)',
-    bar: 'hsl(200 60% 55%)',
+    border: 'hsl(45 50% 50%)',
+    bg: 'hsl(45 50% 97%)',
+    bar: 'hsl(45 50% 50%)',
     barWidth: 3,
   },
   support: {
-    border: 'hsl(120 40% 50%)',
-    bg: 'hsl(120 40% 97%)',
-    bar: 'hsl(120 40% 50%)',
+    border: 'hsl(210 30% 55%)',
+    bg: 'hsl(210 30% 97%)',
+    bar: 'hsl(210 30% 55%)',
     barWidth: 2,
   },
   minor: {
-    border: 'hsl(0 0% 70%)',
+    border: 'hsl(0 0% 60%)',
     bg: 'hsl(0 0% 98%)',
-    bar: 'hsl(0 0% 70%)',
+    bar: 'hsl(0 0% 60%)',
     barWidth: 2,
   },
 };
 
 // 角色等级尺寸配置
 export const CharacterLevelSizes: Record<CharacterLevel, { height: number; padding: number; avatar: number; radius: number }> = {
-  protagonist: { height: 88, padding: 14, avatar: 60, radius: 8 },
-  major_support: { height: 80, padding: 12, avatar: 56, radius: 7 },
-  support: { height: 72, padding: 12, avatar: 48, radius: 6 },
-  minor: { height: 64, padding: 10, avatar: 44, radius: 5 },
+  protagonist: { height: 100, padding: 14, avatar: 68, radius: 8 },
+  major_support: { height: 90, padding: 12, avatar: 62, radius: 7 },
+  support: { height: 82, padding: 12, avatar: 54, radius: 6 },
+  minor: { height: 74, padding: 10, avatar: 48, radius: 5 },
 };
 
 // 性别显示名称
@@ -78,7 +79,8 @@ export const RelationTypeLabels: Record<RelationType, string> = {
   family: '亲情',
   love: '爱情',
   friend: '友情',
-  mentor: '师徒',
+  master: '师父',
+  apprentice: '徒弟',
   enemy: '敌对',
   other: '其他',
 };
@@ -88,7 +90,8 @@ export const RelationTypeColors: Record<RelationType, string> = {
   family: 'hsl(120 40% 50%)',
   love: 'hsl(330 70% 60%)',
   friend: 'hsl(200 60% 55%)',
-  mentor: 'hsl(270 50% 55%)',
+  master: 'hsl(270 50% 55%)',
+  apprentice: 'hsl(280 45% 50%)',
   enemy: 'hsl(0 60% 50%)',
   other: 'hsl(0 0% 60%)',
 };
@@ -100,6 +103,30 @@ export const ArtifactTypeLabels: Record<ArtifactType, string> = {
   accessory: '饰品',
   treasure: '法宝',
   other: '其他',
+};
+
+// 器物等级显示名称
+export const ArtifactRarityLabels: Record<ArtifactRarity, string> = {
+  legendary: '神器',
+  epic: '传说',
+  rare: '稀有',
+  common: '普通',
+};
+
+// 器物等级边框颜色（低饱和度）
+export const ArtifactRarityColors: Record<ArtifactRarity, string> = {
+  legendary: 'hsl(0 60% 50%)',   // 红色 - 神器
+  epic: 'hsl(45 50% 50%)',       // 金色 - 传说
+  rare: 'hsl(210 30% 55%)',      // 银色 - 稀有
+  common: 'hsl(0 0% 60%)',       // 灰色 - 普通
+};
+
+// 器物等级背景颜色
+export const ArtifactRarityBgColors: Record<ArtifactRarity, string> = {
+  legendary: 'hsl(0 60% 97%)',   // 红色淡 - 神器
+  epic: 'hsl(45 50% 97%)',       // 金色淡 - 传说
+  rare: 'hsl(210 30% 97%)',      // 银色淡 - 稀有
+  common: 'hsl(0 0% 98%)',       // 灰色淡 - 普通
 };
 
 // ==================== 基础类型 ====================
@@ -156,8 +183,10 @@ export interface CharacterArtifact {
   id: string;
   character_id: string;
   name: string;
+  quote?: string;
   description?: string;
-  artifact_type?: ArtifactType;
+  artifact_type?: string;
+  rarity?: ArtifactRarity;
   image?: string;
   order_index: number;
   created_at: string;
@@ -173,6 +202,8 @@ export interface Character {
   gender: CharacterGender;
   birth_date?: string;
   birthplace?: string;
+  race?: string;
+  faction?: string;
   level: CharacterLevel;
   quote?: string;
   avatar?: string;
@@ -180,6 +211,9 @@ export interface Character {
   first_appearance_volume?: string;
   first_appearance_act?: string;
   first_appearance_chapter?: string;
+  last_appearance_volume?: string;
+  last_appearance_act?: string;
+  last_appearance_chapter?: string;
   order_index: number;
   aliases: CharacterAlias[];
   cards: CharacterCard[];
@@ -198,9 +232,14 @@ export interface CharacterListItem {
   quote?: string;
   avatar?: string;
   birth_date?: string;
+  race?: string;
+  faction?: string;
   first_appearance_volume?: string;
   first_appearance_act?: string;
   first_appearance_chapter?: string;
+  last_appearance_volume?: string;
+  last_appearance_act?: string;
+  last_appearance_chapter?: string;
   order_index: number;
   aliases: CharacterAlias[];
   created_at: string;
@@ -222,6 +261,8 @@ export interface CreateCharacterRequest {
   gender?: CharacterGender;
   birth_date?: string;
   birthplace?: string;
+  race?: string;
+  faction?: string;
   level?: CharacterLevel;
   quote?: string;
   avatar?: string;
@@ -241,6 +282,8 @@ export interface UpdateCharacterRequest {
   gender?: CharacterGender;
   birth_date?: string;
   birthplace?: string;
+  race?: string;
+  faction?: string;
   level?: CharacterLevel;
   quote?: string;
   avatar?: string;
@@ -248,6 +291,9 @@ export interface UpdateCharacterRequest {
   first_appearance_volume?: string;
   first_appearance_act?: string;
   first_appearance_chapter?: string;
+  last_appearance_volume?: string;
+  last_appearance_act?: string;
+  last_appearance_chapter?: string;
   order_index?: number;
 }
 
@@ -257,7 +303,7 @@ export interface CharacterFilter {
   volume?: string;
   act?: string;
   chapter?: string;
-  sort_by?: 'order_index' | 'name' | 'created_at' | 'updated_at';
+  sort_by?: 'default' | 'order_index' | 'name' | 'created_at' | 'updated_at';
   sort_order?: 'asc' | 'desc';
 }
 
@@ -272,7 +318,7 @@ export interface BatchDeleteRequest {
 }
 
 export interface BatchUpdateOrderRequest {
-  orders: { id: string; order_index: number }[];
+  orders: Record<string, number>;
 }
 
 // ==================== 别名相关 ====================
@@ -333,16 +379,20 @@ export interface UpdateRelationshipRequest {
 
 export interface CreateArtifactRequest {
   name: string;
+  quote?: string;
   description?: string;
-  artifact_type?: ArtifactType;
+  artifact_type?: string;
+  rarity?: ArtifactRarity;
   image?: string;
   order_index?: number;
 }
 
 export interface UpdateArtifactRequest {
   name?: string;
+  quote?: string;
   description?: string;
-  artifact_type?: ArtifactType;
+  artifact_type?: string;
+  rarity?: ArtifactRarity;
   image?: string;
   order_index?: number;
 }

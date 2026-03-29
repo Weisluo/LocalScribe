@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { Users, Plus, Search, Filter } from 'lucide-react';
+import { Users, Plus, Search, Filter, Loader2 } from 'lucide-react';
 
 interface EmptyStateProps {
-  type: 'no-characters' | 'no-search-results' | 'no-filter-results' | 'no-selection';
+  type: 'no-characters' | 'no-search-results' | 'no-filter-results' | 'no-selection' | 'loading';
   onAction?: () => void;
 }
 
@@ -33,6 +33,13 @@ export const EmptyState = ({ type, onAction }: EmptyStateProps) => {
       icon: <Users className="h-16 w-16" />,
       title: '人物设定',
       description: '从左侧选择一个人物，或创建新人物',
+      actionLabel: '',
+      showAction: false,
+    },
+    'loading': {
+      icon: <Loader2 className="h-16 w-16 animate-spin" />,
+      title: '加载中...',
+      description: '正在获取人物数据',
       actionLabel: '',
       showAction: false,
     },

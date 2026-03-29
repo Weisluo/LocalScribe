@@ -7,10 +7,20 @@ import {
 } from '@/types/character';
 import { User } from 'lucide-react';
 
+interface AppearanceMatch {
+  volume: string;
+  act: string;
+  chapter: string;
+}
+
 interface CharacterBarCardProps {
   character: CharacterListItem;
   isSelected: boolean;
   onClick: () => void;
+  appearance?: {
+    first: AppearanceMatch | null;
+    last: AppearanceMatch | null;
+  };
 }
 
 /**
@@ -18,53 +28,69 @@ interface CharacterBarCardProps {
  *
  * 根据角色等级显示不同尺寸和样式的卡片
  */
-export const CharacterBarCard = ({ character, isSelected, onClick }: CharacterBarCardProps) => {
+export const CharacterBarCard = ({ character, isSelected, onClick, appearance }: CharacterBarCardProps) => {
   const level = character.level as CharacterLevel;
   const colors = CharacterLevelColors[level];
   const sizes = CharacterLevelSizes[level];
 
-  // 获取别名显示
   const aliasDisplay = useMemo(() => {
     const parts: string[] = [];
 
-    // 字
     const zi = character.aliases?.find((a) => a.alias_type === 'zi');
     if (zi) parts.push(`字${zi.content}`);
 
-    // 号
     const hao = character.aliases?.find((a) => a.alias_type === 'hao');
     if (hao) parts.push(`号${hao.content}`);
 
     return parts.join(' · ');
   }, [character.aliases]);
 
-  // 获取外号/称号显示
   const titleDisplay = useMemo(() => {
     const titles: string[] = [];
 
-    // 外号
     const nickname = character.aliases?.find((a) => a.alias_type === 'nickname');
     if (nickname) titles.push(`${nickname.content}`);
 
-    // 称号
     const title = character.aliases?.find((a) => a.alias_type === 'title');
     if (title) titles.push(`${title.content}`);
 
     return titles;
   }, [character.aliases]);
 
-  // 出场信息
   const appearanceDisplay = useMemo(() => {
-    const parts: string[] = [];
-    if (character.first_appearance_volume) parts.push(character.first_appearance_volume);
-    if (character.first_appearance_act) parts.push(character.first_appearance_act);
-    if (character.first_appearance_chapter) parts.push(character.first_appearance_chapter);
-    return parts.length > 0 ? `${parts.join('·')} 出场` : '';
-  }, [character]);
+    if (appearance?.first) {
+      const { chapter } = appearance.first;
+      return `出场于 ${chapter}`;
+    }
+    
+    if (character.first_appearance_chapter) {
+      return `出场于 ${character.first_appearance_chapter}`;
+    }
+    return '';
+  }, [character, appearance]);
 
-  // 根据等级确定显示内容
+  const lastAppearanceDisplay = useMemo(() => {
+    if (appearance?.last) {
+      const { chapter } = appearance.last;
+      if (appearance?.first && 
+          appearance.first.volume === appearance.last.volume &&
+          appearance.first.act === appearance.last.act &&
+          appearance.first.chapter === appearance.last.chapter) {
+        return '';
+      }
+      return `退场于 ${chapter}`;
+    }
+    
+    if (character.last_appearance_chapter) {
+      if (character.first_appearance_chapter === character.last_appearance_chapter) {
+        return '';
+      }
+      return `退场于 ${character.last_appearance_chapter}`;
+    }
+    return '';
+  }, [character, appearance]);
+
   const showDetails = level === 'protagonist' || level === 'major_support';
-  const showQuote = level === 'protagonist' || level === 'major_support';
 
   return (
     <div
@@ -96,7 +122,7 @@ export const CharacterBarCard = ({ character, isSelected, onClick }: CharacterBa
       >
         {/* 头像 */}
         <div
-          className="flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center"
+          className="flex-shrink-0 rounded-lg overflow-hidden flex items-center justify-center"
           style={{
             width: `${sizes.avatar}px`,
             height: `${sizes.avatar}px`,
@@ -109,7 +135,7 @@ export const CharacterBarCard = ({ character, isSelected, onClick }: CharacterBa
               className="w-full h-full object-cover"
             />
           ) : (
-            <User className="text-muted-foreground/50" style={{ width: sizes.avatar * 0.5, height: sizes.avatar * 0.5 }} />
+            <User className="text-muted-foreground/30" style={{ width: sizes.avatar * 0.5, height: sizes.avatar * 0.5 }} />
           )}
         </div>
 
@@ -121,7 +147,7 @@ export const CharacterBarCard = ({ character, isSelected, onClick }: CharacterBa
               {character.name}
             </span>
             {aliasDisplay && (
-              <span className="text-sm text-primary truncate">·{aliasDisplay}</span>
+              <span className="text-xs text-foreground truncate">·{aliasDisplay}</span>
             )}
           </div>
 
@@ -159,10 +185,10 @@ export const CharacterBarCard = ({ character, isSelected, onClick }: CharacterBa
             </div>
           )}
 
-          {/* 判词 - 仅主角和重要配角显示 */}
-          {showQuote && character.quote && (
-            <div className="text-xs text-muted-foreground/60 italic mt-0.5 truncate">
-              &ldquo;{character.quote}&rdquo;
+          {/* 最后出场信息 */}
+          {lastAppearanceDisplay && (
+            <div className="text-xs text-muted-foreground/70 mt-0.5 truncate">
+              {lastAppearanceDisplay}
             </div>
           )}
         </div>

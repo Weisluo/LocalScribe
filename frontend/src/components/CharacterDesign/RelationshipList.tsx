@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Trash2, User, Edit2, Check, X } from 'lucide-react';
 import type { CharacterRelationship, RelationType, CharacterSimple } from '@/types/character';
 import { RelationTypeLabels, RelationTypeColors } from '@/types/character';
@@ -6,6 +6,7 @@ import { RelationTypeLabels, RelationTypeColors } from '@/types/character';
 interface RelationshipListProps {
   relationships: CharacterRelationship[];
   availableCharacters: CharacterSimple[];
+  isLoadingCharacters?: boolean;
   onAdd?: (data: {
     target_character_id?: string;
     target_name?: string;
@@ -26,7 +27,7 @@ interface RelationshipListProps {
   isEditable?: boolean;
 }
 
-const relationTypeOptions: RelationType[] = ['family', 'love', 'friend', 'mentor', 'enemy', 'other'];
+const relationTypeOptions: RelationType[] = ['family', 'love', 'friend', 'master', 'apprentice', 'enemy', 'other'];
 
 /**
  * 关系列表组件
@@ -36,6 +37,7 @@ const relationTypeOptions: RelationType[] = ['family', 'love', 'friend', 'mentor
 export const RelationshipList = ({
   relationships,
   availableCharacters,
+  isLoadingCharacters = false,
   onAdd,
   onUpdate,
   onDelete,
@@ -58,6 +60,14 @@ export const RelationshipList = ({
   const [editStrength, setEditStrength] = useState(50);
   const [editIsBidirectional, setEditIsBidirectional] = useState(true);
   const [editReverseDescription, setEditReverseDescription] = useState('');
+
+  // 当 isEditable 变为 false 时，退出编辑状态
+  useEffect(() => {
+    if (!isEditable) {
+      setIsAdding(false);
+      setEditingId(null);
+    }
+  }, [isEditable]);
 
   // 开始添加
   const handleStartAdd = useCallback(() => {
@@ -405,18 +415,30 @@ export const RelationshipList = ({
                 </div>
 
                 {useExistingCharacter ? (
-                  <select
-                    value={newTargetId}
-                    onChange={(e) => setNewTargetId(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  >
-                    <option value="">选择角色...</option>
-                    {availableCharacters.map((char) => (
-                      <option key={char.id} value={char.id}>
-                        {char.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    {isLoadingCharacters ? (
+                      <div className="text-xs text-muted-foreground py-2">
+                        加载中...
+                      </div>
+                    ) : availableCharacters.length === 0 ? (
+                      <div className="text-xs text-muted-foreground py-2">
+                        暂无其他角色可选
+                      </div>
+                    ) : (
+                      <select
+                        value={newTargetId}
+                        onChange={(e) => setNewTargetId(e.target.value)}
+                        className="w-full px-2 py-1.5 text-xs bg-background border border-border/60 rounded focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      >
+                        <option value="">选择角色...</option>
+                        {availableCharacters.map((char) => (
+                          <option key={char.id} value={char.id}>
+                            {char.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 ) : (
                   <input
                     type="text"

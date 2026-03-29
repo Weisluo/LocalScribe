@@ -9,6 +9,7 @@ interface AliasEditorProps {
   onUpdate?: (aliasId: string, data: { alias_type?: AliasType; content?: string }) => void;
   onDelete?: (aliasId: string) => void;
   isEditable?: boolean;
+  compact?: boolean;
 }
 
 const aliasTypeOptions: AliasType[] = ['zi', 'hao', 'nickname', 'title', 'other'];
@@ -24,6 +25,7 @@ export const AliasEditor = ({
   onUpdate,
   onDelete,
   isEditable = true,
+  compact = false,
 }: AliasEditorProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newAliasType, setNewAliasType] = useState<AliasType>('zi');
@@ -84,7 +86,7 @@ export const AliasEditor = ({
   });
 
   return (
-    <div className="space-y-2">
+    <div className={compact ? 'flex items-center gap-2 flex-wrap' : 'space-y-2'}>
       {/* 别名列表 */}
       <div className="flex flex-wrap gap-2">
         {sortedAliases.map((alias) => (
@@ -93,7 +95,6 @@ export const AliasEditor = ({
             className="group flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 rounded-lg text-sm"
           >
             {editingId === alias.id ? (
-              // 编辑模式
               <>
                 <select
                   value={editType}
@@ -127,9 +128,10 @@ export const AliasEditor = ({
                 </button>
               </>
             ) : (
-              // 显示模式
               <>
-                <span className="text-xs text-muted-foreground">{AliasTypeLabels[alias.alias_type]}</span>
+                {!compact && (
+                  <span className="text-xs text-muted-foreground">{AliasTypeLabels[alias.alias_type]}</span>
+                )}
                 <span className="text-foreground font-medium">{alias.content}</span>
                 {isEditable && (
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -155,7 +157,7 @@ export const AliasEditor = ({
 
       {/* 添加新别名 */}
       {isEditable && (
-        <div className="flex items-center gap-2">
+        <>
           {isAdding ? (
             <div className="flex items-center gap-1.5">
               <select
@@ -197,13 +199,15 @@ export const AliasEditor = ({
           ) : (
             <button
               onClick={handleStartAdd}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              className={`flex items-center gap-1 text-xs text-primary hover:bg-primary/10 rounded-lg transition-colors ${
+                compact ? 'px-2 py-0.5' : 'px-2.5 py-1'
+              }`}
             >
               <Plus className="h-3.5 w-3.5" />
-              添加别名
+              {compact ? '添加' : '添加别名'}
             </button>
           )}
-        </div>
+        </>
       )}
     </div>
   );

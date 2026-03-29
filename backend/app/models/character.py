@@ -82,6 +82,16 @@ class Character(Base):
         String(255), nullable=True, comment="出生地"
     )
 
+    # 种族
+    race: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="种族"
+    )
+
+    # 阵营归属
+    faction: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="阵营归属"
+    )
+
     # 角色等级
     level: Mapped[str] = mapped_column(
         String(20), default="minor", comment="角色等级"
@@ -109,6 +119,15 @@ class Character(Base):
     )
     first_appearance_chapter: Mapped[Optional[str]] = mapped_column(
         String(100), nullable=True, comment="首次出场章"
+    )
+    last_appearance_volume: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="最后出场卷"
+    )
+    last_appearance_act: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="最后出场幕"
+    )
+    last_appearance_chapter: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, comment="最后出场章"
     )
 
     # 排序索引
@@ -292,7 +311,7 @@ class CharacterRelationship(Base):
 
     # 关系类型
     relation_type: Mapped[str] = mapped_column(
-        String(50), nullable=False, comment="关系类型: family(亲情), love(爱情), friend(友情), mentor(师徒), enemy(敌对), other(其他)"
+        String(50), nullable=False, comment="关系类型: family(亲情), love(爱情), friend(友情), master(师父), apprentice(徒弟), enemy(敌对), other(其他)"
     )
 
     # 关系描述
@@ -366,13 +385,21 @@ class CharacterArtifact(Base):
     name: Mapped[str] = mapped_column(
         String(255), nullable=False, comment="器物名称"
     )
+    quote: Mapped[Optional[str]] = mapped_column(
+        String(500), nullable=True, comment="器物判词"
+    )
     description: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True, comment="器物描述"
     )
 
-    # 器物类型
+    # 器物类型（自定义）
     artifact_type: Mapped[Optional[str]] = mapped_column(
-        String(100), nullable=True, comment="器物类型: weapon(武器), armor(防具), accessory(饰品), treasure(法宝), other(其他)"
+        String(100), nullable=True, comment="器物类型（自定义）"
+    )
+
+    # 器物等级
+    rarity: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, comment="器物等级: legendary(神器), epic(传说), rare(稀有), common(普通)"
     )
 
     # 器物图片

@@ -47,7 +47,8 @@ class RelationType(str, Enum):
     FAMILY = "family"  # 亲情
     LOVE = "love"  # 爱情
     FRIEND = "friend"  # 友情
-    MENTOR = "mentor"  # 师徒
+    MASTER = "master"  # 师父
+    APPRENTICE = "apprentice"  # 徒弟
     ENEMY = "enemy"  # 敌对
     OTHER = "other"  # 其他
 
@@ -60,6 +61,15 @@ class ArtifactType(str, Enum):
     ACCESSORY = "accessory"  # 饰品
     TREASURE = "treasure"  # 法宝
     OTHER = "other"  # 其他
+
+
+class ArtifactRarity(str, Enum):
+    """器物等级"""
+
+    LEGENDARY = "legendary"  # 神器
+    EPIC = "epic"  # 传说
+    RARE = "rare"  # 稀有
+    COMMON = "common"  # 普通
 
 
 # ==================== 基础 Schema ====================
@@ -149,6 +159,15 @@ class CharacterCardResponse(CharacterCardBase):
 # ==================== 人物关系 Schema ====================
 
 
+class TargetCharacterInfo(BaseModel):
+    """目标人物简要信息"""
+
+    id: str
+    name: str
+    avatar: Optional[str] = None
+    level: str = "other"
+
+
 class CharacterRelationshipBase(BaseModel):
     """关系基础 Schema"""
 
@@ -188,7 +207,7 @@ class CharacterRelationshipResponse(CharacterRelationshipBase):
 
     id: str
     character_id: str
-    target_character: Optional[Dict[str, Any]] = None  # 目标人物简要信息
+    target_character: Optional[TargetCharacterInfo] = None
     created_at: datetime
     updated_at: datetime
 
@@ -200,8 +219,10 @@ class CharacterArtifactBase(BaseModel):
     """器物基础 Schema"""
 
     name: str = Field(..., min_length=1, max_length=255, description="器物名称")
+    quote: Optional[str] = Field(None, max_length=500, description="器物判词")
     description: Optional[str] = Field(None, description="器物描述")
-    artifact_type: Optional[ArtifactType] = Field(None, description="器物类型")
+    artifact_type: Optional[str] = Field(None, max_length=100, description="器物类型（自定义）")
+    rarity: Optional[ArtifactRarity] = Field(None, description="器物等级")
     image: Optional[str] = Field(None, max_length=500, description="器物图片URL")
     order_index: int = Field(0, ge=0, description="排序索引")
 
@@ -216,8 +237,10 @@ class CharacterArtifactUpdate(BaseModel):
     """更新器物 Schema"""
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    quote: Optional[str] = Field(None, max_length=500)
     description: Optional[str] = None
-    artifact_type: Optional[ArtifactType] = None
+    artifact_type: Optional[str] = Field(None, max_length=100)
+    rarity: Optional[ArtifactRarity] = None
     image: Optional[str] = Field(None, max_length=500)
     order_index: Optional[int] = Field(None, ge=0)
 
@@ -243,6 +266,8 @@ class CharacterBase(BaseModel):
     gender: CharacterGender = Field(CharacterGender.UNKNOWN, description="性别")
     birth_date: Optional[str] = Field(None, max_length=100, description="生辰")
     birthplace: Optional[str] = Field(None, max_length=255, description="出生地")
+    race: Optional[str] = Field(None, max_length=100, description="种族")
+    faction: Optional[str] = Field(None, max_length=100, description="阵营归属")
     level: CharacterLevel = Field(CharacterLevel.MINOR, description="角色等级")
     quote: Optional[str] = Field(None, description="判词/引言")
     avatar: Optional[str] = Field(None, max_length=500, description="头像URL")
@@ -257,6 +282,15 @@ class CharacterBase(BaseModel):
     )
     first_appearance_chapter: Optional[str] = Field(
         None, max_length=100, description="首次出场章"
+    )
+    last_appearance_volume: Optional[str] = Field(
+        None, max_length=100, description="最后出场卷"
+    )
+    last_appearance_act: Optional[str] = Field(
+        None, max_length=100, description="最后出场幕"
+    )
+    last_appearance_chapter: Optional[str] = Field(
+        None, max_length=100, description="最后出场章"
     )
     order_index: int = Field(0, ge=0, description="排序索引")
 
@@ -285,6 +319,8 @@ class CharacterUpdate(BaseModel):
     gender: Optional[CharacterGender] = None
     birth_date: Optional[str] = Field(None, max_length=100)
     birthplace: Optional[str] = Field(None, max_length=255)
+    race: Optional[str] = Field(None, max_length=100)
+    faction: Optional[str] = Field(None, max_length=100)
     level: Optional[CharacterLevel] = None
     quote: Optional[str] = None
     avatar: Optional[str] = Field(None, max_length=500)
@@ -292,6 +328,9 @@ class CharacterUpdate(BaseModel):
     first_appearance_volume: Optional[str] = Field(None, max_length=100)
     first_appearance_act: Optional[str] = Field(None, max_length=100)
     first_appearance_chapter: Optional[str] = Field(None, max_length=100)
+    last_appearance_volume: Optional[str] = Field(None, max_length=100)
+    last_appearance_act: Optional[str] = Field(None, max_length=100)
+    last_appearance_chapter: Optional[str] = Field(None, max_length=100)
     order_index: Optional[int] = Field(None, ge=0)
 
 
