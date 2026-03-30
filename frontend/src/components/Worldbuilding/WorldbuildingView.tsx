@@ -4,6 +4,7 @@ import { worldbuildingApi, WorldModule, WorldSubmodule, WorldModuleItem } from '
 import { useProjectStore } from '@/stores/projectStore';
 import { Loader2, Plus, ChevronDown, ChevronRight, Edit2, Trash2, X, Save, Globe2, Map, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload } from 'lucide-react';
 import { HistoryView } from './HistoryView';
+import { EconomyView } from './EconomyView';
 
 // 弹窗组件
 interface ModalProps {
@@ -1436,6 +1437,8 @@ export const WorldbuildingView = () => {
               </div>
             ) : activeTab === 'history' && currentModule ? (
               <HistoryView moduleId={currentModule.id} />
+            ) : activeTab === 'economy' && currentModule ? (
+              <EconomyView moduleId={currentModule.id} />
             ) : currentModule ? (
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-4xl mx-auto">
