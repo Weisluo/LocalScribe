@@ -1,4 +1,3 @@
-// frontend/src/components/Outline/StoryChainView/ConnectionLine.tsx
 import { useEffect, useState } from 'react';
 import type { EventConnection, ConnectionType } from '../types';
 import './animations.css';
@@ -7,6 +6,9 @@ interface ConnectionLineProps {
   connection: EventConnection;
   eventPositions: Map<string, { x: number; y: number; width: number; height: number }>;
   isNew?: boolean;
+  isSelected?: boolean;
+  onSelect?: (connectionId: string) => void;
+  onDelete?: (connectionId: string) => void;
 }
 
 const connectionStyles: Record<ConnectionType, {
@@ -27,6 +29,9 @@ export const ConnectionLine = ({
   connection,
   eventPositions,
   isNew = false,
+  isSelected = false,
+  onSelect,
+  onDelete,
 }: ConnectionLineProps) => {
   const [isAnimating, setIsAnimating] = useState(isNew);
   const fromPos = eventPositions.get(connection.from_event_id);
@@ -57,29 +62,74 @@ export const ConnectionLine = ({
     Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)
   );
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSelect) {
+      onSelect(connection.id);
+    }
+  };
+
   return (
-    <g className="optimize-animations">
+    <g className="optimize-animations" onClick={handleClick}>
       <path
         d={path}
         fill="none"
-        stroke={overrideColor}
-        strokeWidth={connection.thickness || style.strokeWidth}
+        stroke="transparent"
+        strokeWidth={12}
+        style={{ cursor: 'pointer' }}
+      />
+      <path
+        d={path}
+        fill="none"
+        stroke={isSelected ? 'hsl(var(--destructive))' : overrideColor}
+        strokeWidth={isSelected ? 3 : (connection.thickness || style.strokeWidth)}
         strokeDasharray={connection.dashed ? '6 3' : style.strokeDasharray}
         markerEnd={style.markerEnd}
         className={`
           ${isAnimating ? 'connection-line-draw' : ''}
           ${connection.connection_type === 'loop' ? 'connection-line-flow' : ''}
+          transition-all duration-200
         `}
         style={{
           strokeDasharray: isAnimating ? pathLength : undefined,
+          cursor: 'pointer',
         }}
       />
+      {isSelected && onDelete && (
+        <g
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(connection.id);
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <circle
+            cx={(startX + endX) / 2}
+            cy={midY}
+            r={14}
+            fill="hsl(var(--destructive))"
+            className="transition-all duration-200 hover:r-[16]"
+          />
+          <text
+            x={(startX + endX) / 2}
+            y={midY}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+            fontSize="14"
+            fontWeight="bold"
+            style={{ pointerEvents: 'none' }}
+          >
+            ×
+          </text>
+        </g>
+      )}
       {connection.label && (
         <text
           x={(startX + endX) / 2}
           y={midY - 8}
           textAnchor="middle"
-          className="text-[10px] fill-muted-foreground"
+          className="text-[10px] fill-muted-foreground pointer-events-none"
         >
           {connection.label}
         </text>
@@ -88,7 +138,6 @@ export const ConnectionLine = ({
   );
 };
 
-// SVG Definitions for arrowheads
 export const SvgDefs = () => (
   <defs>
     <marker

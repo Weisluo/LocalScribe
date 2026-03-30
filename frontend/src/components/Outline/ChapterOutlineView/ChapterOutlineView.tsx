@@ -102,8 +102,9 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
   );
 
   useEffect(() => {
+    const timers = saveTimerRef.current;
     return () => {
-      Object.values(saveTimerRef.current).forEach(clearTimeout);
+      Object.values(timers).forEach(clearTimeout);
     };
   }, []);
 
@@ -170,7 +171,10 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
               </button>
 
               {/* 卷内容 - 幕列表 */}
-              <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVolumeExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+              <div 
+                className={`grid transition-all duration-500 ${isVolumeExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+              >
                 <div className="overflow-hidden">
                   <div className="px-5 pb-4 space-y-3">
                   {volume.acts.map((act, aIndex) => {
@@ -205,7 +209,10 @@ export const ChapterOutlineView = ({ projectId, outlineData, onNavigateToNote }:
                         </button>
 
                         {/* 幕内容 - 章节列表 */}
-                        <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isActExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                        <div 
+                          className={`grid transition-all duration-500 ${isActExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                          style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
+                        >
                           <div className="overflow-hidden">
                             <div className="px-4 pb-3 space-y-4 pt-1">
                             {act.chapters.length === 0 ? (

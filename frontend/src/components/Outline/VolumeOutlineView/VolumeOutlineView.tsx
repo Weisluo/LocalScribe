@@ -79,8 +79,9 @@ export const VolumeOutlineView = ({ projectId, outlineData }: VolumeOutlineViewP
   );
 
   useEffect(() => {
+    const timers = saveTimerRef.current;
     return () => {
-      Object.values(saveTimerRef.current).forEach(clearTimeout);
+      Object.values(timers).forEach(clearTimeout);
     };
   }, []);
 
@@ -127,9 +128,10 @@ export const VolumeOutlineView = ({ projectId, outlineData }: VolumeOutlineViewP
               {/* 折叠内容 */}
               <div
                 className={`
-                  grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
+                  grid transition-all duration-500
                   ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}
                 `}
+                style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
               >
                 <div className="overflow-hidden">
                   <div className="px-5 pb-5 pt-2">

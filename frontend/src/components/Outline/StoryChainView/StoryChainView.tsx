@@ -1,15 +1,17 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   ChevronDown, BookOpen, Layers, Plus, GitBranch, Maximize,
   ZoomIn, ZoomOut, Grid3X3, Settings,
 } from 'lucide-react';
 import { useOutlineStore } from '../hooks/useOutlineStore';
+import { useUIStore } from '@/stores/uiStore';
 import {
   useActEvents,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
   useCreateConnection,
+  useDeleteConnection,
   useProjectEvents,
 } from '../hooks/useOutline';
 import { EventNode } from './EventNode';
@@ -176,9 +178,11 @@ const ActChainItem = ({
   const updateEventMutation = useUpdateEvent(projectId);
   const deleteEventMutation = useDeleteEvent(projectId);
   const createConnectionMutation = useCreateConnection(projectId);
+  const deleteConnectionMutation = useDeleteConnection(projectId);
 
   const {
     selectedEventId, setSelectedEvent,
+    selectedConnectionId, setSelectedConnection,
     connectionMode, connectionType, connectionSource,
     setConnectionMode, setConnectionSource, resetConnectionMode,
   } = useOutlineStore();
@@ -194,7 +198,6 @@ const ActChainItem = ({
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingEvent, setEditingEvent] = useState<StoryEvent | undefined>();
   const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
-  void draggingEventId;
   const [alignmentLines, setAlignmentLines] = useState<{
     showH: boolean;
     showV: boolean;
@@ -203,9 +206,10 @@ const ActChainItem = ({
   }>({ showH: false, showV: false, hY: 0, vX: 0 });
   
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [actualSizes, setActualSizes] = useState<Map<string, { width: number; height: number }>>(new Map());
 
-  const events = actData?.events || [];
-  const connections = actData?.connections || [];
+  const events = useMemo(() => actData?.events || [], [actData?.events]);
+  const connections = useMemo(() => actData?.connections || [], [actData?.connections]);
 
   const positions = useMemo(() => autoLayout(events, connections), [events, connections]);
 
@@ -219,8 +223,42 @@ const ActChainItem = ({
         final.set(id, { ...auto, x: pos.x, y: pos.y });
       }
     });
+    actualSizes.forEach((size, id) => {
+      const current = final.get(id);
+      if (current) {
+        final.set(id, { ...current, width: size.width, height: size.height });
+      }
+    });
     return final;
-  }, [positions, manualPositions]);
+  }, [positions, manualPositions, actualSizes]);
+
+  useLayoutEffect(() => {
+    if (!canvasRef.current || events.length === 0) return;
+    
+    const newSizes = new Map<string, { width: number; height: number }>();
+    events.forEach(event => {
+      const node = canvasRef.current?.querySelector(`[data-event-id="${event.id}"]`);
+      if (node) {
+        const rect = node.getBoundingClientRect();
+        newSizes.set(event.id, { 
+          width: rect.width / zoom, 
+          height: rect.height / zoom 
+        });
+      }
+    });
+    
+    setActualSizes(prev => {
+      const hasChanges = Array.from(newSizes.entries()).some(
+        ([id, size]) => {
+          const prevSize = prev.get(id);
+          return !prevSize || 
+                 Math.abs(prevSize.width - size.width) > 1 || 
+                 Math.abs(prevSize.height - size.height) > 1;
+        }
+      );
+      return hasChanges ? newSizes : prev;
+    });
+  }, [events, zoom]);
 
   const { snapPosition } = useSnapToGrid(gridConfig, zoom, finalPositions);
 
@@ -325,15 +363,23 @@ const ActChainItem = ({
 
   const handleCopyEvent = useCallback(() => {
     if (!selectedEvent) return;
-    const copiedEvent = {
-      title: `${selectedEvent.title} (副本)`,
+    const copiedEvent: StoryEventCreate = {
+      act_id: actId,
+      project_id: projectId,
+      title: `${selectedEvent.title || '未命名事件'} (副本)`,
       content: selectedEvent.content,
       event_type: selectedEvent.event_type,
+      characters: selectedEvent.characters,
       location: selectedEvent.location,
       timestamp: selectedEvent.timestamp,
     };
-    createEventMutation.mutate({ actId, data: copiedEvent as StoryEventCreate });
-  }, [selectedEvent, actId, createEventMutation]);
+    createEventMutation.mutate({ actId, data: copiedEvent });
+  }, [selectedEvent, actId, projectId, createEventMutation]);
+
+  const handleDeleteConnection = useCallback((connectionId: string) => {
+    deleteConnectionMutation.mutate(connectionId);
+    setSelectedConnection(null);
+  }, [deleteConnectionMutation, setSelectedConnection]);
 
   const handleDragStart = useCallback((id: string) => {
     setDraggingEventId(id);
@@ -479,6 +525,16 @@ const ActChainItem = ({
         <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
           {events.length} 事件
         </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddEvent();
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1.5 rounded-md hover:bg-accent/20"
+          title="添加事件"
+        >
+          <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+        </button>
       </button>
 
       <div 
@@ -492,8 +548,8 @@ const ActChainItem = ({
           {isLoading ? (
           <StoryChainSkeleton volumeCount={1} actPerVolume={1} showProgress={false} />
         ) : events.length === 0 ? (
-          <div className="py-10 text-center">
-            <GitBranch className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+          <div className="flex flex-col items-center justify-center text-center" style={{ minHeight: '66.67vh' }}>
+            <GitBranch className="h-10 w-10 mb-3 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground mb-3">暂无事件</p>
             <button
               onClick={handleAddEvent}
@@ -507,22 +563,21 @@ const ActChainItem = ({
           </div>
         ) : (
           <>
-            <div className="relative overflow-auto bg-muted/5 border-t border-border/20" style={{ maxHeight: '1000px' }}>
+            <div className="relative bg-muted/5 border-t border-border/20">
               <div
                 ref={canvasRef}
                 data-canvas="true"
                 className="relative"
                 style={{
-                  width: canvasSize.width * zoom,
-                  height: canvasSize.height * zoom,
+                  width: canvasSize.width,
+                  height: canvasSize.height,
                   transform: `scale(${zoom})`,
                   transformOrigin: 'top left',
-                  minWidth: canvasSize.width,
-                  minHeight: canvasSize.height,
                 }}
                 onClick={(e) => {
                   if (e.target === e.currentTarget) {
                     setSelectedEvent(null);
+                    setSelectedConnection(null);
                     clearSelection();
                   }
                 }}
@@ -550,8 +605,13 @@ const ActChainItem = ({
                 />
 
                 <svg
-                  className="absolute inset-0 pointer-events-none"
+                  className="absolute inset-0"
                   style={{ width: canvasSize.width, height: canvasSize.height }}
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget || (e.target as SVGElement).tagName === 'path') {
+                      setSelectedConnection(null);
+                    }
+                  }}
                 >
                   <SvgDefs />
                   {connections.map((conn) => {
@@ -560,6 +620,9 @@ const ActChainItem = ({
                         key={conn.id}
                         connection={conn}
                         eventPositions={finalPositions}
+                        isSelected={selectedConnectionId === conn.id}
+                        onSelect={setSelectedConnection}
+                        onDelete={handleDeleteConnection}
                       />
                     );
                   })}
@@ -710,6 +773,8 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
     connectionSource,
     resetConnectionMode,
   } = useOutlineStore();
+
+  const openModal = useUIStore(state => state.openModal);
 
   const { data: projectEventsData } = useProjectEvents(projectId);
 
@@ -868,7 +933,7 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
       }
     };
 
-    const handleOutlineSearch = (e: CustomEvent<{ keyword: string; filters?: any }>) => {
+    const handleOutlineSearch = (e: CustomEvent<{ keyword: string; filters?: import('../types').SearchFilters }>) => {
       setSearchKeyword(e.detail.keyword);
       if (e.detail.filters) {
         setSearchFilters(e.detail.filters);
@@ -906,6 +971,11 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
       window.removeEventListener('openKeyboardShortcuts', handleOpenKeyboardShortcuts);
     };
   }, []);
+
+  const handleCreateAct = (e: React.MouseEvent, volumeId: string) => {
+    e.stopPropagation();
+    openModal('act', volumeId);
+  };
 
   return (
     <>
@@ -962,13 +1032,24 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
                     <span className="text-lg font-semibold text-foreground">
                       第{vIndex + 1}卷：{volume.name}
                     </span>
+                    <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                      {volume.acts.length} 幕
+                    </span>
+                    <button
+                      onClick={(e) => handleCreateAct(e, volume.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1.5 rounded-md hover:bg-accent/20"
+                      title="新建幕"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                    </button>
                   </button>
 
                   <div 
                     className={`
-                      grid transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
+                      grid transition-all duration-500
                       ${isVolumeExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}
                     `}
+                    style={{ transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' }}
                   >
                     <div className="overflow-hidden">
                       <div className={`transition-all duration-300 ${isVolumeExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>

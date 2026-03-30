@@ -1,5 +1,6 @@
 // frontend/src/components/Outline/StoryChainView/EventModal.tsx
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, User, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/utils/request';
@@ -136,15 +137,13 @@ export const EventModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className={`fixed inset-0 z-50 flex items-center justify-center ${isClosing ? 'animate-out fade-out duration-200' : 'animate-in fade-in duration-200'}`}>
-      {/* 背景遮罩 */}
       <div
         className="absolute inset-0 bg-background/60 backdrop-blur-sm"
         onClick={handleClose}
       />
 
-      {/* 弹窗内容 */}
       <div className={`
         relative w-full max-w-lg mx-4 bg-card rounded-xl shadow-2xl ring-1 ring-border/60
         ${isClosing ? 'animate-out zoom-out-95 duration-200' : 'animate-in zoom-in-95 duration-200'}
@@ -355,6 +354,7 @@ export const EventModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

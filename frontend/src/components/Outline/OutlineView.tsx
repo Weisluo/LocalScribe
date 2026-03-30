@@ -7,7 +7,7 @@ import { useOutlineStore } from './hooks/useOutlineStore';
 import { useProjectOutline } from './hooks/useOutline';
 import { StoryChainSkeleton, VolumeOutlineSkeleton, ChapterOutlineSkeleton } from './StoryChainView/Skeleton';
 import { useUIStore } from '@/stores/uiStore';
-import type { SearchFilters } from './types';
+import type { SearchFilters, SearchScope } from './types';
 
 const VolumeOutlineView = lazy(() => import('./VolumeOutlineView').then(m => ({ default: m.VolumeOutlineView })));
 const ChapterOutlineView = lazy(() => import('./ChapterOutlineView').then(m => ({ default: m.ChapterOutlineView })));
@@ -206,13 +206,13 @@ export const OutlineView = () => {
                 <button
                   key={opt.value}
                   onClick={() => {
-                    const scopes = filters.scopes.includes(opt.value as any)
+                    const scopes = filters.scopes.includes(opt.value as SearchScope)
                       ? filters.scopes.filter(s => s !== opt.value)
-                      : [...filters.scopes, opt.value as any];
+                      : [...filters.scopes, opt.value as SearchScope];
                     handleFiltersChange({ ...filters, scopes });
                   }}
                   className={`px-2.5 py-1 text-xs rounded-md border transition-all
-                           ${filters.scopes.includes(opt.value as any)
+                           ${filters.scopes.includes(opt.value as SearchScope)
                              ? 'bg-accent/20 border-accent/40 text-foreground'
                              : 'border-border/40 text-muted-foreground hover:bg-accent/10 hover:text-foreground'}`}
                 >

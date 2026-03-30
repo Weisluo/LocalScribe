@@ -3,11 +3,9 @@ import { create } from 'zustand';
 import type { OutlineTab } from '../types';
 
 interface OutlineState {
-  // 当前视图状态
   activeTab: OutlineTab;
   setActiveTab: (tab: OutlineTab) => void;
 
-  // 展开状态
   expandedVolumeIds: Set<string>;
   expandedActIds: Set<string>;
   expandedChapterIds: Set<string>;
@@ -17,15 +15,15 @@ interface OutlineState {
   expandAll: (volumeIds: string[], actIds: string[], chapterIds?: string[]) => void;
   collapseAll: () => void;
 
-  // 编辑状态
   editingEventId: string | null;
   setEditingEvent: (id: string | null) => void;
 
-  // 选中事件
   selectedEventId: string | null;
   setSelectedEvent: (id: string | null) => void;
 
-  // 连接模式
+  selectedConnectionId: string | null;
+  setSelectedConnection: (id: string | null) => void;
+
   connectionMode: boolean;
   connectionType: string | null;
   connectionSource: string | null;
@@ -102,6 +100,9 @@ export const useOutlineStore = create<OutlineState>((set) => ({
 
   selectedEventId: null,
   setSelectedEvent: (id) => set({ selectedEventId: id }),
+
+  selectedConnectionId: null,
+  setSelectedConnection: (id) => set({ selectedConnectionId: id }),
 
   connectionMode: false,
   connectionType: null,

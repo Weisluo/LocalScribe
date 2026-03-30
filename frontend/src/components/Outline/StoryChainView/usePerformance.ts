@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useRef, useEffect, useMemo } from 'react';
 
 export function useDebounce<T extends (...args: any[]) => any>(
@@ -19,6 +20,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
     };
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(
     ((...args: Parameters<T>) => {
       if (timeoutRef.current) {
@@ -52,6 +54,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
     };
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(
     ((...args: Parameters<T>) => {
       const now = Date.now();
@@ -92,6 +95,7 @@ export function useRafCallback<T extends (...args: any[]) => any>(
     };
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(
     ((...args: Parameters<T>) => {
       if (rafRef.current) {
@@ -232,6 +236,7 @@ export function useStableCallback<T extends (...args: any[]) => any>(
     callbackRef.current = callback;
   }, [callback]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(((...args: Parameters<T>) => {
     return callbackRef.current(...args);
   }) as T, []);
