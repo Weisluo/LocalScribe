@@ -34,30 +34,32 @@ export const AddEraModal = ({ isOpen, onClose, onSubmit, isLoading, error }: Add
         <div>
           <label className="block text-sm font-medium mb-2 text-foreground">时代基调</label>
           <div className="grid grid-cols-4 gap-2">
-            {(Object.keys(ERA_THEME_CONFIG) as EraTheme[]).map((t) => {
-              const themeConfig = ERA_THEME_CONFIG[t];
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTheme(t)}
-                  className={`p-2.5 rounded-lg border-2 transition-all text-left ${
-                    theme === t 
-                      ? `${themeConfig.border} bg-gradient-to-br ${themeConfig.gradient}` 
-                      : 'border-border/30 hover:border-border/50 bg-muted/20'
-                  }`}
-                  title={themeConfig.description}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className={`w-3 h-3 rounded-full ${themeConfig.accent}`} />
-                    <span className={`text-xs font-medium ${theme === t ? themeConfig.text : 'text-muted-foreground'}`}>
-                      {themeConfig.labelCn}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground/70 line-clamp-1">{themeConfig.label}</p>
-                </button>
-              );
-            })}
+            {(Object.keys(ERA_THEME_CONFIG) as EraTheme[])
+              .filter((t) => t !== 'standalone')
+              .map((t) => {
+                const themeConfig = ERA_THEME_CONFIG[t];
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTheme(t)}
+                    className={`p-2.5 rounded-lg border-2 transition-all text-left ${
+                      theme === t
+                        ? `${themeConfig.border} bg-gradient-to-br ${themeConfig.gradient}`
+                        : 'border-border/30 hover:border-border/50 bg-muted/20'
+                    }`}
+                    title={themeConfig.description}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-3 h-3 rounded-full ${themeConfig.accent}`} />
+                      <span className={`text-xs font-medium ${theme === t ? themeConfig.text : 'text-muted-foreground'}`}>
+                        {themeConfig.labelCn}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/70 line-clamp-1">{themeConfig.label}</p>
+                  </button>
+                );
+              })}
           </div>
           <p className="text-xs text-muted-foreground mt-2 italic">{ERA_THEME_CONFIG[theme].description}</p>
         </div>

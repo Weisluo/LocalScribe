@@ -3,4 +3,8 @@ export * from './config';
 export { TimelineTooltip } from './TimelineTooltip';
 export { HistorySkeleton } from './HistorySkeleton';
 export { EventCard } from './EventCard';
+export { EraSwitchContainer } from './EraSwitchContainer';
+export { EraContentPanel } from './EraContentPanel';
+export { EraTimeline } from './EraTimeline';
+export { CharacterReference } from './CharacterReference';
 export * from './modals';

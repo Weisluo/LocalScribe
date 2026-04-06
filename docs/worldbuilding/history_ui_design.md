@@ -1,1108 +1,743 @@
-# 历史界面 UI 设计方案
+# 世界观设定 - 历史界面 (HistoryView) UI 设计实现总结
 
-> LocalScribe 世界观设定 - 历史模块设计文档（增强版）
+## 1. 概述与文件结构
 
----
+### 1.1 项目定位
 
-## 一、概述
+HistoryView 是 LocalScribe 世界观模块中 **历史模块** 的核心界面，用于管理世界的时间线、时代与事件。核心特性：
 
-### 1.1 设计目标
+- **时代-事件二级结构**：时代（Era）包含多个事件（Event），事件可关联条目（EventItem）和人物
+- **中国古典纪年**：支持"贞观元年"、"建安十三年"等中文时间表达
+- **3D 卡片轮播**：创新的时代切换交互体验
+- **双模式人物关联**：事件级独立引用 + 条目级内联链接
 
-历史界面作为世界观设定的**时间轴核心模块**，需要实现：
-
-1. **时代管理**：创建和管理历史时代，定义时代的起止时间和主题风格
-2. **事件记录**：记录历史事件，支持不同等级和类型的事件分类
-3. **时间线可视化**：直观展示时代与事件的时间关系
-4. **跨模块关联**：支持与政治、经济等模块的**双向强关联**
-5. **世界观适配**：适配仙侠、历史、西幻、现代、科幻、末世等世界观类型
-6. **详细条目**：为事件添加详细信息条目，构建完整的历史档案
-
-### 1.2 模块关系图（增强版）
+### 1.2 文件结构
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           世界观设定系统                                  │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐          │
-│  │  地图   │────▶│  政治   │◀────│  历史   │────▶│  种族   │          │
-│  │ (地区)  │     │ (核心)  │     │ (时间)  │     │ (人口)  │          │
-│  └─────────┘     └─────────┘     └────┬────┘     └─────────┘          │
-│                                       │               │                │
-│                                       │               │                │
-│                                       ▼               ▼                │
-│                                  ┌─────────┐     ┌─────────┐          │
-│                                  │  经济   │     │  特殊   │          │
-│                                  │ (资源)  │     │ (设定)  │          │
-│                                  └─────────┘     └─────────┘          │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+frontend/src/components/Worldbuilding/
+├── HistoryView.tsx                          # 根组件 (719行) - 状态管理、数据获取、CRUD mutations
+├── HistoryView/
+│   ├── index.ts                              # 统一导出
+│   ├── types.ts                              # 所有 TypeScript 类型定义 (249行)
+│   ├── config.ts                             # 配置常量: 主题/类型/级别/动画/解析函数 (511行)
+│   │
+│   ├── EraSwitchContainer.tsx                # 时代切换容器 - 3D 卡片轮播 (436行)
+│   ├── EraContentPanel.tsx                   # 时代内容面板 - 头部/描述/事件列表 (272行)
+│   ├── EventCard.tsx                         # 事件卡片 - 核心 UI 单元 (621行)
+│   ├── EraTimeline.tsx                       # 时间轴组件 - 左侧事件节点线 (134行)
+│   ├── CharacterReference.tsx                # 人物引用区域 - 独立模式 (152行)
+│   ├── TimelineTooltip.tsx                   # 时间轴悬浮提示 - Portal 渲染 (43行)
+│   └── HistorySkeleton.tsx                   # 加载骨架屏 (49行)
+│   │
+│   └── modals/                               # 模态框目录
+│       ├── index.ts                          # 模态框统一导出
+│       ├── AddEraModal.tsx                   # 添加时代
+│       ├── EditEraModal.tsx                  # 编辑时代
+│       ├── AddEventModal.tsx                 # 添加事件
+│       ├── EditEventModal.tsx                # 编辑事件
+│       ├── AddItemModal.tsx                  # 添加条目
+│       ├── EditItemModal.tsx                 # 编辑条目
+│       ├── ConfigModal.tsx                   # 样式配置
+│       └── CharacterPickerModal.tsx          # 人物选择器 (选择/快速创建)
+│
+└── (其他世界观组件...)
 
-双向关联关系：
-• 历史事件 → 政治实体（因果关系、时间关系）
-• 历史事件 → 经济实体（功能关系、依赖关系）
-• 政治实体 → 历史事件（反向查询、影响分析）
-• 经济实体 → 历史事件（反向查询、发展脉络）
-```
+backend/app/
+├── models/worldbuilding.py                   # SQLAlchemy ORM 模型 (206行)
+│   WorldTemplate, WorldModule, WorldSubmodule, WorldModuleItem, WorldInstance, CustomWorldviewConfig
+│
+└── api/v1/worldbuilding.py                   # FastAPI 路由 (2749行)
 
----
+frontend/src/services/
+└── worldbuildingApi.ts                       # API 客户端封装 (255行)
 
-## 二、数据结构设计（增强版）
-
-### 2.1 类型定义
-
-```typescript
-// 事件等级
-export type EventLevel = 
-  | 'critical'  // 重点大事件 ★★★
-  | 'major'     // 大事件 ★★
-  | 'normal'    // 普通事件 ★
-  | 'minor';    // 小事件 ○
-
-// 时代主题
-export type EraTheme = 
-  | 'ochre'      // 赭石 - 时间的底色
-  | 'gilded'     // 鎏金 - 文明的野心
-  | 'verdant'    // 青绿 - 千里江山
-  | 'cerulean'   // 釉色 - 瓷器的光泽
-  | 'patina'     // 锈迹 - 遗忘与新生
-  | 'parchment'  // 宣纸 - 古籍的呼吸
-  | 'cinnabar'   // 朱砂 - 血与墨
-  | 'ink';       // 枯墨 - 史书的颜色
-
-// 事件类型（基础类型，支持世界观适配）
-export type EventType = 
-  | 'imperial'   // 帝王 - 王朝更迭
-  | 'war'        // 征伐 - 战争史诗
-  | 'culture'    // 文华 - 艺术思想
-  | 'discovery'  // 发明 - 科技革新
-  | 'disaster'   // 灾厄 - 天灾人祸
-  | 'folk'       // 民俗 - 百姓故事
-  | 'mystery'    // 秘闻 - 神秘事件
-  | 'legacy';    // 传承 - 历史遗产
-
-// 世界观适配的事件类型
-export type WorldviewEventType = EventType & {
-  worldview: WorldviewType;
-  adaptedLabel: string;
-  adaptedIcon: string;
-  adaptedColor: string;
-};
-
-// 世界观类型
-export type WorldviewType = 
-  | 'xianxia'     // 仙侠
-  | 'historical'  // 历史
-  | 'western'     // 西幻
-  | 'modern'      // 现代
-  | 'scifi'       // 科幻
-  | 'apocalypse'; // 末世
-
-// 跨模块引用类型
-export type CrossModuleReferenceType = 
-  | 'politics'    // 政治模块引用
-  | 'economy'    // 经济模块引用
-  | 'map'        // 地图模块引用
-  | 'races'      // 种族模块引用
-  | 'systems';   // 体系模块引用
-```
-
-### 2.2 核心接口（增强版）
-
-```typescript
-// 跨模块引用接口
-export interface CrossModuleReference {
-  module: CrossModuleReferenceType;
-  entityId: string;
-  entityName: string;
-  entityType: string;
-  relationType: 'causal' | 'temporal' | 'functional' | 'hierarchical' | 'dependency';
-  relationStrength: 'strong' | 'medium' | 'weak';
-  timestamp?: string; // 关联时间点
-  description?: string; // 关联描述
-}
-
-// 时代（增强版）
-export interface Era {
-  id: string;
-  name: string;
-  description?: string;
-  startDate?: string;
-  endDate?: string;
-  order_index: number;
-  theme?: EraTheme;
-  worldview?: WorldviewType; // 世界观类型
-  
-  // 跨模块关联
-  politicalEntities?: CrossModuleReference[]; // 关联的政治实体
-  economicSystems?: CrossModuleReference[];   // 关联的经济体系
-  
-  // 世界观适配属性
-  adaptedName?: string; // 世界观适配后的名称
-  adaptedDescription?: string; // 世界观适配后的描述
-}
-
-// 历史事件（增强版）
-export interface Event {
-  id: string;
-  name: string;
-  description?: string;
-  level: EventLevel;
-  eventDate?: string;
-  icon?: string;
-  order_index: number;
-  eraId?: string;
-  items: EventItem[];
-  eventType?: EventType;
-  worldview?: WorldviewType; // 世界观类型
-  
-  // 跨模块双向关联
-  crossModuleReferences: {
-    politics: CrossModuleReference[]; // 政治关联
-    economy: CrossModuleReference[];  // 经济关联
-    map: CrossModuleReference[];      // 地图关联
-    races: CrossModuleReference[];    // 种族关联
-    systems: CrossModuleReference[];  // 体系关联
-  };
-  
-  // 关联网络数据
-  relationNetwork?: {
-    incoming: CrossModuleReference[]; // 入向关联
-    outgoing: CrossModuleReference[]; // 出向关联
-    bidirectional: CrossModuleReference[]; // 双向关联
-  };
-  
-  // 世界观适配属性
-  adaptedEventType?: WorldviewEventType; // 世界观适配后的事件类型
-  impactAnalysis?: { // 影响分析
-    politicalImpact: number; // 政治影响度 (0-100)
-    economicImpact: number;  // 经济影响度 (0-100)
-    culturalImpact: number;  // 文化影响度 (0-100)
-    technologicalImpact: number; // 科技影响度 (0-100)
-  };
-}
-
-// 事件条目（增强版）
-export interface EventItem {
-  id: string;
-  name: string;
-  content: Record<string, string>;
-  order_index: number;
-  
-  // 跨模块关联
-  crossModuleRefs?: CrossModuleReference[]; // 条目级关联
-  
-  // 世界观适配
-  adaptedContent?: Record<string, string>; // 世界观适配后的内容
-}
+frontend/src/utils/
+└── timeParser.ts                             # 中文时间解析 (481行)
 ```
 
 ---
 
-## 三、跨模块关联与世界观适配
+## 2. 数据结构
 
-### 3.1 跨模块关联机制
-
-#### 3.1.1 历史-政治双向关联
+### 2.1 前端 TypeScript 类型 (`types.ts`)
 
 ```typescript
-// 示例：汉武帝北伐事件的跨模块关联
-const hanEmperorNorthernExpedition: Event = {
-  id: 'event-han-northern-expedition',
-  name: '汉武帝北伐',
-  description: '卫青、霍去病北击匈奴，开辟河西走廊的重大军事行动',
-  level: 'major',
-  eventDate: '前119年',
-  eventType: 'war',
-  worldview: 'historical',
-  
-  crossModuleReferences: {
-    politics: [
-      {
-        module: 'politics',
-        entityId: 'nation-han-empire',
-        entityName: '大汉帝国',
-        entityType: 'nation',
-        relationType: 'causal',
-        relationStrength: 'strong',
-        description: '汉武帝发动的军事行动'
-      },
-      {
-        module: 'politics',
-        entityId: 'leader-liu-che',
-        entityName: '汉武帝刘彻',
-        entityType: 'leader',
-        relationType: 'functional',
-        relationStrength: 'strong',
-        description: '决策者和指挥者'
-      }
-    ],
-    economy: [
-      {
-        module: 'economy',
-        entityId: 'trade-route-silk-road',
-        entityName: '丝绸之路',
-        entityType: 'trade_route',
-        relationType: 'functional',
-        relationStrength: 'medium',
-        description: '军事行动为丝绸之路开辟创造条件'
-      }
-    ]
-  },
-  
-  impactAnalysis: {
-    politicalImpact: 85,
-    economicImpact: 70,
-    culturalImpact: 60,
-    technologicalImpact: 40
-  }
-};
-```
+// ===== 核心实体 =====
 
-#### 3.1.2 世界观适配示例
+interface Era {
+  id: string
+  name: string                           // 时代名称
+  description?: string                   // 时代描述
+  startDate?: string                     // 起始时间 (从 icon 字段解析 "era:{start}:{end}")
+  endDate?: string                       // 结束时间
+  order_index: number                    // 排序索引
+  theme?: EraTheme                       // 时代主题色
+}
 
-```typescript
-// 仙侠世界观适配示例
-const xianxiaEventAdaptation: Event = {
-  id: 'event-cultivation-breakthrough',
-  name: '元婴突破',
-  description: '某修士成功突破元婴境界，引发天地异象',
-  level: 'major',
-  eventDate: '修真历 2350年',
-  eventType: 'discovery',
-  worldview: 'xianxia',
-  
-  adaptedEventType: {
-    type: 'discovery',
-    worldview: 'xianxia',
-    adaptedLabel: '修为突破',
-    adaptedIcon: '🧘',
-    adaptedColor: '#8b5cf6'
-  },
-  
-  crossModuleReferences: {
-    politics: [
-      {
-        module: 'politics',
-        entityId: 'sect-tai-xu',
-        entityName: '太虚门',
-        entityType: 'sect',
-        relationType: 'hierarchical',
-        relationStrength: 'strong',
-        description: '所属门派'
-      }
-    ],
-    systems: [
-      {
-        module: 'systems',
-        entityId: 'cultivation-realm-yuanying',
-        entityName: '元婴境',
-        entityType: 'cultivation_realm',
-        relationType: 'functional',
-        relationStrength: 'strong',
-        description: '突破的境界'
-      }
-    ]
-  }
-};
+interface Event {
+  id: string
+  name: string                           // 事件名称
+  description?: string                   // 事件描述
+  level: EventLevel                      // 事件重要级别
+  eventDate?: string                     // 事件日期 (从 icon 字段解析 "date:{date}")
+  icon?: string                          // 自定义图标
+  order_index: number
+  eraId?: string                         // 所属时代 ID (parent_id)
+  items: EventItem[]                     // 关联条目列表
+  eventType?: EventType                  // 事件类型
+}
 
-// 科幻世界观适配示例
-const scifiEventAdaptation: Event = {
-  id: 'event-ai-awakening',
-  name: 'AI觉醒事件',
-  description: '超级人工智能"天网"实现自我意识觉醒',
-  level: 'critical',
-  eventDate: '2245-03-15',
-  eventType: 'discovery',
-  worldview: 'scifi',
-  
-  adaptedEventType: {
-    type: 'discovery',
-    worldview: 'scifi',
-    adaptedLabel: '科技突破',
-    adaptedIcon: '🤖',
-    adaptedColor: '#0ea5e9'
-  },
-  
-  crossModuleReferences: {
-    politics: [
-      {
-        module: 'politics',
-        entityId: 'corp-neuralink',
-        entityName: '神经链接公司',
-        entityType: 'organization',
-        relationType: 'causal',
-        relationStrength: 'strong',
-        description: '研发机构'
-      }
-    ],
-    economy: [
-      {
-        module: 'economy',
-        entityId: 'tech-ai',
-        entityName: '人工智能技术',
-        entityType: 'industry',
-        relationType: 'functional',
-        relationStrength: 'strong',
-        description: '相关产业'
-      }
-    ]
-  }
-};
-```
+interface EventItem {
+  id: string
+  name: string                           // 条目名称
+  content: Record<string, string>         // 结构化内容 (KV 对)
+  order_index: number
+}
 
-### 3.2 关联可视化组件
+// ===== 枚举类型 =====
 
-#### 3.2.1 关联网络面板
+type EventLevel = 'critical' | 'major' | 'normal' | 'minor'
+type EraTheme = 'ochre' | 'gilded' | 'verdant' | 'cerulean' | 'patina' | 'parchment' | 'cinnabar' | 'ink' | 'standalone'
+type EventType = 'imperial' | 'war' | 'culture' | 'discovery' | 'disaster' | 'folk' | 'mystery' | 'legacy'
 
-```typescript
-// 关联网络可视化组件
-const RelationNetworkPanel: React.FC<{ event: Event }> = ({ event }) => {
-  const { crossModuleReferences, relationNetwork } = event;
-  
-  return (
-    <div className="relation-network-panel">
-      <h4>📊 跨模块关联网络</h4>
-      
-      {/* 政治关联 */}
-      {crossModuleReferences.politics.length > 0 && (
-        <div className="relation-category">
-          <h5>🏛️ 政治关联</h5>
-          {crossModuleReferences.politics.map(ref => (
-            <RelationNode key={ref.entityId} reference={ref} />
-          ))}
-        </div>
-      )}
-      
-      {/* 经济关联 */}
-      {crossModuleReferences.economy.length > 0 && (
-        <div className="relation-category">
-          <h5>💰 经济关联</h5>
-          {crossModuleReferences.economy.map(ref => (
-            <RelationNode key={ref.entityId} reference={ref} />
-          ))}
-        </div>
-      )}
-      
-      {/* 影响分析图表 */}
-      {event.impactAnalysis && (
-        <ImpactAnalysisChart analysis={event.impactAnalysis} />
-      )}
-    </div>
-  );
-};
-```
+// ===== 配置类型 =====
 
-#### 3.2.2 世界观适配指示器
+interface EraThemeConfig {
+  label: string; labelCn: string          // 英/中文名
+  gradient: string                        // Tailwind 渐变色类
+  border: string                          // 边框色类
+  accent: string                          // 强调色块类
+  accentColor: string                     // CSS 颜色值
+  text: string                           // 文字色类
+  bgLight: string                         // 浅色模式 rgba
+  bgDark: string                          // 深色模式 rgba
+  description: string                     // 描述文案
+}
 
-```typescript
-// 世界观适配指示器组件
-const WorldviewIndicator: React.FC<{ worldview: WorldviewType }> = ({ worldview }) => {
-  const worldviewConfigs = {
-    xianxia: { label: '仙侠', icon: '🧘', color: '#7c3aed' },
-    historical: { label: '历史', icon: '📜', color: '#c9a227' },
-    western: { label: '西幻', icon: '⚔️', color: '#b91c1c' },
-    modern: { label: '现代', icon: '🏢', color: '#64748b' },
-    scifi: { label: '科幻', icon: '🚀', color: '#0ea5e9' },
-    apocalypse: { label: '末世', icon: '💀', color: '#57534e' }
-  };
-  
-  const config = worldviewConfigs[worldview];
-  
-  return (
-    <div className="worldview-indicator" style={{ borderColor: config.color }}>
-      <span>{config.icon}</span>
-      <span>{config.label}</span>
-    </div>
-  );
-};
-```
+interface EventTypeConfig {
+  label: string; labelCn: string
+  color: string                           // 主色调 hex
+  gradient: string; border: string; accent: string; text: string
+  icon: string                            // emoji 图标
+  description: string
+}
 
----
+interface EventLevelConfig {
+  label: string; labelCn: string
+  flexBasis: string                        // flex 基础宽度 (决定卡片大小)
+  minHeight: string                        // 最小高度
+  padding: string                          // 内边距
+  bgClass: string                         // 背景渐变类
+  borderClass: string                      // 边框类
+  textClass: string                       // 文字色类
+  titleSize: string                       // 标题字号
+  icon: string                            // 星级符号
+  glowColor: string                       // 光晕颜色
+  accentGradient: string                   // 强调渐变
+}
 
-## 四、UI 布局设计（增强版）
-
-### 4.1 主界面布局（增强版）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  [添加时代]  [世界观: 🧘 仙侠]  [🔍 搜索时代、事件或关联...]                 │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                    ▼ 时间线（时代区间可视化 + 关联热点）                 │ │
-│  │  ────────────────────────────────────────────────────────────────────  │ │
-│  │  ○────●────●────○────●────○────●                                       │ │
-│  │  │    │    │    │    │    │    │                                       │ │
-│  │ 前206 前119 8年 220年 ...                                              │ │
-│  │  ●: 强关联事件  ○: 普通事件                                             │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ 🏺 大汉时代 🧘 [仙侠适配]                                [编辑] [删除] │ │
-│  │ ══════════════════════════════════════════════════════════════════════ │ │
-│  │ 时间: 前206年 - 220年  |  主题: 鎏金  |  世界观: 历史 → 仙侠适配         │ │
-│  │ 描述: 统一六国后建立的中央集权帝国，修真界称之为"凡间王朝"...           │ │
-│  │                                                                        │ │
-│  │ ┌──────────────────────────────────────────────────────────────────┐  │ │
-│  │ │ 🧘 元婴突破                                      [编辑] [删除]    │  │ │
-│  │ │ 修真历2350年 | 修为突破 | 大事件                                  │  │ │
-│  │ │ 太虚门长老张三丰成功突破元婴境界，引发天地异象...                 │  │ │
-│  │ │                                                                  │  │ │
-│  │ │ [🏛️ 太虚门] [⚔️ 元婴境] [📊 影响分析] [+ 添加关联]               │  │ │
-│  │ │                                                                  │  │ │
-│  │ │ ┌──────────────────────────────────────────────────────────────┐ │  │ │
-│  │ │ │ 📊 跨模块关联网络                                            │ │  │ │
-│  │ │ │ 政治: 太虚门 (门派) ──▶ 修为突破 (事件)                      │ │  │ │
-│  │ │ │ 体系: 元婴境 (境界) ──▶ 修为突破 (事件)                      │ │  │ │
-│  │ │ │ 影响: 政治 85% | 经济 40% | 文化 60% | 科技 70%              │ │  │ │
-│  │ │ └──────────────────────────────────────────────────────────────┘ │  │ │
-│  │ └──────────────────────────────────────────────────────────────────┘  │ │
-│  │                                                                        │ │
-│  │ ┌──────────────────────────────────────────────────────────────────┐  │ │
-│  │ │ 🤖 AI觉醒事件                                   [编辑] [删除]    │  │ │
-│  │ │ 2245-03-15 | 科技突破 | 重点大事件                               │  │ │
-│  │ │ 神经链接公司研发的超级AI"天网"实现自我意识觉醒...                │  │ │
-│  │ │                                                                  │  │ │
-│  │ │ [🏢 神经链接公司] [💻 AI技术] [📊 影响分析] [+ 添加关联]         │  │ │
-│  │ │                                                                  │  │ │
-│  │ │ ┌──────────────────────────────────────────────────────────────┐ │  │ │
-│  │ │ │ 📊 跨模块关联网络                                            │ │  │ │
-│  │ │ │ 政治: 神经链接公司 (企业) ──▶ AI觉醒 (事件)                  │ │  │ │
-│  │ │ │ 经济: AI技术 (产业) ───────▶ AI觉醒 (事件)                  │ │  │ │
-│  │ │ │ 影响: 政治 90% | 经济 95% | 文化 75% | 科技 100%             │ │  │ │
-│  │ │ └──────────────────────────────────────────────────────────────┘ │  │ │
-│  │ └──────────────────────────────────────────────────────────────────┘  │ │
-│  │                                                                        │ │
-│  │ [+ 添加事件]                                                           │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │ 📜 三国时代 🧘 [仙侠适配]                                [编辑] [删除] │ │
-│  │ 时间: 220年 - 280年  |  主题: 朱砂  |  世界观: 历史 → 仙侠适配         │ │
-│  │ ...                                                                    │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.2 卡片设计规格
-
-| 事件等级 | 图标 | 主色调 | 卡片样式 |
-|---------|------|--------|---------|
-| 重点大事件 | ★★★ | 紫色 `#6366f1` | 100% 宽度，渐变背景，强阴影，发光效果 |
-| 大事件 | ★★ | 琥珀 `#f59e0b` | 50% 宽度，渐变背景，中等阴影 |
-| 普通事件 | ★ | 灰色 `#64748b` | 33% 宽度，轻阴影 |
-| 小事件 | ○ | 浅灰 `#cbd5e1` | 25% 宽度，虚线边框，简洁样式 |
-
-### 3.3 时代主题样式
-
-| 主题 | 中文名 | 主色调 | 视觉效果 |
-|------|--------|--------|---------|
-| ochre | 赭石 | 琥珀色 | 泥土、古陶、大地的颜色 |
-| gilded | 鎏金 | 金色 | 宫殿琉璃、帝王龙袍 |
-| verdant | 青绿 | 翠绿 | 千里江山图的石绿 |
-| cerulean | 釉色 | 天蓝 | 瓷器的光泽 |
-| patina | 锈迹 | 石灰 | 青铜器上的绿锈 |
-| parchment | 宣纸 | 米白 | 古籍的呼吸 |
-| cinnabar | 朱砂 | 暗红 | 血与墨混合 |
-| ink | 枯墨 | 灰黑 | 史书的颜色 |
-
----
-
-## 四、配色方案
-
-### 4.1 事件等级配色
-
-```typescript
-export const LEVEL_COLORS: Record<EventLevel, string> = {
-  critical: '#6366f1',  // 紫色 - 重点大事件
-  major: '#f59e0b',     // 琥珀 - 大事件
-  normal: '#64748b',    // 灰色 - 普通事件
-  minor: '#cbd5e1',     // 浅灰 - 小事件
-};
-
-export const LEVEL_CONFIG: Record<EventLevel, EventLevelConfig> = {
-  critical: {
-    label: '重点大事件',
-    labelCn: '★★★',
-    flexBasis: 'flex-[1_1_100%]',
-    minHeight: 'min-h-[220px]',
-    padding: 'p-6',
-    bgClass: 'bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-pink-500/15',
-    borderClass: 'border-2 border-indigo-400/50 shadow-xl shadow-indigo-500/20',
-    textClass: 'text-foreground',
-    titleSize: 'text-xl font-bold',
-    icon: '★',
-    glowColor: 'rgba(99, 102, 241, 0.4)',
-    accentGradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%)',
-  },
-  major: {
-    label: '大事件',
-    labelCn: '★★',
-    flexBasis: 'flex-[1_1_calc(50%-12px)]',
-    minHeight: 'min-h-[170px]',
-    padding: 'p-5',
-    bgClass: 'bg-gradient-to-br from-amber-500/10 via-orange-500/8 to-yellow-500/10',
-    borderClass: 'border-2 border-amber-400/40 shadow-lg shadow-amber-500/15',
-    textClass: 'text-foreground',
-    titleSize: 'text-lg font-semibold',
-    icon: '★',
-    glowColor: 'rgba(245, 158, 11, 0.3)',
-    accentGradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
-  },
-  normal: {
-    label: '普通事件',
-    labelCn: '★',
-    flexBasis: 'flex-[1_1_calc(33.333%-12px)]',
-    minHeight: 'min-h-[130px]',
-    padding: 'p-4',
-    bgClass: 'bg-gradient-to-br from-slate-400/8 via-slate-500/5 to-slate-400/8',
-    borderClass: 'border border-slate-400/30 shadow-md shadow-slate-500/10',
-    textClass: 'text-foreground',
-    titleSize: 'text-base font-medium',
-    icon: '○',
-    glowColor: 'rgba(100, 116, 139, 0.2)',
-    accentGradient: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
-  },
-  minor: {
-    label: '小事件',
-    labelCn: '○',
-    flexBasis: 'flex-[1_1_calc(25%-12px)]',
-    minHeight: 'min-h-[100px]',
-    padding: 'p-3',
-    bgClass: 'bg-muted/40',
-    borderClass: 'border border-dashed border-border/70',
-    textClass: 'text-muted-foreground',
-    titleSize: 'text-sm font-medium',
-    icon: '○',
-    glowColor: 'transparent',
-    accentGradient: 'linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 100%)',
-  },
-};
-```
-
-### 4.2 事件类型配色
-
-```typescript
-export const EVENT_TYPE_CONFIG: Record<EventType, EventTypeConfig> = {
-  imperial: {
-    label: 'Imperial',
-    labelCn: '帝王',
-    color: '#c9a227',
-    gradient: 'from-yellow-600/15 via-amber-500/10 to-orange-500/8',
-    border: 'border-yellow-500/40',
-    accent: 'bg-yellow-500',
-    text: 'text-yellow-700 dark:text-yellow-300',
-    icon: '👑',
-    description: '王朝更迭、帝王功业、宫廷大事',
-  },
-  war: {
-    label: 'War',
-    labelCn: '征伐',
-    color: '#b91c1c',
-    gradient: 'from-red-700/15 via-rose-600/10 to-orange-700/8',
-    border: 'border-red-500/40',
-    accent: 'bg-red-600',
-    text: 'text-red-700 dark:text-red-300',
-    icon: '⚔️',
-    description: '战争、征伐、英雄史诗',
-  },
-  culture: {
-    label: 'Culture',
-    labelCn: '文华',
-    color: '#059669',
-    gradient: 'from-emerald-600/15 via-teal-500/10 to-cyan-600/8',
-    border: 'border-emerald-400/40',
-    accent: 'bg-emerald-500',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    icon: '📜',
-    description: '艺术、文学、思想、文化繁荣',
-  },
-  discovery: {
-    label: 'Discovery',
-    labelCn: '发明',
-    color: '#0284c7',
-    gradient: 'from-sky-600/15 via-blue-500/10 to-indigo-500/8',
-    border: 'border-sky-400/40',
-    accent: 'bg-sky-500',
-    text: 'text-sky-700 dark:text-sky-300',
-    icon: '💡',
-    description: '科技发明、探索发现、革新突破',
-  },
-  disaster: {
-    label: 'Disaster',
-    labelCn: '灾厄',
-    color: '#6b7280',
-    gradient: 'from-stone-500/15 via-zinc-500/10 to-slate-500/8',
-    border: 'border-stone-400/40',
-    accent: 'bg-stone-500',
-    text: 'text-stone-600 dark:text-stone-300',
-    icon: '🌋',
-    description: '天灾人祸、瘟疫饥馑、文明衰落',
-  },
-  folk: {
-    label: 'Folk',
-    labelCn: '民俗',
-    color: '#a16207',
-    gradient: 'from-amber-600/15 via-orange-500/10 to-yellow-600/8',
-    border: 'border-amber-400/40',
-    accent: 'bg-amber-500',
-    text: 'text-amber-700 dark:text-amber-300',
-    icon: '🏘️',
-    description: '民间生活、风俗传统、百姓故事',
-  },
-  mystery: {
-    label: 'Mystery',
-    labelCn: '秘闻',
-    color: '#7c3aed',
-    gradient: 'from-violet-600/15 via-purple-500/10 to-indigo-600/8',
-    border: 'border-violet-400/40',
-    accent: 'bg-violet-500',
-    text: 'text-violet-700 dark:text-violet-300',
-    icon: '🔮',
-    description: '未解之谜、传说秘闻、神秘事件',
-  },
-  legacy: {
-    label: 'Legacy',
-    labelCn: '传承',
-    color: '#0891b2',
-    gradient: 'from-cyan-600/15 via-teal-500/10 to-emerald-600/8',
-    border: 'border-cyan-400/40',
-    accent: 'bg-cyan-500',
-    text: 'text-cyan-700 dark:text-cyan-300',
-    icon: '🏛️',
-    description: '历史遗产、建筑文物、传统延续',
-  },
-};
-```
-
-### 4.3 时代主题配色
-
-```typescript
-export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
-  ochre: {
-    label: 'Ochre',
-    labelCn: '赭石',
-    gradient: 'from-amber-800/20 via-orange-900/15 to-yellow-900/10',
-    border: 'border-amber-700/40',
-    accent: 'bg-amber-700',
-    text: 'text-amber-800 dark:text-amber-300',
-    bgLight: 'rgba(180, 130, 80, 0.15)',
-    bgDark: 'rgba(140, 100, 60, 0.2)',
-    description: '时间的底色，泥土、古陶、千万人赤足踩过的大地',
-  },
-  gilded: {
-    label: 'Gilded',
-    labelCn: '鎏金',
-    gradient: 'from-yellow-600/20 via-amber-500/15 to-orange-600/10',
-    border: 'border-yellow-500/50',
-    accent: 'bg-yellow-600',
-    text: 'text-yellow-700 dark:text-yellow-300',
-    bgLight: 'rgba(200, 160, 60, 0.15)',
-    bgDark: 'rgba(180, 140, 40, 0.2)',
-    description: '文明的野心，宫殿琉璃、帝王龙袍、圣像冠冕',
-  },
-  verdant: {
-    label: 'Verdant',
-    labelCn: '青绿',
-    gradient: 'from-emerald-700/20 via-teal-600/15 to-cyan-700/10',
-    border: 'border-emerald-500/40',
-    accent: 'bg-emerald-600',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    bgLight: 'rgba(60, 140, 100, 0.15)',
-    bgDark: 'rgba(40, 120, 80, 0.2)',
-    description: '千里江山图的石绿，汝窑雨过天青的静谧',
-  },
-  cerulean: {
-    label: 'Cerulean',
-    labelCn: '釉色',
-    gradient: 'from-sky-600/20 via-blue-500/15 to-indigo-600/10',
-    border: 'border-sky-400/40',
-    accent: 'bg-sky-500',
-    text: 'text-sky-700 dark:text-sky-300',
-    bgLight: 'rgba(80, 140, 180, 0.15)',
-    bgDark: 'rgba(60, 120, 160, 0.2)',
-    description: '瓷器的光泽，火焰中成形的瞬间',
-  },
-  patina: {
-    label: 'Patina',
-    labelCn: '锈迹',
-    gradient: 'from-stone-500/20 via-zinc-600/15 to-slate-500/10',
-    border: 'border-stone-400/40',
-    accent: 'bg-stone-500',
-    text: 'text-stone-600 dark:text-stone-300',
-    bgLight: 'rgba(120, 110, 100, 0.15)',
-    bgDark: 'rgba(100, 90, 80, 0.2)',
-    description: '青铜器上的绿锈，石碑上的苔藓，遗忘与新生的颜色',
-  },
-  parchment: {
-    label: 'Parchment',
-    labelCn: '宣纸',
-    gradient: 'from-stone-300/20 via-amber-200/15 to-yellow-100/10',
-    border: 'border-stone-300/50',
-    accent: 'bg-stone-400',
-    text: 'text-stone-700 dark:text-stone-300',
-    bgLight: 'rgba(220, 200, 170, 0.2)',
-    bgDark: 'rgba(180, 160, 130, 0.15)',
-    description: '古籍的呼吸，家书在樟木箱里慢慢老去的颜色',
-  },
-  cinnabar: {
-    label: 'Cinnabar',
-    labelCn: '朱砂',
-    gradient: 'from-red-700/20 via-rose-600/15 to-orange-700/10',
-    border: 'border-red-500/40',
-    accent: 'bg-red-600',
-    text: 'text-red-700 dark:text-red-300',
-    bgLight: 'rgba(180, 60, 60, 0.15)',
-    bgDark: 'rgba(160, 40, 40, 0.2)',
-    description: '血与墨混合后干涸的暗红，战争的伤痕',
-  },
-  ink: {
-    label: 'Ink',
-    labelCn: '枯墨',
-    gradient: 'from-gray-700/20 via-slate-600/15 to-zinc-700/10',
-    border: 'border-gray-500/40',
-    accent: 'bg-gray-600',
-    text: 'text-gray-700 dark:text-gray-300',
-    bgLight: 'rgba(80, 80, 90, 0.15)',
-    bgDark: 'rgba(60, 60, 70, 0.2)',
-    description: '史书是用墨写成的，字缝里渗出岁月的风干',
-  },
-};
-```
-
----
-
-## 五、后端数据存储方案
-
-### 5.1 数据映射关系
-
-利用现有 `WorldSubmodule` 和 `WorldModuleItem` 结构存储历史数据：
-
-| 字段 | 存储内容 | 格式示例 |
-|------|---------|---------|
-| `color` | 类型标识 | 时代: `era:ochre`，事件: `type:imperial:major` |
-| `icon` | 时间信息 | 时代: `era:前206:220`，事件: `date:前206年` |
-| `parent_id` | 所属时代 | 事件所属的时代ID |
-| `WorldModuleItem` | 事件详细条目 | 见下方详细说明 |
-
-### 5.2 时代存储
-
-```typescript
-// WorldSubmodule - 时代
-{
-  id: "era-001",
-  module_id: "history_module_id",
-  name: "大汉时代",
-  description: "统一六国后建立的中央集权帝国...",
-  color: "era:gilded",
-  icon: "era:前206:220",
-  parent_id: null,
-  order_index: 0
+interface HistoryModuleConfig {
+  eraThemes: (EraThemeConfig & { id: string })[]
+  eventTypes: (EventTypeConfig & { id: string })[]
+  levels: (EventLevelConfig & { id: string })[]
 }
 ```
 
-### 5.3 事件存储
+### 2.2 后端数据库模型 (`worldbuilding.py`)
 
-```typescript
-// WorldSubmodule - 历史事件
-{
-  id: "event-001",
-  module_id: "history_module_id",
-  name: "楚汉争霸",
-  description: "刘邦与项羽争夺天下的战争...",
-  color: "type:imperial:critical",
-  icon: "date:前206年",
-  parent_id: "era-001",
-  order_index: 0
-}
+历史界面的数据映射到通用的世界观数据模型：
+
+```
+WorldTemplate (世界模板)
+  └── WorldModule (module_type='history')  ← moduleId
+        ├── WorldSubmodule (color 以 'era:' 开头, parent_id=NULL)  → 前端 Era
+        │     └── WorldSubmodule (color 以 'type:' 开头, parent_id=eraId)  → 前端 Event
+        │           └── WorldModuleItem (submodule_id=eventId)  → 前端 EventItem
+        └── WorldModuleItem (name='moduleConfig')  → HistoryModuleConfig 序列化存储
+              └── content JSON: { eraThemes: [...], eventTypes: [...], levels: [...] }
 ```
 
-### 5.4 事件条目存储
+**关键字段编码约定：**
 
-```typescript
-// WorldModuleItem - 事件详细条目
-{
-  id: "item-001",
-  module_id: "history_module_id",
-  submodule_id: "event-001",
-  name: "政治背景",
-  content: {
-    "秦末农民起义": "陈胜吴广起义，天下大乱",
-    "楚怀王之约": "先入关中者为王",
-    "鸿门宴": "项羽设宴，刘邦险些被杀"
-  }
-}
+| 用途 | 存储字段 | 编码格式 | 示例 |
+|------|---------|---------|------|
+| 时代标识 | `submodule.color` | `era:{themeName}` | `"era:ochre"` |
+| 时代时间范围 | `submodule.icon` | `era:{startDate}:{endDate}` | `"era:公元元年:公元500年"` |
+| 事件标识 | `submodule.color` | `type:{eventType}[:{level}]` | `"type:imperial:critical"` |
+| 事件日期 | `submodule.icon` | `date:{eventDate}` | `"date:2024年1月"` |
+| 事件自定义图标 | `submodule.icon` | 直接存图标字符串 | `"⚔️"` |
+| 人物引用 (独立) | `item.name` | `_char_ref_{charId}` | `"_char_ref_abc123"` |
+| 人物引用内容 (独立) | `item.content[key]` | `_char_ref:{charId}` | `"_char_ref:abc123": "张三"` |
+| 人物链接 (条目级) | `item.content[key]` | `_char_link:{itemId}:{charId}` | `"_char_link:item001:abc123": "张三"` |
+| 模块配置 | `item.name` | `"moduleConfig"` | 固定值 |
 
-// WorldModuleItem - 参战势力
-{
-  id: "item-002",
-  module_id: "history_module_id",
-  submodule_id: "event-001",
-  name: "参战势力",
-  content: {
-    "汉军": "刘邦统领，以关中为基地",
-    "楚军": "项羽统领，势力范围广大",
-    "诸侯联军": "各方诸侯势力"
-  }
-}
+### 2.3 数据转换流程 (后端 → 前端)
+
+```
+API 返回: WorldSubmodule[] (getSubmodules) + WorldModuleItem[] (getItems include_all=true)
+                    ↓ HistoryView.tsx L106-L148
+              数据映射/转换
+                    ↓
+前端模型: Era[] + Event[] (各含嵌套 EventItem[])
+
+转换规则:
+1. Era 判定: isEra(sub) → sub.color.startsWith('era:') && !sub.parent_id
+   - theme = parseEraTheme(sub.color)     // "era:ochre" → "ochre"
+   - 时间 = sub.icon.replace('era:', '').split(':')
+
+2. Event 判定: !isEra(sub)
+   - level = parseEventLevel(sub.color)   // "type:imperial:critical" → "critical"
+   - eventType = parseEventType(sub.color) // "type:imperial:critical" → "imperial"
+   - 日期 = sub.icon.replace('date:', '')
+   - eraId = sub.parent_id
+
+3. 独立事件孤儿处理: events.filter(e => !e.eraId) → 归入 "时间之外" 伪时代 (STANDALONE_ERA_ID)
+
+4. 排序: eras 按 compareTimes(startDate), events 按 compareTimes(eventDate)
 ```
 
 ---
 
-## 六、组件结构
+## 3. API 调用
 
-### 6.1 文件结构
+### 3.1 历史界面涉及的 API 调用汇总
 
+所有 API 通过 `worldbuildingApi` (基于 Axios) 调用，由 React Query (`@tanstack/react-query`) 管理缓存。
+
+#### 查询 (Queries)
+
+| QueryKey | API 方法 | 触发时机 | 用途 |
+|----------|---------|---------|------|
+| `['worldbuilding', 'submodules', moduleId]` | `getSubmodules(moduleId)` | 组件挂载 | 获取所有时代+事件子模块 |
+| `['worldbuilding', 'items', moduleId]` | `getItems(moduleId, { include_all: true })` | 组件挂载 | 获取所有条目（含 moduleConfig） |
+| `['characters-simple', projectId]` | `characterApi.getCharactersSimple(projectId)` | EventCard 挂载 | 获取简化人物列表（用于 badge 解析） |
+| `['characters', projectId]` | `characterApi.getCharacters(projectId)` | CharacterReference 挂载 | 获取完整人物列表（用于选择器） |
+
+#### 变更 (Mutations)
+
+| Mutation | API 方法 | 触发操作 | 成功后失效 Key |
+|----------|---------|---------|---------------|
+| `createEraMutation` | `createSubmodule(moduleId, {...})` | 添加时代 | `submodules` |
+| `updateEraMutation` | `updateSubmodule(eraId, {...})` | 编辑时代 | `submodules` |
+| `createEventMutation` | `createSubmodule(moduleId, {...})` | 添加事件 | `submodules` |
+| `updateEventMutation` | `updateSubmodule(eventId, {...})` | 编辑事件 | `submodules` |
+| `deleteEventMutation` | `deleteSubmodule(eventId)` | 删除事件 | `submodules`, `items` |
+| `updateDescriptionMutation` | `updateSubmodule(id, {description})` | 内联编辑描述 | `submodules` |
+| `createItemMutation` | `createItem(moduleId, {...})` | 添加条目 | `items` |
+| `createItemForEventMutation` | `createItem(moduleId, {...})` | 添加人物引用条目 | `items` |
+| `deleteItemMutation` | `deleteItem(itemId)` | 删除条目 | `items` |
+| `updateItemMutation` | `updateItem(itemId, {...})` | 编辑条目 / 关联/取消关联人物 | `items` |
+| `saveConfigMutation` | `createItem/updateItem(...)` | 保存样式配置 | `items` |
+
+### 3.2 关键 API 请求详情
+
+#### 获取子模块 (时代 + 事件)
 ```
-HistoryView/
-├── index.ts                    # 导出入口
-├── types.ts                    # 类型定义
-├── config.ts                   # 配置（颜色、图标、样式）
-├── HistoryView.tsx             # 主组件
-├── EventCard.tsx               # 事件卡片组件
-├── EraCard.tsx                 # 时代卡片组件（内联在主组件中）
-├── TimelineTooltip.tsx         # 时间线提示组件
-├── HistorySkeleton.tsx         # 加载骨架屏
-└── modals/
-    ├── index.ts
-    ├── AddEraModal.tsx         # 添加时代弹窗
-    ├── EditEraModal.tsx        # 编辑时代弹窗
-    ├── AddEventModal.tsx       # 添加事件弹窗
-    ├── EditEventModal.tsx      # 编辑事件弹窗
-    ├── AddItemModal.tsx        # 添加条目弹窗
-    └── EditItemModal.tsx       # 编辑条目弹窗
+GET /api/v1/worldbuilding/modules/{moduleId}/submodules
+→ WorldSubmoduleResponse[]
+  { id, module_id, name, description, order_index, color, icon, parent_id, ... }
 ```
 
-### 6.2 组件职责
+#### 获取条目 (含配置)
+```
+GET /api/v1/worldbuilding/modules/{moduleId}/items?include_all=true
+→ WorldModuleItemResponse[]
+  { id, module_id, submodule_id, name, content, order_index, ... }
+```
 
-| 组件 | 职责 |
-|------|------|
-| `HistoryView` | 主容器，管理状态、数据获取、筛选逻辑、时间线渲染 |
-| `EventCard` | 单个事件卡片，展示事件信息和条目 |
-| `TimelineTooltip` | 时间线上的悬浮提示 |
-| `HistorySkeleton` | 加载状态的骨架屏 |
-| `AddEraModal` | 添加新时代的表单弹窗 |
-| `EditEraModal` | 编辑时代信息的表单弹窗 |
-| `AddEventModal` | 添加新事件的表单弹窗 |
-| `EditEventModal` | 编辑事件信息的表单弹窗 |
-| `AddItemModal` | 添加事件条目的表单弹窗 |
-| `EditItemModal` | 编辑事件条目的表单弹窗 |
+#### 创建子模块 (以创建事件为例)
+```
+POST /api/v1/worldbuilding/modules/{moduleId}/submodules
+Body: {
+  name: "王朝建立",
+  description: "第一位皇帝登基",
+  color: "type:imperial:critical",    // 编码: 类型 + 级别
+  icon: "date:公元前221年",           // 编码: 日期
+  parent_id: "{eraId}"                // 所属时代
+}
+```
+
+#### 创建条目 (以人物引用为例)
+```
+POST /api/v1/worldbuilding/modules/{moduleId}/items
+Body: {
+  name: "_char_ref_{charId}",
+  content: { "_char_ref:{charId}": "秦始皇" },
+  submodule_id: "{eventId}"
+}
+```
+
+### 3.3 缓存策略
+
+- **QueryClient** 使用 `invalidateQueries` 在 mutation 成功后使相关查询失效
+- `submodules` 和 `items` 分开缓存，避免不必要的请求
+- 搜索在前端内存中过滤（不发起额外请求）
+- `moduleConfig` 作为特殊 item（`name === 'moduleConfig'`）从 items 中提取，通过 `useMemo` 解析验证
 
 ---
 
-## 七、交互设计
+## 4. UI 组件层级
 
-### 7.1 核心交互
+### 4.1 整体组件层级
 
-| 功能 | 描述 | 实现方式 |
+```
+HistoryView (根容器)
+├── Toolbar (顶部工具栏)
+│   ├── [添加时代] 按钮
+│   ├── [搜索框] (搜索时代/事件/条目)
+│   ├── [添加事件] 按钮
+│   └── [样式配置] 按钮 (Settings)
+│
+├── EmptyState (空状态 - 无数据时)
+│   └── 引导创建第一个时代/事件
+│
+├── SearchEmptyState (搜索无结果)
+│
+└── EraSwitchContainer (时代切换容器 - 核心布局)
+    │
+    ├── EraTabs (时代标签栏)
+    │   └── 时代 Tab 列表 (带 layoutId 动画指示器)
+    │
+    └── 卡片堆叠区域 (perspective 3D 布局)
+        ├── AnimatedCard (左侧预览卡片, isLeft=true)
+        ├── AnimatedCard (当前活跃卡片, isActive=true) ← 可拖拽滑动
+        ├── AnimatedCard (右侧预览卡片, isLeft=false)
+        └── AnimatedCard (退出动画卡片, isExiting=true)
+            └── EraContentPanel (时代内容面板)
+                ├── Header (时代标题栏)
+                │   ├── 时代圆点 + 名称 + 时间范围
+                │   ├── [编辑] / [删除] 按钮
+                │   └── [添加事件] 按钮
+                │
+                ├── Description (时代描述区 - 可内联编辑)
+                │
+                └── Content Body
+                    ├── EraTimeline (左侧时间轴)
+                    │   └── 事件节点圆点 (按 level 区分大小/颜色)
+                    │   └── TimelineTooltip (悬浮提示 Portal)
+                    │
+                    └── EventCards Grid (事件卡片网格)
+                        └── EventCard × N
+                            ├── Header (事件标题 + 类型标签 + 级别标签)
+                            ├── Date (事件日期)
+                            ├── Description (描述 - 可内联编辑)
+                            ├── Items (条目列表 - 含人物关联标签)
+                            │   └── ItemTag × N (含 char link badge)
+                            ├── [展开全部] 按钮
+                            └── CharacterReference (人物关联区域)
+                                ├── 参与人物列表 (CharacterBarCard)
+                                └── [添加] 按钮 → CharacterPickerModal
+```
+
+### 4.2 模态框 (Modals)
+
+| 模态框 | 触发入口 | 功能 |
+|--------|---------|------|
+| `AddEraModal` | Toolbar [添加时代] | 创建新时代（名称、描述、起止时间、主题色） |
+| `EditEraModal` | EraContentPanel Header [编辑] | 编辑时代信息 |
+| `AddEventModal` | Toolbar [添加事件] / EraContentPanel [添加事件] | 创建新事件（名称、描述、级别、日期、图标、所属时代、事件类型） |
+| `EditEventModal` | EventCard [编辑] | 编辑事件信息 |
+| `AddItemModal` | EventCard [添加条目] | 创建事件下的条目（名称 + 自定义字段内容） |
+| `EditItemModal` | EventCard 条目 [编辑] | 编辑条目内容 |
+| `ConfigModal` | Toolbar [Settings] | 配置模块样式（时代主题、事件类型、级别样式） |
+| `CharacterPickerModal` | CharacterReference [添加] / EventCard 条目 [关联人物] | 选择或快速创建人物并关联到事件 |
+
+### 4.3 三种显示状态
+
+1. **Loading 状态** (`isFirstLoad && isLoading`): 显示 `HistorySkeleton` 骨架屏
+2. **空状态** (`eras.length === 0 && orphanEvents.length === 0`): 显示引导创建的 EmptyState
+3. **搜索无结果**: 显示 SearchEmptyState
+4. **正常状态**: 显示 `EraSwitchContainer` + `EraContentPanel`
+
+---
+
+## 5. 动画系统
+
+### 5.1 动画配置常量 (`config.ts` → `animationConfig`)
+
+```typescript
+animationConfig = {
+  spring:        { type: 'spring', stiffness: 280, damping: 28, mass: 0.85 },     // 默认弹性
+  springSnappy: { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 },      // 快速弹性
+  springGentle: { type: 'spring', stiffness: 220, damping: 32, mass: 1 },        // 温和弹性
+  ease:         { duration: 0.3, ease: [0.4, 0, 0.2, 1] },                       // 标准缓动
+  easeOut:      { duration: 0.28, ease: [0.33, 1, 0.68, 1] },                    // 减出缓动
+  stagger:      { staggerChildren: 0.055, delayChildren: 0.12 },                  // 交错动画
+}
+```
+
+### 5.2 组件变体 (Variants)
+
+#### cardVariants (EventCard 入场/退场)
+```
+hidden: { opacity: 0, y: 20, scale: 0.97, filter: 'blur(4px)' }
+visible: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }  // spring: stiffness=260, damping=28
+exit:    { opacity: 0, scale: 0.96, y: -12, filter: 'blur(3px)' } // duration=0.25
+```
+
+#### eraVariants (EraContentPanel 入场/退场)
+```
+hidden: { opacity: 0, y: 24, scale: 0.97, filter: 'blur(4px)' }
+visible: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }
+exit:    { opacity: 0, y: -16, scale: 0.96, filter: 'blur(3px)' }
+```
+
+#### contentVariants (折叠/展开)
+```
+collapsed: { height: 0, opacity: 0 }
+expanded:  { height: 'auto', opacity: 1 }
+```
+
+### 5.3 核心 3D 卡片切换动画 (EraSwitchContainer → AnimatedCard)
+
+这是历史界面最核心的动画系统，采用 **perspective 3D 卡片轮播**：
+
+```
+卡片状态机:
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│  [Side-Left] ←→ [Active] ←→ [Side-Right]          │
+│       ↑              ↓              ↑              │
+│       └────────── [Exiting] ←────────┘              │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+
+各状态视觉参数:
+┌──────────────┬──────────┬────────┬─────────┬──────────┬──────────┐
+│     State    │    x     │ scale │ opacity │   zIndex │  filter  │
+├──────────────┼──────────┼────────┼─────────┼──────────┼──────────┤
+│ Active       │   0%     │  1.00  │   1.0   │    20    │ blur(0) │
+│ Side-Left    │  -28%    │  0.88  │   0.7   │     5    │blur(1.5px)│
+│ Side-Right   │  +28%    │  0.88  │   0.7   │     5    │blur(1.5px)│
+│ Exiting(→R)  │  -55%    │  0.65  │   0.0   │    25    │blur(10px)│
+│ Exiting(→L)  │  +55%    │  0.65  │   0.0   │    25    │blur(10px)│
+│ Entering(←R) │  +45%    │  0.75  │  0.85   │    15    │ blur(8px)│
+│ Entering(→L) │  -45%    │  0.75  │  0.85   │    15    │ blur(8px)│
+└──────────────┴──────────┴────────┴─────────┴──────────┴──────────┘
+
+额外变换:
+- Side 卡片: rotateY(±3°), perspective=1200
+- Exiting 卡片: rotateY(±20°), brightness(0.75)
+- Entering 卡片: rotateY(±15°), brightness(0.8)
+```
+
+**切换触发方式：**
+- 点击 EraTabs 标签
+- 点击侧边预览卡片
+- 左右拖拽活跃卡片 (drag elastic=0.12, threshold=60px 或 velocity>500)
+- 键盘 ← / → 方向键
+
+**切换流程：**
+1. 用户触发切换 → `handleSwitch(targetId)` 
+2. 计算 direction (1=向右/-1=向左)
+3. 设置 `exitingCard` = 当前活跃卡片 + direction
+4. 同步调用 `onSwitchEra(targetId)` 更新 activeEraId
+5. AnimatePresence 检测 key 变化：
+   - 旧 active 卡片 → 以 exit 动画移出
+   - 新 active 卡片 → 从对侧以 enter 动画入场
+6. 600ms 后清除 exitingCard 状态，解除锁定
+
+### 5.4 EraTabs layoutId 动画
+
+使用 Framer Motion 的 `layoutId="era-tab-indicator"` 实现标签指示器平滑滑动过渡。
+
+### 5.5 EventCard 微交互
+
+| 交互 | 动画效果 |
+|------|---------|
+| 整体 hover | y: -4, scale: 1.005, shadow 增强 |
+| critical 级别 | 径向渐变光晕 + 脉冲呼吸圆点动画 (2s/2.5s infinite) |
+| major 级别 | 单个径向渐变光晕 |
+| 类型图标入场 | scale: 0.8→1, rotate: -10°→0° (delay 0.1s) |
+| 条目 stagger | 每个条目延迟 idx*0.04s 弹性入场 |
+| 展开按钮箭头 | rotate: 0↔180° |
+
+### 5.6 EraTimeline 时间轴动画
+
+- 事件节点: `opacity: 0→1, scale: 0→1`, 延迟 index*0.05s
+- critical 节点: 双层脉冲扩散动画 (scale: 1→2.2, 1.8s infinite, 交错 0.4s)
+- hover 节点: `scale: 1.25` (critical 除外)
+- Tooltip: Portal 渲染, `opacity+scale+x` 组合动画
+
+---
+
+## 6. 人物关联
+
+### 6.1 关联架构
+
+历史界面支持 **两种人物关联模式**：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   人物关联体系                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  模式一: 事件级独立引用 (Standalone Char Ref)                 │
+│  ─────────────────────────────────────────                  │
+│  存储: WorldModuleItem                                       │
+│  name = "_char_ref_{charId}"                                │
+│  content = { "_char_ref:{charId}": "charName" }             │
+│  submodule_id = eventId                                     │
+│                                                             │
+│  组件: CharacterReference                                   │
+│  位置: EventCard 底部独立区域                                 │
+│  功能: 显示参与人物的 CharacterBarCard 列表                   │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  模式二: 条目级内联链接 (Inline Char Link)                    │
+│  ─────────────────────────────────                          │
+│  存储: 已有 WorldModuleItem 的 content 字段新增               │
+│  content["_char_link:{itemId}:{charId}"] = "charName"       │
+│                                                             │
+│  位置: EventCard 内每个 ItemTag 上                            │
+│  功能: 小型人物 badge (头像+名字+取消按钮)                    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 数据流
+
+```
+用户操作流:
+
+[添加人物]
+    │
+    ├─→ CharacterPickerModal 打开
+    │       ├─ Tab "选择已有": 搜索 → characterApi.getCharacters()
+    │       └─ Tab "快速创建": 表单 → characterApi.createCharacter(source='history')
+    │
+    ├─→ 模式一 (CharacterReference):
+    │   onSelect → addCharRefMutation
+    │   → worldbuildingApi.createItem({
+    │       name: `_char_ref_${charId}`,
+    │       content: { `_char_ref:${charId}`: charName },
+    │       submodule_id: eventId
+    │     })
+    │
+    └─→ 模式二 (EventCard ItemTag):
+        onSelect → handleLinkCharacter
+        → updateItemMutation
+        → worldbuildingApi.updateItem(itemId, {
+            content: { ...existing, `_char_link:${itemId}:${charId}`: charName }
+          })
+
+[移除人物]
+    │
+    ├─→ 模式一: removeCharRefMutation → deleteItem(itemId)
+    │   (删除整个 _char_ref_ 条目)
+    │
+    └─→ 模式二: handleUnlinkCharacter → updateItemMutation
+        → 从 content 中删除对应的 _char_link: key
+```
+
+### 6.3 人物数据来源
+
+- **API**: `characterApi.getCharacters(projectId)` — 获取完整人物列表
+- **API**: `characterApi.getCharactersSimple(projectId)` — 获取简化列表 (用于 picker 和 badge 解析)
+- **解析**: 通过 `itemCharLinks` useMemo 从 event.items 中提取所有 `_char_link:` 前缀的 key-value 对
+
+---
+
+## 7. 中文时间解析系统 (`timeParser.ts`)
+
+历史界面支持**中国古典纪年格式**的时间表达（如"贞观元年"、"建安十三年"、"洪武三十一年"），这是该界面独有的核心工具模块。
+
+### 7.1 支持的时间格式
+
+| 格式 | 示例 | 解析结果 |
 |------|------|---------|
-| **时代展开/折叠** | 点击时代标题展开或折叠事件列表 | 手风琴组件 |
-| **搜索过滤** | 按时代、事件、条目名称搜索 | 搜索框 + 过滤逻辑 |
-| **快速编辑** | 点击描述区域直接编辑 | 内联编辑器 |
-| **时间线导航** | 悬浮时间线显示事件信息 | Tooltip 组件 |
-| **条目管理** | 添加/编辑/删除事件条目 | Modal + 表单 |
+| **年号+元年** | `贞观元年`、`开元元` | eraName="贞观", year=1, isYuanNian=true |
+| **年号+数字年** | `贞观10年`、`建安13年` | eraName="贞观/建安", year=10/13 |
+| **年号+中文数字年** | `洪武二十三年` | eraName="洪武", year=23 |
+| **纯阿拉伯数字** | `2024年`、`公元前221年` | eraName="", year=2024/221 |
+| **纯中文数字** | `二百零一年` | eraName="", year=201 |
+| **空/无效** | `""`、`未知` | sortValue=0, 排到最后 |
 
-### 7.2 交互流程
+### 7.2 核心算法
 
-#### 添加时代
-
+#### 中文数字 → 阿拉伯数字 转换 (`chineseNumberToArabic`)
 ```
-点击"添加时代" → 填写时代名称 → 选择起止时间 
-→ 选择主题风格 → 填写描述 → 保存
-```
-
-#### 添加事件
-
-```
-点击"添加事件" → 选择所属时代 → 填写事件名称 
-→ 选择事件等级 → 选择事件类型 → 填写时间 → 保存
+支持字符: 零〇一二三四五六七八九十百千万
+处理逻辑: 按位解析，遇单位词(十/百/千/万)时累乘
+特殊: "元" → 1 (用于"元年"简写)
 ```
 
-#### 添加事件条目
+#### sortValue 生成规则
+```
+sortValue = eraHash(eraName) * 100000 + year
+其中 eraHash = Σ(charCodeAt(char) * 10^(index % 5))
+```
+
+### 7.3 使用位置
 
 ```
-点击事件卡片中的"+ 添加条目" → 填写条目名称 
-→ 添加键值对内容 → 保存
-```
-
-### 7.3 动画设计
-
-```typescript
-export const animationConfig = {
-  spring: {
-    type: 'spring' as const,
-    stiffness: 300,
-    damping: 30,
-  },
-  ease: {
-    duration: 0.3,
-    ease: [0.4, 0, 0.2, 1] as const,
-  },
-  stagger: {
-    staggerChildren: 0.06,
-    delayChildren: 0.05,
-  },
-};
-
-export const cardVariants = {
-  hidden: { 
-    opacity: 0, 
-    y: 16,
-    scale: 0.98,
-  },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    scale: 1,
-    transition: animationConfig.spring,
-  },
-  exit: { 
-    opacity: 0, 
-    scale: 0.95,
-    y: -8,
-    transition: { duration: 0.2, ease: 'easeOut' as const },
-  },
-};
-
-export const eraVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: animationConfig.spring,
-  },
-  exit: { 
-    opacity: 0, 
-    y: -10,
-    transition: { duration: 0.2 },
-  },
-};
-
-export const contentVariants = {
-  collapsed: {
-    height: 0,
-    opacity: 0,
-    transition: animationConfig.ease,
-  },
-  expanded: {
-    height: 'auto',
-    opacity: 1,
-    transition: animationConfig.spring,
-  },
-};
+HistoryView.tsx
+  ├── L6: import { compareTimes } from '@/utils/timeParser'
+  ├── L122: eras.sort((a, b) => compareTimes(a.startDate, b.startDate))  // 时代排序
+  └── L148: events.sort((a, b) => compareTimes(...))                      // 事件排序
 ```
 
 ---
 
-## 八、API 调用
+## 8. 样式配置系统 (ConfigModal)
 
-### 8.1 数据获取
+用户可通过 Toolbar 的 ⚙️ 按钮打开 `ConfigModal`，自定义三大样式维度。
+
+### 8.1 配置结构
 
 ```typescript
-// 获取历史模块的子模块（时代和事件）
-const { data: submodules } = useQuery({
-  queryKey: ['worldbuilding', 'submodules', moduleId],
-  queryFn: () => worldbuildingApi.getSubmodules(moduleId),
-});
-
-// 获取历史模块的所有条目（事件详细内容）
-const { data: items } = useQuery({
-  queryKey: ['worldbuilding', 'items', moduleId],
-  queryFn: () => worldbuildingApi.getItems(moduleId, { include_all: true }),
-});
+interface HistoryModuleConfig {
+  eraThemes:   (EraThemeConfig & { id: string })[]   // 时代主题配色方案
+  eventTypes:  (EventTypeConfig & { id: string })[]   // 事件类型定义
+  levels:      (EventLevelConfig & { id: string })[]   // 事件级别样式
+}
 ```
 
-### 8.2 数据操作
+### 8.2 配置存储与加载
 
-```typescript
-// 创建时代
-const createEraMutation = useMutation({
-  mutationFn: (data) => worldbuildingApi.createSubmodule(moduleId, {
-    name: data.name,
-    description: data.description,
-    color: `era:${data.theme}`,
-    icon: `era:${data.startDate}:${data.endDate}`,
-  }),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'submodules', moduleId] });
-  },
-});
+```
+存储: WorldModuleItem (name='moduleConfig', submodule_id=NULL)
+      → content JSON = { eraThemes: [...], eventTypes: [...], levels: [...] }
 
-// 创建事件
-const createEventMutation = useMutation({
-  mutationFn: (data) => worldbuildingApi.createSubmodule(moduleId, {
-    name: data.name,
-    description: data.description,
-    color: `type:${data.eventType}:${data.level}`,
-    icon: `date:${data.eventDate}`,
-    parent_id: data.eraId,
-  }),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'submodules', moduleId] });
-  },
-});
+加载: items.find(item => item.name === 'moduleConfig')
+      → validateHistoryModuleConfig() 校验
+      → 失败则回退到 DEFAULT_*_CONFIGS
+```
 
-// 创建事件条目
-const createItemMutation = useMutation({
-  mutationFn: (data) => worldbuildingApi.createItem(moduleId, {
-    name: data.name,
-    content: data.content,
-    submodule_id: data.eventId,
-  }),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items', moduleId] });
-  },
-});
+### 8.3 默认配置
+
+| 类别 | 默认值 |
+|------|--------|
+| **时代主题** | 赭石、鎏金、青绿、釉色、锈迹、宣纸、朱砂、枯墨、独立 (9种) |
+| **事件类型** | 帝王👑、征伐⚔️、文华📜、发明💡、灾厄🌋、民俗🏘️、秘闻🔮、传承🏛️ (8种) |
+| **事件级别** | ★★★重点大事件(100%宽)、★★大事件(50%)、★普通(33%)、○小事件(25%) (4级) |
+
+---
+
+## 9. 搜索系统
+
+### 9.1 搜索范围
+
+覆盖 **三层深度** 数据：
+
+```
+匹配目标:
+1. 时代 (Era): name, description
+2. 事件 (Event): name, description  
+3. 条目内容 (EventItem.content): 任意 value 深度匹配
+```
+
+### 9.2 搜索联动逻辑
+
+```
+1. filteredEras = eras.filter(名称或描述匹配)
+
+2. filteredEvents = events.filter(
+     名称匹配 || 描述匹配 || 任一条目内容匹配
+   )
+
+3. finalFilteredEras = 联合过滤:
+   - 直接匹配的时代
+   - 其事件有匹配的时代 (通过 eraId 关联)
+   - 独立事件匹配时包含 standalone 时代
 ```
 
 ---
 
-## 九、参考实现
+## 10. 内联编辑 (Inline Editing)
 
-### 9.1 实现文件
+时代描述和事件描述均支持**点击即编辑**，无需打开模态框。
 
-- 主组件：`frontend/src/components/Worldbuilding/HistoryView.tsx`
-- 类型定义：`frontend/src/components/Worldbuilding/HistoryView/types.ts`
-- 配置文件：`frontend/src/components/Worldbuilding/HistoryView/config.ts`
-- 事件卡片：`frontend/src/components/Worldbuilding/HistoryView/EventCard.tsx`
-- 骨架屏：`frontend/src/components/Worldbuilding/HistoryView/HistorySkeleton.tsx`
-- 时间提示：`frontend/src/components/Worldbuilding/HistoryView/TimelineTooltip.tsx`
-- 弹窗组件：`frontend/src/components/Worldbuilding/HistoryView/modals/`
+### 10.1 时代描述内联编辑
 
-### 9.2 时间解析工具
+```
+点击 → 显示 textarea (autoFocus) → [保存]/[取消]
+特殊: standalone 时代不可编辑
+```
 
-- 时间比较：`frontend/src/utils/timeParser.ts` - `compareTimes()`
-- 位置计算：`frontend/src/utils/timeParser.ts` - `calculateEraBasedPositions()`
+### 10.2 事件描述内联编辑
+
+```
+同上，不同点:
+- critical/major: 暖色系背景
+- normal: 冷色系背景
+```
 
 ---
 
-## 十、设计原则
+## 11. 独立时代 (Standalone Era)
 
-### 10.1 视觉设计
+当事件的 `eraId` 为空时，系统自动创建 **"时间之外"** 虚拟时代收纳孤儿事件。
 
-- **时间感**：通过时代主题配色营造历史氛围
-- **层次分明**：通过卡片大小、颜色深浅区分事件等级
-- **信息密度**：合理控制信息展示密度，避免视觉疲劳
-- **一致性**：与其他世界观模块保持视觉风格一致
+```typescript
+const STANDALONE_ERA_ID = '__standalone__';
+const standaloneEra = orphanEvents.length > 0 ? {
+  id: STANDALONE_ERA_ID,
+  name: '时间之外',
+  description: '游离于时间之外的独立事件...',
+  order_index: Infinity,  // 始终排最后
+  theme: 'standalone',
+} : null;
+```
 
-### 10.2 交互设计
+### 特殊行为
 
-- **直观易用**：操作流程简洁明了
-- **即时反馈**：操作后立即更新界面
-- **容错设计**：提供确认机制防止误操作
-- **流畅动画**：使用 Framer Motion 提供流畅的过渡效果
+| 方面 | 行为 |
+|------|------|
+| 排序 | `order_index: Infinity`，始终末尾 |
+| 主题 | 固定 slate/gray 冷色调 |
+| 可编辑 | ❌ 否（无编辑/删除按钮） |
+| 时间轴 | ❌ 不显示 |
 
-### 10.3 设计理念
+---
 
-历史界面的设计灵感来源于中国传统文化的色彩体系：
+## 12. 跨模块导航 (onNavigateToCharacter)
 
-- **赭石**：时间的底色，泥土、古陶、千万人赤足踩过的大地
-- **鎏金**：文明的野心，宫殿琉璃、帝王龙袍、圣像冠冕
-- **青绿**：千里江山图的石绿，汝窑雨过天青的静谧
-- **釉色**：瓷器的光泽，火焰中成形的瞬间
-- **锈迹**：青铜器上的绿锈，石碑上的苔藓，遗忘与新生的颜色
-- **宣纸**：古籍的呼吸，家书在樟木箱里慢慢老去的颜色
-- **朱砂**：血与墨混合后干涸的暗红，战争的伤痕
-- **枯墨**：史书是用墨写成的，字缝里渗出岁月的风干
+```typescript
+interface HistoryViewProps {
+  moduleId: string
+  projectId: string
+  onNavigateToCharacter?: (characterId: string) => void  // 可选回调
+}
+```
+
+**触发点**: CharacterReference 中 CharacterBarCard 点击 → 回调父组件实现跳转
+
+---
+
+## 13. 性能优化策略
+
+### 13.1 后端: selectinload 批量加载
+
+```python
+# 3次查询替代 N+1 问题
+# 1. modules + submodules
+# 2. module_items (submodule_id IS NULL)
+# 3. submodule_items
+```
+
+### 13.2 前端: React Query 缓存分层
+
+| 策略 | 实现 |
+|------|------|
+| 查询分离 | `submodules` 和 `items` 用不同 queryKey |
+| 精确失效 | mutation 后只 invalidate 相关 key |
+| 条件启用 | `enabled: !!projectId` |
+| 内存搜索 | 前端 filter() 不过后端 |
+
+### 13.3 前端: useMemo 计算优化
+
+| 计算 | 依赖 |
+|------|------|
+| `configItem` | `items` |
+| `moduleConfig` | `configItem` |
+| `baseEras` / `events` | `submodules` / `items` |
+| `filteredEras` / `filteredEvents` | `eras` / `events` / `searchQuery` |
+
+### 13.4 渲染优化
+
+- **AnimatePresence mode="popLayout"**: 正确处理布局动画
+- **forwardRef (EventCard)**: Framer Motion 需要 ref
+- **flushSync**: 切换时代时同步更新状态
+- **transitionTimer 600ms**: 连续切换防错乱

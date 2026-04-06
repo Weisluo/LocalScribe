@@ -1,4 +1,4 @@
-import { EventLevel, EraTheme, EventType, EraThemeConfig, EventTypeConfig, EventLevelConfig } from './types';
+import { EventLevel, EraTheme, EventType, EraThemeConfig, EventTypeConfig, EventLevelConfig, HistoryModuleConfig } from './types';
 
 export const LEVEL_COLORS: Record<EventLevel, string> = {
   critical: '#6366f1',
@@ -14,6 +14,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-amber-800/20 via-orange-900/15 to-yellow-900/10',
     border: 'border-amber-700/40',
     accent: 'bg-amber-700',
+    accentColor: '#b45309',
     text: 'text-amber-800 dark:text-amber-300',
     bgLight: 'rgba(180, 130, 80, 0.15)',
     bgDark: 'rgba(140, 100, 60, 0.2)',
@@ -25,6 +26,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-yellow-600/20 via-amber-500/15 to-orange-600/10',
     border: 'border-yellow-500/50',
     accent: 'bg-yellow-600',
+    accentColor: '#ca8a04',
     text: 'text-yellow-700 dark:text-yellow-300',
     bgLight: 'rgba(200, 160, 60, 0.15)',
     bgDark: 'rgba(180, 140, 40, 0.2)',
@@ -36,6 +38,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-emerald-700/20 via-teal-600/15 to-cyan-700/10',
     border: 'border-emerald-500/40',
     accent: 'bg-emerald-600',
+    accentColor: '#059669',
     text: 'text-emerald-700 dark:text-emerald-300',
     bgLight: 'rgba(60, 140, 100, 0.15)',
     bgDark: 'rgba(40, 120, 80, 0.2)',
@@ -47,6 +50,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-sky-600/20 via-blue-500/15 to-indigo-600/10',
     border: 'border-sky-400/40',
     accent: 'bg-sky-500',
+    accentColor: '#0ea5e9',
     text: 'text-sky-700 dark:text-sky-300',
     bgLight: 'rgba(80, 140, 180, 0.15)',
     bgDark: 'rgba(60, 120, 160, 0.2)',
@@ -58,6 +62,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-stone-500/20 via-zinc-600/15 to-slate-500/10',
     border: 'border-stone-400/40',
     accent: 'bg-stone-500',
+    accentColor: '#78716c',
     text: 'text-stone-600 dark:text-stone-300',
     bgLight: 'rgba(120, 110, 100, 0.15)',
     bgDark: 'rgba(100, 90, 80, 0.2)',
@@ -69,6 +74,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-stone-300/20 via-amber-200/15 to-yellow-100/10',
     border: 'border-stone-300/50',
     accent: 'bg-stone-400',
+    accentColor: '#a8a29e',
     text: 'text-stone-700 dark:text-stone-300',
     bgLight: 'rgba(220, 200, 170, 0.2)',
     bgDark: 'rgba(180, 160, 130, 0.15)',
@@ -80,6 +86,7 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-red-700/20 via-rose-600/15 to-orange-700/10',
     border: 'border-red-500/40',
     accent: 'bg-red-600',
+    accentColor: '#dc2626',
     text: 'text-red-700 dark:text-red-300',
     bgLight: 'rgba(180, 60, 60, 0.15)',
     bgDark: 'rgba(160, 40, 40, 0.2)',
@@ -91,10 +98,23 @@ export const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
     gradient: 'from-gray-700/20 via-slate-600/15 to-zinc-700/10',
     border: 'border-gray-500/40',
     accent: 'bg-gray-600',
+    accentColor: '#4b5563',
     text: 'text-gray-700 dark:text-gray-300',
     bgLight: 'rgba(80, 80, 90, 0.15)',
     bgDark: 'rgba(60, 60, 70, 0.2)',
     description: '史书是用墨写成的，字缝里渗出岁月的风干',
+  },
+  standalone: {
+    label: 'Standalone',
+    labelCn: '独立',
+    gradient: 'from-slate-500/15 via-zinc-400/10 to-stone-500/8',
+    border: 'border-slate-400/40',
+    accent: 'bg-slate-500',
+    accentColor: '#64748b',
+    text: 'text-slate-600 dark:text-slate-300',
+    bgLight: 'rgba(100, 116, 139, 0.12)',
+    bgDark: 'rgba(80, 96, 119, 0.15)',
+    description: '游离于时代之外的独立事件，等待被归类的记忆碎片',
   },
 };
 
@@ -248,53 +268,114 @@ export const LEVEL_CONFIG: Record<EventLevel, EventLevelConfig> = {
   },
 };
 
+export const DEFAULT_ERA_THEME_CONFIGS: (EraThemeConfig & { id: EraTheme })[] = Object.entries(ERA_THEME_CONFIG).map(
+  ([key, config]) => ({
+    id: key as EraTheme,
+    ...config,
+  }),
+);
+
+export const DEFAULT_EVENT_TYPE_CONFIGS: (EventTypeConfig & { id: EventType })[] = Object.entries(EVENT_TYPE_CONFIG).map(
+  ([key, config]) => ({
+    id: key as EventType,
+    ...config,
+  }),
+);
+
+export const DEFAULT_LEVEL_CONFIGS: (EventLevelConfig & { id: EventLevel })[] = Object.entries(LEVEL_CONFIG).map(
+  ([key, config]) => ({
+    id: key as EventLevel,
+    ...config,
+  }),
+);
+
 export const animationConfig = {
   spring: {
     type: 'spring' as const,
-    stiffness: 300,
-    damping: 30,
+    stiffness: 280,
+    damping: 28,
+    mass: 0.85,
+  },
+  springSnappy: {
+    type: 'spring' as const,
+    stiffness: 380,
+    damping: 26,
+    mass: 0.8,
+  },
+  springGentle: {
+    type: 'spring' as const,
+    stiffness: 220,
+    damping: 32,
+    mass: 1,
   },
   ease: {
     duration: 0.3,
     ease: [0.4, 0, 0.2, 1] as const,
   },
+  easeOut: {
+    duration: 0.28,
+    ease: [0.33, 1, 0.68, 1] as const,
+  },
   stagger: {
-    staggerChildren: 0.06,
-    delayChildren: 0.05,
+    staggerChildren: 0.055,
+    delayChildren: 0.12,
   },
 };
 
 export const cardVariants = {
-  hidden: { 
-    opacity: 0, 
-    y: 16,
-    scale: 0.98,
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.97,
+    filter: 'blur(4px)',
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
-    transition: animationConfig.spring,
+    filter: 'blur(0px)',
+    transition: {
+      type: 'spring' as const,
+      stiffness: 260,
+      damping: 28,
+      mass: 0.9,
+    },
   },
-  exit: { 
-    opacity: 0, 
-    scale: 0.95,
-    y: -8,
-    transition: { duration: 0.2, ease: 'easeOut' as const },
+  exit: {
+    opacity: 0,
+    scale: 0.96,
+    y: -12,
+    filter: 'blur(3px)',
+    transition: {
+      duration: 0.25,
+      ease: [0.4, 0, 1, 1] as const,
+    },
   },
 };
 
 export const eraVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  hidden: { opacity: 0, y: 24, scale: 0.97, filter: 'blur(4px)' },
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: animationConfig.spring,
+    scale: 1,
+    filter: 'blur(0px)',
+    transition: {
+      type: 'spring' as const,
+      stiffness: 260,
+      damping: 28,
+      mass: 0.9,
+    },
   },
-  exit: { 
-    opacity: 0, 
-    y: -10,
-    transition: { duration: 0.2 },
+  exit: {
+    opacity: 0,
+    y: -16,
+    scale: 0.96,
+    filter: 'blur(3px)',
+    transition: {
+      duration: 0.25,
+      ease: [0.4, 0, 1, 1] as const,
+    },
   },
 };
 
@@ -364,6 +445,7 @@ export const parseEraTheme = (color?: string): EraTheme => {
     'era:parchment': 'parchment',
     'era:cinnabar': 'cinnabar',
     'era:ink': 'ink',
+    'era:standalone': 'standalone',
   };
   return themeMap[color] || 'ochre';
 };
@@ -388,3 +470,42 @@ export const parseEventType = (color?: string): EventType | undefined => {
 export const isEra = (sub: { color?: string; parent_id?: string }): boolean => {
   return (sub.color?.startsWith('era:') || sub.color === '#f59e0b') && !sub.parent_id;
 };
+
+export const getEraThemeConfig = (theme: EraTheme, configs: (EraThemeConfig & { id: string })[]): (EraThemeConfig & { id: string }) | undefined => {
+  return configs.find((c) => c.id === theme);
+};
+
+export const getEventTypeConfig = (type: EventType, configs: (EventTypeConfig & { id: string })[]): (EventTypeConfig & { id: string }) | undefined => {
+  return configs.find((c) => c.id === type);
+};
+
+export const getEventLevelConfig = (level: EventLevel, configs: (EventLevelConfig & { id: string })[]): (EventLevelConfig & { id: string }) | undefined => {
+  return configs.find((c) => c.id === level);
+};
+
+export function validateHistoryModuleConfig(content: unknown): HistoryModuleConfig | null {
+  if (typeof content !== 'object' || content === null) return null;
+  const config = content as Record<string, unknown>;
+  if (!Array.isArray(config.eraThemes) || !Array.isArray(config.eventTypes) || !Array.isArray(config.levels)) return null;
+
+  const isValidEraTheme = (item: unknown): item is EraThemeConfig & { id: string } => {
+    if (typeof item !== 'object' || item === null) return false;
+    const obj = item as Record<string, unknown>;
+    return typeof obj.id === 'string' && typeof obj.labelCn === 'string';
+  };
+
+  const isValidEventType = (item: unknown): item is EventTypeConfig & { id: string } => {
+    if (typeof item !== 'object' || item === null) return false;
+    const obj = item as Record<string, unknown>;
+    return typeof obj.id === 'string' && typeof obj.labelCn === 'string';
+  };
+
+  const isValidLevel = (item: unknown): item is EventLevelConfig & { id: string } => {
+    if (typeof item !== 'object' || item === null) return false;
+    const obj = item as Record<string, unknown>;
+    return typeof obj.id === 'string' && typeof obj.labelCn === 'string';
+  };
+
+  if (!config.eraThemes.every(isValidEraTheme) || !config.eventTypes.every(isValidEventType) || !config.levels.every(isValidLevel)) return null;
+  return content as unknown as HistoryModuleConfig;
+}

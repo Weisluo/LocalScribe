@@ -38,6 +38,9 @@ export const EditorPage = () => {
   const [showCharacterDesign, setShowCharacterDesign] = useState(false);
   const [showOutline, setShowOutline] = useState(false);
 
+  // 用于从历史界面跳转到人物设定界面时指定要选中的人物
+  const [targetCharacterId, setTargetCharacterId] = useState<string | null>(null);
+
   const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>();
   const [noteTitle, setNoteTitle] = useState<string>('');
   const [noteContent, setNoteContent] = useState<string>('');
@@ -224,6 +227,7 @@ export const EditorPage = () => {
     setShowWorldbuilding(false);
     setShowCharacterDesign(false);
     setShowOutline(false);
+    setTargetCharacterId(null);
     queryClient.removeQueries({ queryKey: ['worldbuilding'] });
     queryClient.removeQueries({ queryKey: ['characters'] });
     queryClient.removeQueries({ queryKey: ['outline'] });
@@ -718,15 +722,25 @@ export const EditorPage = () => {
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
         {showWorldbuilding ? (
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <WorldbuildingView />
+            <WorldbuildingView
+              onNavigateToCharacter={(characterId) => {
+                setTargetCharacterId(characterId);
+                setShowWorldbuilding(false);
+                setShowCharacterDesign(true);
+              }}
+            />
           </Suspense>
         ) : showCharacterDesign ? (
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <CharacterDesignView
               projectId={currentProjectId}
-              onClose={() => setShowCharacterDesign(false)}
+              onClose={() => {
+                setShowCharacterDesign(false);
+                setTargetCharacterId(null);
+              }}
               onNavigateToNote={(noteId) => {
                 setShowCharacterDesign(false);
+                setTargetCharacterId(null);
                 // 从目录树查找章节标题
                 const findNoteTitle = (nodes: TreeNodeType[]): string => {
                   for (const node of nodes) {
@@ -743,6 +757,7 @@ export const EditorPage = () => {
                 const title = tree ? findNoteTitle(tree) : '';
                 handleSelectNote(noteId, title);
               }}
+              initialCharacterId={targetCharacterId}
             />
           </Suspense>
         ) : showOutline ? (

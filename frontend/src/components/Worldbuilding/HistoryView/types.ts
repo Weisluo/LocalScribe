@@ -1,6 +1,6 @@
 export type EventLevel = 'critical' | 'major' | 'normal' | 'minor';
 
-export type EraTheme = 'ochre' | 'gilded' | 'verdant' | 'cerulean' | 'patina' | 'parchment' | 'cinnabar' | 'ink';
+export type EraTheme = 'ochre' | 'gilded' | 'verdant' | 'cerulean' | 'patina' | 'parchment' | 'cinnabar' | 'ink' | 'standalone';
 
 export type EventType = 'imperial' | 'war' | 'culture' | 'discovery' | 'disaster' | 'folk' | 'mystery' | 'legacy';
 
@@ -40,6 +40,7 @@ export interface EraThemeConfig {
   gradient: string;
   border: string;
   accent: string;
+  accentColor: string;
   text: string;
   bgLight: string;
   bgDark: string;
@@ -134,16 +135,24 @@ export interface EditItemModalProps {
 
 export interface EventCardProps {
   event: Event;
+  projectId?: string;
+  moduleId?: string;
   onEdit: () => void;
   onDelete: () => void;
   onAddItem: () => void;
   onEditItem: (item: EventItem) => void;
   onDeleteItem: (itemId: string) => void;
   onUpdateDescription: (description: string) => void;
+  onAddCharRefItem?: (name: string, content: Record<string, string>) => void;
+  onNavigateToCharacter?: (characterId: string) => void;
+  eventTypeConfigs?: (EventTypeConfig & { id: string })[];
+  levelConfigs?: (EventLevelConfig & { id: string })[];
 }
 
 export interface HistoryViewProps {
   moduleId: string;
+  projectId: string;
+  onNavigateToCharacter?: (characterId: string) => void;
 }
 
 export interface EraCardProps {
@@ -161,4 +170,80 @@ export interface EraCardProps {
   onDeleteItem: (itemId: string) => void;
   onUpdateEventDescription: (event: Event, description: string) => void;
   onUpdateEraDescription: (description: string) => void;
+}
+
+export interface CharacterRef {
+  id: string;
+  name: string;
+  avatar?: string;
+  source?: 'history' | null;
+}
+
+export interface EraSwitchContainerProps {
+  eras: Era[];
+  activeEraId: string | null;
+  onSwitchEra: (eraId: string) => void;
+  renderEraContent: (era: Era) => React.ReactNode;
+}
+
+export interface EraContentPanelProps {
+  era: Era;
+  events: Event[];
+  onEditEra: () => void;
+  onDeleteEra: () => void;
+  onAddEvent: () => void;
+  onEditEvent: (event: Event) => void;
+  onDeleteEvent: (eventId: string) => void;
+  onAddItem: (event: Event) => void;
+  onEditItem: (event: Event, item: EventItem) => void;
+  onDeleteItem: (itemId: string) => void;
+  onUpdateEventDescription: (event: Event, desc: string) => void;
+  onUpdateEraDescription: (desc: string) => void;
+  onAddCharRefItem?: (event: Event, name: string, content: Record<string, string>) => void;
+  projectId: string;
+  moduleId: string;
+  isStandalone?: boolean;
+  onNavigateToCharacter?: (characterId: string) => void;
+  eraThemeConfigs?: (EraThemeConfig & { id: string })[];
+  eventTypeConfigs?: (EventTypeConfig & { id: string })[];
+  levelConfigs?: (EventLevelConfig & { id: string })[];
+}
+
+export interface EraTimelineProps {
+  events: Event[];
+  eraId: string;
+}
+
+export interface CharacterReferenceProps {
+  eventId: string;
+  eventItems: EventItem[];
+  projectId: string;
+  moduleId: string;
+  onAddItem: (name: string, content: Record<string, string>) => void;
+  onEditItem: (item: EventItem) => void;
+  onDeleteItem: (itemId: string) => void;
+  onNavigateToCharacter?: (characterId: string) => void;
+  isHovered?: boolean;
+}
+
+export interface CharacterPickerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (characterId: string, characterName: string) => void;
+  projectId: string;
+}
+
+// 历史模块配置
+export interface HistoryModuleConfig {
+  eraThemes: (EraThemeConfig & { id: string })[];
+  eventTypes: (EventTypeConfig & { id: string })[];
+  levels: (EventLevelConfig & { id: string })[];
+}
+
+export interface ConfigModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  config: HistoryModuleConfig;
+  onSave: (config: HistoryModuleConfig) => void;
+  isLoading?: boolean;
 }

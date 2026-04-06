@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
 import { Modal } from '@/components/Modals/Modal';
 import { EditItemModalProps } from '../types';
@@ -6,6 +6,8 @@ import { EditItemModalProps } from '../types';
 export const EditItemModal = ({ isOpen, onClose, onSubmit, item, isLoading, error }: EditItemModalProps) => {
   const [name, setName] = useState('');
   const [fields, setFields] = useState<{ key: string; value: string }[]>([]);
+  const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+  const keyBoxRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (item) {
@@ -19,7 +21,8 @@ export const EditItemModal = ({ isOpen, onClose, onSubmit, item, isLoading, erro
   };
 
   const handleRemoveField = (index: number) => {
-    setFields(fields.filter((_, i) => i !== index));
+    const newFields = fields.filter((_, i) => i !== index);
+    setFields(newFields);
   };
 
   const handleFieldChange = (index: number, key: string, value: string) => {
@@ -27,6 +30,24 @@ export const EditItemModal = ({ isOpen, onClose, onSubmit, item, isLoading, erro
     newFields[index] = { key, value };
     setFields(newFields);
   };
+
+  const adjustHeight = (textarea: HTMLTextAreaElement | null | undefined, keyBox: HTMLDivElement | null | undefined) => {
+    if (textarea && keyBox) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.max(38, textarea.scrollHeight);
+      textarea.style.height = `${newHeight}px`;
+      keyBox.style.height = `${newHeight}px`;
+    }
+  };
+
+  useEffect(() => {
+    fields.forEach((_, index) => {
+      const id = `field-${index}`;
+      const textarea = textareaRefs.current.get(id);
+      const keyBox = keyBoxRefs.current.get(id);
+      adjustHeight(textarea, keyBox);
+    });
+  }, [fields]);
 
   const handleSubmit = () => {
     if (name.trim()) {
@@ -46,7 +67,7 @@ export const EditItemModal = ({ isOpen, onClose, onSubmit, item, isLoading, erro
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="编辑条目">
-      <div className="space-y-4">
+      <div className="space-y-4 min-w-[400px]">
         <div>
           <label className="block text-sm font-medium mb-2 text-foreground">条目名称 *</label>
           <input
@@ -60,36 +81,58 @@ export const EditItemModal = ({ isOpen, onClose, onSubmit, item, isLoading, erro
         </div>
         <div>
           <label className="block text-sm font-medium mb-2 text-foreground">自定义字段</label>
-          <div className="space-y-2">
-            {fields.map((field, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={field.key}
-                  onChange={(e) => handleFieldChange(index, e.target.value, field.value)}
-                  placeholder="字段名"
-                  className="flex-1 bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-[border-color,box-shadow]"
-                />
-                <input
-                  type="text"
-                  value={field.value}
-                  onChange={(e) => handleFieldChange(index, field.key, e.target.value)}
-                  placeholder="字段值"
-                  className="flex-1 bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-[border-color,box-shadow]"
-                />
-                <button
-                  onClick={() => handleRemoveField(index)}
-                  className="p-2 hover:bg-destructive/10 rounded-md text-destructive transition-colors shrink-0"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+          <div className="space-y-3">
+            {fields.map((field, index) => {
+              const id = `field-${index}`;
+              return (
+                <div key={id} className="flex gap-2">
+                  <div
+                    ref={(el) => {
+                      if (el) keyBoxRefs.current.set(id, el);
+                      else keyBoxRefs.current.delete(id);
+                    }}
+                    className="w-28 shrink-0 bg-background border border-border/50 rounded-md flex items-center px-3 overflow-hidden transition-[border-color,box-shadow] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"
+                    style={{ minHeight: '38px', height: '38px' }}
+                  >
+                    <input
+                      type="text"
+                      value={field.key}
+                      onChange={(e) => handleFieldChange(index, e.target.value, field.value)}
+                      placeholder="字段名"
+                      className="w-full bg-transparent outline-none text-sm"
+                    />
+                  </div>
+                  <textarea
+                    ref={(el) => {
+                      if (el) textareaRefs.current.set(id, el);
+                      else textareaRefs.current.delete(id);
+                    }}
+                    value={field.value}
+                    onChange={(e) => {
+                      handleFieldChange(index, field.key, e.target.value);
+                      const keyBox = keyBoxRefs.current.get(id);
+                      adjustHeight(e.target, keyBox);
+                    }}
+                    placeholder="字段值"
+                    rows={1}
+                    className="flex-1 min-w-0 bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-[border-color,box-shadow] resize-none whitespace-pre-wrap break-words overflow-hidden text-sm"
+                    style={{ minHeight: '38px', height: '38px' }}
+                  />
+                  <button
+                    onClick={() => handleRemoveField(index)}
+                    className="p-2 hover:bg-destructive/10 rounded-md text-destructive transition-colors shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
             <button
               onClick={handleAddField}
-              className="p-2 hover:bg-primary/10 rounded-md text-primary transition-colors shrink-0"
+              className="flex items-center gap-1.5 px-3 py-2 hover:bg-primary/10 rounded-md text-primary transition-colors text-sm"
             >
               <Plus className="h-4 w-4" />
+              添加字段
             </button>
           </div>
         </div>
@@ -98,9 +141,9 @@ export const EditItemModal = ({ isOpen, onClose, onSubmit, item, isLoading, erro
             {error}
           </div>
         )}
-        <div className="flex justify-end gap-2 pt-2 shrink-0">
-          <button 
-            onClick={handleClose} 
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            onClick={handleClose}
             className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors hover:bg-accent/10 rounded-md"
           >
             取消

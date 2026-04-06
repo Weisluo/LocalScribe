@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Edit2,
   Trash2,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   X,
   Settings,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { characterApi } from '@/services/characterApi';
 import { api } from '@/utils/request';
@@ -32,6 +34,7 @@ import type { TreeNodeType } from '@/types';
 import {
   CharacterLevelColors,
   CharacterGenderLabels,
+  CharacterLevelLabels,
 } from '@/types/character';
 import type { ProjectOutline } from '@/components/Outline/types';
 
@@ -66,6 +69,8 @@ export const CharacterDetail = ({
   const [newCardId, setNewCardId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertLevel, setConvertLevel] = useState<CharacterLevel>('minor');
 
   // 获取人物详情
   const { data: character, isLoading } = useQuery({
@@ -121,6 +126,20 @@ export const CharacterDetail = ({
     onSuccess: () => {
       onDelete?.(characterId);
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+    },
+  });
+
+  // 转换历史人物为主线人物
+  const convertCharacterMutation = useMutation({
+    mutationFn: () =>
+      characterApi.updateCharacter(projectId, characterId, {
+        source: null,
+        level: convertLevel,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['character', projectId, characterId] });
+      queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      setShowConvertModal(false);
     },
   });
 
@@ -498,28 +517,53 @@ export const CharacterDetail = ({
               {/* 姓名行 - 包含编辑和删除按钮 */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex items-baseline gap-3">
-                    <h1 className="text-3xl font-serif font-bold text-foreground">{character.name}</h1>
-                    {!isEditing && aliasDisplay && (
-                      <span className="text-[15px] text-foreground">{aliasDisplay}</span>
-                    )}
-                    {isEditing && (
+                  <div className="flex flex-col gap-2">
+                    {/* 第一行：姓名 + 别名 */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h1 className="text-3xl font-serif font-bold text-foreground">{character.name}</h1>
+                      {!isEditing && aliasDisplay && (
+                        <span className="text-[15px] text-foreground">{aliasDisplay}</span>
+                      )}
+                      {isEditing && (
+                        <div className="flex items-center gap-2">
+                          <AliasEditor
+                            aliases={character.aliases || []}
+                            onAdd={(data) => createAliasMutation.mutate(data)}
+                            onUpdate={(id, data) => updateAliasMutation.mutate({ aliasId: id, data })}
+                            onDelete={(id) => deleteAliasMutation.mutate(id)}
+                            isEditable={true}
+                            compact={true}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {/* 第二行：历史标签 + 转主线按钮 */}
+                    {character.source === 'history' && (
                       <div className="flex items-center gap-2">
-                        <AliasEditor
-                          aliases={character.aliases || []}
-                          onAdd={(data) => createAliasMutation.mutate(data)}
-                          onUpdate={(id, data) => updateAliasMutation.mutate({ aliasId: id, data })}
-                          onDelete={(id) => deleteAliasMutation.mutate(id)}
-                          isEditable={true}
-                          compact={true}
-                        />
+                        <motion.span
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="text-xs px-2 py-0.5 rounded bg-amber-100/80 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 font-medium"
+                        >
+                          历史
+                        </motion.span>
+                        {!isEditing && (
+                          <button
+                            onClick={() => setShowConvertModal(true)}
+                            className="flex items-center gap-1 px-2 py-0.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20 rounded transition-colors border border-amber-200/60 dark:border-amber-800/60"
+                            title="转换为主线故事人物"
+                          >
+                            <ArrowRightLeft className="h-3 w-3" />
+                            转主线
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
-                
+
                 {/* 编辑和删除按钮 - 编辑状态始终显示，非编辑状态悬浮时显示 */}
-                <div 
+                <div
                   className={`flex items-center gap-2 transition-all duration-200 ${
                     isEditing || isHeaderHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
                   }`}
@@ -825,6 +869,85 @@ export const CharacterDetail = ({
         confirmText="确认删除"
         isLoading={deleteCharacterMutation.isPending}
       />
+
+      {/* 转换历史人物确认弹窗 */}
+      <AnimatePresence>
+        {showConvertModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setShowConvertModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-card rounded-xl shadow-2xl border border-border/60 m-4 p-6"
+            >
+              <h3 className="text-lg font-semibold mb-2">转换为主线故事人物</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                确定要将 "{character?.name}" 从「历史背景人物」转换为「主线故事人物」吗？
+              </p>
+              <div className="bg-muted/30 border border-border/50 rounded-lg p-4 mb-6 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  转换后，该人物将成为主线故事的一部分。请选择转换后的角色等级：
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['protagonist', 'major_support', 'support', 'minor'] as CharacterLevel[]).map((level) => {
+                    const colors = CharacterLevelColors[level];
+                    const isSelected = convertLevel === level;
+                    return (
+                      <button
+                        key={level}
+                        onClick={() => setConvertLevel(level)}
+                        className="px-3 py-2 text-xs rounded-lg border transition-all text-left"
+                        style={{
+                          borderColor: isSelected ? colors.bar : colors.border,
+                          backgroundColor: isSelected ? colors.bar : colors.bg,
+                          color: isSelected ? 'white' : 'inherit',
+                        }}
+                      >
+                        <span className="font-medium">{CharacterLevelLabels[level]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground/70">
+                  此操作可以随时撤销（通过编辑人物重新设为历史背景）。
+                </p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowConvertModal(false)}
+                  className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => convertCharacterMutation.mutate()}
+                  disabled={convertCharacterMutation.isPending}
+                  className="px-4 py-2 text-sm bg-primary/80 hover:bg-primary text-primary-foreground rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {convertCharacterMutation.isPending ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      转换中...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="h-4 w-4" />
+                      确认转换
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

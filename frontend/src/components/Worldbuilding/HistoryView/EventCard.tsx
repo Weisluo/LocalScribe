@@ -1,17 +1,29 @@
-import { useState } from 'react';
+import { useState, useMemo, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Edit2, Trash2, X, Plus, ChevronDown } from 'lucide-react';
+import { Calendar, Edit2, Trash2, X, Plus, ChevronDown, User } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { EventCardProps } from './types';
-import { LEVEL_CONFIG, EVENT_TYPE_CONFIG, animationConfig, cardVariants } from './config';
+import { LEVEL_CONFIG, EVENT_TYPE_CONFIG, animationConfig, cardVariants, getEventTypeConfig, getEventLevelConfig, DEFAULT_EVENT_TYPE_CONFIGS, DEFAULT_LEVEL_CONFIGS } from './config';
+import { CharacterReference } from './CharacterReference';
+import { CharacterPickerModal } from './modals/CharacterPickerModal';
+import { characterApi } from '@/services/characterApi';
+import { worldbuildingApi } from '@/services/worldbuildingApi';
 
-export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDeleteItem, onUpdateDescription }: EventCardProps) => {
+const CHAR_LINK_PREFIX = '_char_link:';
+
+export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, projectId, moduleId, onEdit, onDelete, onAddItem, onEditItem, onDeleteItem, onUpdateDescription, onAddCharRefItem, onNavigateToCharacter, eventTypeConfigs, levelConfigs }, ref) => {
+  const queryClient = useQueryClient();
   const [showAllItems, setShowAllItems] = useState(false);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [editDesc, setEditDesc] = useState(event.description || '');
   const [isHovered, setIsHovered] = useState(false);
+  const [linkingItemId, setLinkingItemId] = useState<string | null>(null);
   
-  const typeConfig = event.eventType ? EVENT_TYPE_CONFIG[event.eventType] : null;
-  const levelConfig = LEVEL_CONFIG[event.level];
+  const typeConfig = event.eventType
+    ? getEventTypeConfig(event.eventType, eventTypeConfigs || DEFAULT_EVENT_TYPE_CONFIGS)
+      || EVENT_TYPE_CONFIG[event.eventType]
+    : null;
+  const levelConfig = getEventLevelConfig(event.level, levelConfigs || DEFAULT_LEVEL_CONFIGS) || LEVEL_CONFIG[event.level];
   
   const bgClass = typeConfig ? `bg-gradient-to-br ${typeConfig.gradient}` : levelConfig.bgClass;
   const borderClass = typeConfig ? `border-2 ${typeConfig.border}` : levelConfig.borderClass;
@@ -20,8 +32,96 @@ export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDe
   const glowColor = typeConfig ? typeConfig.color : levelConfig.glowColor;
 
   const maxVisibleItems = event.level === 'critical' ? 6 : event.level === 'major' ? 3 : event.level === 'normal' ? 2 : 0;
-  const visibleItems = showAllItems ? event.items : event.items.slice(0, maxVisibleItems);
-  const hasMoreItems = event.items.length > maxVisibleItems;
+
+  const regularItems = useMemo(() => {
+    return event.items.filter((item) => {
+      if (item.name.startsWith('_char_ref_')) return false;
+      if (Object.keys(item.content).some((k) => k.startsWith('_char_ref:'))) return false;
+      return true;
+    });
+  }, [event.items]);
+
+  const visibleItems = showAllItems ? regularItems : regularItems.slice(0, maxVisibleItems);
+  const hasMoreItems = regularItems.length > maxVisibleItems;
+
+  const { data: allCharacters = [] } = useQuery({
+    queryKey: ['characters-simple', projectId],
+    queryFn: () => characterApi.getCharactersSimple(projectId!),
+    enabled: !!projectId,
+  });
+
+  const itemCharLinks = useMemo(() => {
+    const links: Map<string, Array<{ charId: string; charName: string }>> = new Map();
+    for (const item of event.items) {
+      for (const key of Object.keys(item.content)) {
+        if (key.startsWith(CHAR_LINK_PREFIX)) {
+          const suffix = key.slice(CHAR_LINK_PREFIX.length);
+          const colonIdx = suffix.indexOf(':');
+          if (colonIdx > 0) {
+            const itemId = suffix.slice(0, colonIdx);
+            const charId = suffix.slice(colonIdx + 1);
+            if (itemId === item.id && charId) {
+              if (!links.has(itemId)) links.set(itemId, []);
+              const char = allCharacters.find((c) => c.id === charId);
+              links.get(itemId)!.push({
+                charId,
+                charName: item.content[key] || char?.name || charId,
+              });
+            }
+          }
+        }
+      }
+    }
+    return links;
+  }, [event.items, allCharacters]);
+
+  const updateItemMutation = useMutation({
+    mutationFn: (data: { itemId: string; name: string; content: Record<string, string> }) => {
+      return worldbuildingApi.updateItem(data.itemId, {
+        name: data.name,
+        content: data.content,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items'] });
+    },
+  });
+
+  const handleLinkCharacter = (itemId: string, charId: string, charName: string) => {
+    const item = event.items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const linkKey = `${CHAR_LINK_PREFIX}${itemId}:${charId}`;
+    if (linkKey in item.content) return;
+
+    const newContent = {
+      ...item.content,
+      [linkKey]: charName,
+    };
+
+    updateItemMutation.mutate({
+      itemId: item.id,
+      name: item.name,
+      content: newContent,
+    });
+    setLinkingItemId(null);
+  };
+
+  const handleUnlinkCharacter = (itemId: string, charId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const item = event.items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const linkKey = `${CHAR_LINK_PREFIX}${itemId}:${charId}`;
+    const newContent = { ...item.content };
+    delete newContent[linkKey];
+
+    updateItemMutation.mutate({
+      itemId: item.id,
+      name: item.name,
+      content: newContent,
+    });
+  };
 
   const handleStartEditDesc = () => {
     setEditDesc(event.description || '');
@@ -38,9 +138,14 @@ export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDe
     setIsEditingDesc(false);
   };
 
+  const getCharInfo = (charId: string) => {
+    return allCharacters.find((c) => c.id === charId);
+  };
+
   if (event.level === 'minor') {
     return (
       <motion.div
+        ref={ref}
         variants={cardVariants}
         initial="hidden"
         animate="visible"
@@ -95,6 +200,7 @@ export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDe
 
   return (
     <motion.div
+      ref={ref}
       variants={cardVariants}
       initial="hidden"
       animate="visible"
@@ -300,9 +406,11 @@ export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDe
                   <textarea
                     value={editDesc}
                     onChange={(e) => setEditDesc(e.target.value)}
-                    className="w-full bg-transparent resize-none outline-none text-foreground/85 leading-relaxed min-h-[60px]"
+                    className="w-full bg-transparent resize-y outline-none text-foreground/85 leading-relaxed min-h-[60px]"
                     placeholder="输入事件描述..."
                     autoFocus
+                    rows={Math.max(3, editDesc.split('\n').length)}
+                    style={{ fieldSizing: 'content' }}
                   />
                   <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-border/20">
                     <button
@@ -344,71 +452,116 @@ export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDe
           >
             <div className="flex flex-wrap gap-2">
               <AnimatePresence mode="popLayout">
-                {visibleItems.map((item, idx) => (
-                  <motion.div
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -5 }}
-                    transition={{ delay: idx * 0.04, ...animationConfig.spring }}
-                    onClick={() => onEditItem(item)}
-                    className="cursor-pointer transition-all duration-200 group/item hover:scale-[1.02]"
-                    style={{
-                      background: event.level === 'normal'
-                        ? `linear-gradient(145deg, 
-                            rgba(248, 250, 252, 0.9) 0%, 
-                            rgba(241, 245, 249, 0.8) 50%,
-                            rgba(248, 250, 252, 0.85) 100%
-                          )`
-                        : `linear-gradient(145deg, 
-                            rgba(255, 253, 248, 0.88) 0%, 
-                            rgba(252, 248, 240, 0.78) 50%,
-                            rgba(250, 246, 238, 0.82) 100%
-                          )`,
-                      boxShadow: event.level === 'normal'
-                        ? `inset 1px 1px 4px rgba(0, 0, 0, 0.03),
-                           inset -1px -1px 3px rgba(255, 255, 255, 0.4),
-                           inset 0 0 8px rgba(100, 116, 139, 0.03)`
-                        : `inset 2px 2px 6px rgba(0, 0, 0, 0.05),
-                           inset -1px -1px 4px rgba(255, 255, 255, 0.5),
-                           inset 0 0 12px rgba(180, 165, 145, 0.05)`,
-                      borderRadius: event.level === 'normal' ? '8px' : '10px',
-                      padding: event.level === 'normal' ? '8px 12px' : '12px 16px',
-                    }}
-                  >
-                    <div className="text-sm font-medium flex items-center gap-2">
-                      {item.name}
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          onDeleteItem(item.id); 
-                        }} 
-                        className="opacity-0 group-hover/item:opacity-100 p-0.5 hover:bg-destructive/15 rounded transition-all"
-                      >
-                        <X className="h-3 w-3 text-destructive" />
-                      </button>
-                    </div>
-                    {Object.entries(item.content).length > 0 && (
-                      <div className="mt-1.5 space-y-1">
-                        {Object.entries(item.content).map(([k, v]) => (
-                          <div key={k} className="text-xs flex items-start gap-1.5">
-                            <span className="text-muted-foreground/60 shrink-0 font-medium">{k}:</span>
-                            <span className="text-muted-foreground">{v}</span>
+                {visibleItems.map((item, idx) => {
+                  const charLinks = itemCharLinks.get(item.id) || [];
+                  const hasLinks = charLinks.length > 0;
+                  
+                  return (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -5 }}
+                      transition={{ delay: idx * 0.04, ...animationConfig.spring }}
+                      className="cursor-pointer transition-all duration-200 group/item hover:scale-[1.02]"
+                      style={{
+                        background: event.level === 'normal'
+                          ? `linear-gradient(145deg, 
+                              rgba(248, 250, 252, 0.9) 0%, 
+                              rgba(241, 245, 249, 0.8) 50%,
+                              rgba(248, 250, 252, 0.85) 100%
+                            )`
+                          : `linear-gradient(145deg, 
+                              rgba(255, 253, 248, 0.88) 0%, 
+                              rgba(252, 248, 240, 0.78) 50%,
+                              rgba(250, 246, 238, 0.82) 100%
+                            )`,
+                        boxShadow: event.level === 'normal'
+                          ? `inset 1px 1px 4px rgba(0, 0, 0, 0.03),
+                             inset -1px -1px 3px rgba(255, 255, 255, 0.4),
+                             inset 0 0 8px rgba(100, 116, 139, 0.03)`
+                          : `inset 2px 2px 6px rgba(0, 0, 0, 0.05),
+                             inset -1px -1px 4px rgba(255, 255, 255, 0.5),
+                             inset 0 0 12px rgba(180, 165, 145, 0.05)`,
+                        borderRadius: event.level === 'normal' ? '8px' : '10px',
+                        padding: event.level === 'normal' ? '8px 12px' : '12px 16px',
+                      }}
+                    >
+                      <div className="text-sm font-medium flex items-center gap-2">
+                        <span onClick={() => onEditItem(item)}>{item.name}</span>
+                        {hasLinks && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {charLinks.map((link) => {
+                              const charInfo = getCharInfo(link.charId);
+                              return (
+                                <span
+                                  key={link.charId}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] bg-primary/15 text-primary"
+                                >
+                                  {charInfo?.avatar ? (
+                                    <img src={charInfo.avatar} alt={link.charName} className="w-3 h-3 rounded-full object-cover" />
+                                  ) : (
+                                    <User className="h-2.5 w-2.5" />
+                                  )}
+                                  <span className="max-w-[50px] truncate">{link.charName}</span>
+                                  <button
+                                    onClick={(e) => handleUnlinkCharacter(item.id, link.charId, e)}
+                                    className="p-0.5 rounded-full hover:bg-black/10 transition-colors"
+                                    title="取消关联"
+                                  >
+                                    <X className="h-2 w-2" />
+                                  </button>
+                                </span>
+                              );
+                            })}
                           </div>
-                        ))}
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLinkingItemId(item.id);
+                          }}
+                          className={`p-1 rounded transition-colors ${
+                            hasLinks 
+                              ? 'opacity-0 group-hover/item:opacity-100 text-primary hover:bg-primary/10' 
+                              : 'opacity-0 group-hover/item:opacity-100 text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                          }`}
+                          title="关联人物"
+                        >
+                          <User className="h-3 w-3" />
+                        </button>
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            onDeleteItem(item.id); 
+                          }} 
+                          className="opacity-0 group-hover/item:opacity-100 p-0.5 hover:bg-destructive/15 rounded transition-all"
+                        >
+                          <X className="h-3 w-3 text-destructive" />
+                        </button>
                       </div>
-                    )}
-                  </motion.div>
-                ))}
+                      {Object.entries(item.content).filter(([k]) => !k.startsWith('_char_')).length > 0 && (
+                        <div className="mt-1.5 space-y-1">
+                          {Object.entries(item.content).filter(([k]) => !k.startsWith('_char_')).map(([k, v]) => (
+                            <div key={k} className="text-xs flex items-start gap-1.5">
+                              <span className="text-muted-foreground/60 shrink-0 font-medium">{k}:</span>
+                              <span className="text-muted-foreground">{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
               <motion.button 
                 onClick={onAddItem} 
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                animate={{ opacity: isHovered ? 1 : 0 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`bg-background/50 backdrop-blur-sm rounded-lg px-4 py-3 cursor-pointer hover:bg-background/70 transition-colors flex items-center gap-2 text-sm border border-dashed border-border/40 text-muted-foreground hover:text-foreground ${event.level === 'normal' ? 'opacity-60 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                className="bg-background/50 backdrop-blur-sm rounded-lg px-4 py-3 cursor-pointer hover:bg-background/70 transition-colors flex items-center gap-2 text-sm border border-dashed border-border/40 text-muted-foreground hover:text-foreground"
               >
                 <Plus className="h-4 w-4" />
                 添加条目
@@ -432,7 +585,38 @@ export const EventCard = ({ event, onEdit, onDelete, onAddItem, onEditItem, onDe
             )}
           </motion.div>
         )}
+
+        {projectId && moduleId && onAddCharRefItem && (
+          <div className="mt-3 pt-3 border-t border-border/30">
+            <CharacterReference
+              eventId={event.id}
+              eventItems={event.items}
+              projectId={projectId}
+              moduleId={moduleId}
+              onAddItem={onAddCharRefItem}
+              onEditItem={onEditItem}
+              onDeleteItem={onDeleteItem}
+              onNavigateToCharacter={onNavigateToCharacter}
+              isHovered={isHovered}
+            />
+          </div>
+        )}
       </div>
+
+      {projectId && (
+        <CharacterPickerModal
+          isOpen={linkingItemId !== null}
+          onClose={() => setLinkingItemId(null)}
+          onSelect={(charId, charName) => {
+            if (linkingItemId) {
+              handleLinkCharacter(linkingItemId, charId, charName);
+            }
+          }}
+          projectId={projectId}
+        />
+      )}
     </motion.div>
   );
-};
+});
+
+EventCard.displayName = 'EventCard';

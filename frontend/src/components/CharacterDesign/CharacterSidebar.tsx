@@ -115,17 +115,17 @@ export const CharacterSidebar = ({
   const queryClient = useQueryClient();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [levelFilter, setLevelFilter] = useState<CharacterLevel | null>(null);
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [isSorting, setIsSorting] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showAppearanceFilter, setShowAppearanceFilter] = useState(false);
   const [volumeFilter, setVolumeFilter] = useState<string | null>(null);
   const [actFilter, setActFilter] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
-  const appearanceFilterRef = useRef<HTMLDivElement>(null);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'history' | 'main' | null>('all');
+  const [showUnifiedFilter, setShowUnifiedFilter] = useState(false);
+  const [activeFilterTab, setActiveFilterTab] = useState<'level' | 'source' | 'appearance'>('level');
+  const unifiedFilterRef = useRef<HTMLDivElement>(null);
 
   const { data: tree } = useQuery({
     queryKey: ['directory', projectId],
@@ -184,13 +184,14 @@ export const CharacterSidebar = ({
   }, [tree, volumeFilter]);
 
   const { data: characters = [], isLoading } = useQuery({
-    queryKey: ['characters', projectId, levelFilter, searchKeyword, volumeFilter, actFilter, isSorting],
+    queryKey: ['characters', projectId, levelFilter, searchKeyword, volumeFilter, actFilter, sourceFilter, isSorting],
     queryFn: () =>
       characterApi.getCharacters(projectId, {
         level: levelFilter || undefined,
         search: searchKeyword || undefined,
         volume: volumeFilter || undefined,
         act: actFilter || undefined,
+        source: sourceFilter && sourceFilter !== 'all' ? sourceFilter : undefined,
         sort_by: isSorting ? 'order_index' : 'default',
         sort_order: 'asc',
       }),
@@ -245,6 +246,12 @@ export const CharacterSidebar = ({
 
     return result;
   }, [outline, tree, characters]);
+
+  const filteredBySource = useMemo(() => {
+    if (!sourceFilter || sourceFilter === 'all') return characters;
+    if (sourceFilter === 'history') return characters.filter(c => c.source === 'history' || c.level === 'past');
+    return characters.filter(c => !c.source || c.source !== 'history');
+  }, [characters, sourceFilter]);
 
   // 获取统计数据
   const { data: stats } = useQuery({
@@ -316,7 +323,15 @@ export const CharacterSidebar = ({
   // 处理等级筛选
   const handleLevelFilter = useCallback((level: CharacterLevel | null) => {
     setLevelFilter(level);
-    setShowFilterDropdown(false);
+  }, []);
+
+  // 处理来源筛选
+  const handleSourceFilter = useCallback((source: 'all' | 'history' | 'main') => {
+    if (source === 'all') {
+      setSourceFilter('all');
+    } else {
+      setSourceFilter(source);
+    }
   }, []);
 
   // 处理创建人物
@@ -332,11 +347,8 @@ export const CharacterSidebar = ({
   // 点击外部关闭筛选下拉框
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
-        setShowFilterDropdown(false);
-      }
-      if (appearanceFilterRef.current && !appearanceFilterRef.current.contains(event.target as Node)) {
-        setShowAppearanceFilter(false);
+      if (unifiedFilterRef.current && !unifiedFilterRef.current.contains(event.target as Node)) {
+        setShowUnifiedFilter(false);
       }
     };
 
@@ -345,14 +357,13 @@ export const CharacterSidebar = ({
   }, []);
 
   // 当搜索或筛选时，禁用排序和批量模式
-  const hasActiveFilter = levelFilter || volumeFilter || actFilter;
+  const hasActiveFilter = levelFilter || volumeFilter || actFilter || (sourceFilter && sourceFilter !== 'all');
   const canSort = !searchKeyword && !hasActiveFilter && !isLoading && !isBatchMode;
   const canBatch = !searchKeyword && !hasActiveFilter && !isLoading && !isSorting;
 
   const handleClearAppearanceFilter = useCallback(() => {
     setVolumeFilter(null);
     setActFilter(null);
-    setShowAppearanceFilter(false);
   }, []);
 
   // 处理批量选择
@@ -527,153 +538,206 @@ export const CharacterSidebar = ({
             )}
           </div>
 
-          {/* 筛选按钮 */}
-          <div className="relative flex-shrink-0" ref={filterDropdownRef}>
+          {/* 统一筛选按钮 */}
+          <div className="relative flex-shrink-0" ref={unifiedFilterRef}>
             <button
-              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-              className={`flex items-center gap-1 px-2.5 py-2 text-sm rounded-lg transition-all duration-200 ${
-                levelFilter
-                  ? 'bg-primary text-primary-foreground'
+              onClick={() => setShowUnifiedFilter(!showUnifiedFilter)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
+                hasActiveFilter
+                  ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-accent/10 text-muted-foreground hover:text-foreground hover:bg-accent/20'
               }`}
-              title="等级筛选"
+              title="筛选"
             >
               <Filter className="h-3.5 w-3.5" />
-              {levelFilter && (
-                <span className="text-xs opacity-80">
-                  ({CharacterLevelLabels[levelFilter]})
+              <span className="text-xs font-medium">筛选</span>
+              {hasActiveFilter && (
+                <span className="ml-0.5 w-4 h-4 flex items-center justify-center text-[10px] bg-primary-foreground/20 rounded-full">
+                  {[levelFilter, sourceFilter !== 'all' ? sourceFilter : null, volumeFilter, actFilter].filter(Boolean).length}
                 </span>
               )}
             </button>
 
-            {/* 筛选下拉菜单 */}
-            {showFilterDropdown && (
-              <div className="absolute top-full right-0 mt-1 w-40 bg-card border border-border/60 rounded-lg shadow-lg z-20 py-1">
-                <button
-                  onClick={() => handleLevelFilter(null)}
-                  className={`w-full px-3 py-2 text-sm text-left transition-colors ${
-                    levelFilter === null
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-accent/10'
-                  }`}
-                >
-                  全部角色
-                </button>
-                <div className="my-1 border-t border-border/40" />
-                {(['protagonist', 'major_support', 'support', 'minor'] as CharacterLevel[]).map(
-                  (level) => (
+            {/* 统一筛选面板 */}
+            {showUnifiedFilter && (
+              <div className="absolute top-full right-0 mt-1.5 w-64 bg-card border border-border/60 rounded-xl shadow-xl z-20 overflow-hidden">
+                {/* 标签页切换 */}
+                <div className="flex border-b border-border/40">
+                  {[
+                    { key: 'level', label: '等级', icon: Users },
+                    { key: 'source', label: '来源', icon: BookOpen },
+                    { key: 'appearance', label: '出场', icon: LayoutGrid },
+                  ].map(({ key, label, icon: Icon }) => (
                     <button
-                      key={level}
-                      onClick={() => handleLevelFilter(level)}
-                      className={`w-full px-3 py-2 text-sm text-left flex items-center gap-2 transition-colors ${
-                        levelFilter === level
-                          ? 'bg-primary/10 text-primary'
-                          : 'hover:bg-accent/10'
+                      key={key}
+                      onClick={() => setActiveFilterTab(key as typeof activeFilterTab)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
+                        activeFilterTab === key
+                          ? 'text-primary bg-primary/5 border-b-2 border-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
                       }`}
                     >
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: CharacterLevelColors[level].bar }}
-                      />
-                      {CharacterLevelLabels[level]}
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
                     </button>
-                  )
-                )}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
 
-          <div className="relative flex-shrink-0" ref={appearanceFilterRef}>
-            <button
-              onClick={() => setShowAppearanceFilter(!showAppearanceFilter)}
-              className={`flex items-center gap-1 px-2.5 py-2 text-sm rounded-lg transition-all duration-200 ${
-                volumeFilter || actFilter
-                  ? 'bg-accent text-accent-foreground'
-                  : 'bg-accent/10 text-muted-foreground hover:text-foreground hover:bg-accent/20'
-              }`}
-              title="出场筛选"
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              {(volumeFilter || actFilter) && (
-                <span className="text-xs opacity-80">
-                  ({[volumeFilter, actFilter].filter(Boolean).length})
-                </span>
-              )}
-            </button>
-
-            {showAppearanceFilter && (
-              <div className="absolute top-full right-0 mt-1 w-56 bg-card border border-border/60 rounded-lg shadow-lg z-20 py-2">
-                {volumes.length > 0 && (
-                  <div className="px-3 py-2">
-                    <span className="text-xs text-muted-foreground block mb-1.5">卷</span>
-                    <div className="flex flex-wrap gap-1">
-                      {volumes.map((vol) => (
+                {/* 等级筛选内容 */}
+                {activeFilterTab === 'level' && (
+                  <div className="p-3 space-y-1">
+                    <button
+                      onClick={() => handleLevelFilter(null)}
+                      className={`w-full px-3 py-2 text-sm text-left rounded-lg transition-colors ${
+                        levelFilter === null
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-accent/10 text-foreground'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground/40" />
+                        全部角色
+                      </div>
+                    </button>
+                    <div className="my-2 border-t border-border/30" />
+                    {(['protagonist', 'major_support', 'support', 'minor'] as CharacterLevel[]).map(
+                      (level) => (
                         <button
-                          key={vol}
-                          onClick={() => {
-                            if (volumeFilter === vol) {
-                              setVolumeFilter(null);
-                              setActFilter(null);
-                            } else {
-                              setVolumeFilter(vol);
-                              setActFilter(null);
-                            }
-                          }}
-                          className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                            volumeFilter === vol
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-accent/10 hover:bg-accent/20'
+                          key={level}
+                          onClick={() => handleLevelFilter(level)}
+                          className={`w-full px-3 py-2 text-sm text-left rounded-lg transition-colors ${
+                            levelFilter === level
+                              ? 'bg-primary/10 text-primary'
+                              : 'hover:bg-accent/10 text-foreground'
                           }`}
                         >
-                          {vol}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: CharacterLevelColors[level].bar }}
+                            />
+                            {CharacterLevelLabels[level]}
+                          </div>
                         </button>
-                      ))}
-                    </div>
+                      )
+                    )}
                   </div>
                 )}
 
-                {volumeFilter && availableActs.length > 0 && (
-                  <>
-                    <div className="my-1 border-t border-border/40" />
-                    <div className="px-3 py-2">
-                      <span className="text-xs text-muted-foreground block mb-1.5">幕</span>
-                      <div className="flex flex-wrap gap-1">
-                        {availableActs.map((act) => (
-                          <button
-                            key={act}
-                            onClick={() => setActFilter(actFilter === act ? null : act)}
-                            className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                              actFilter === act
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-accent/10 hover:bg-accent/20'
-                            }`}
-                          >
-                            {act}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {volumes.length === 0 && (
-                  <div className="px-3 py-2 text-xs text-muted-foreground text-center">
-                    暂无章节数据
-                  </div>
-                )}
-
-                {(volumeFilter || actFilter) && (
-                  <>
-                    <div className="my-1 border-t border-border/40" />
-                    <div className="px-3 py-1">
+                {/* 来源筛选内容 */}
+                {activeFilterTab === 'source' && (
+                  <div className="p-3 space-y-1">
+                    {[
+                      { key: 'all', label: '全部人物', desc: '显示所有人物' },
+                      { key: 'main', label: '主线人物', desc: '故事主要角色' },
+                      { key: 'history', label: '历史背景', desc: '仅历史中出现' },
+                    ].map(({ key, label, desc }) => (
                       <button
-                        onClick={handleClearAppearanceFilter}
-                        className="w-full text-xs text-primary hover:underline text-center"
+                        key={key}
+                        onClick={() => handleSourceFilter(key as 'all' | 'history' | 'main')}
+                        className={`w-full px-3 py-2.5 text-left rounded-lg transition-colors ${
+                          (sourceFilter === key || (key === 'all' && !sourceFilter))
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-accent/10 text-foreground'
+                        }`}
                       >
-                        清除出场筛选
+                        <div className="text-sm font-medium">{label}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{desc}</div>
                       </button>
-                    </div>
-                  </>
+                    ))}
+                  </div>
+                )}
+
+                {/* 出场筛选内容 */}
+                {activeFilterTab === 'appearance' && (
+                  <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
+                    {volumes.length > 0 ? (
+                      <>
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground block mb-2">选择卷</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {volumes.map((vol) => (
+                              <button
+                                key={vol}
+                                onClick={() => {
+                                  if (volumeFilter === vol) {
+                                    setVolumeFilter(null);
+                                    setActFilter(null);
+                                  } else {
+                                    setVolumeFilter(vol);
+                                    setActFilter(null);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                                  volumeFilter === vol
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-accent/10 hover:bg-accent/20 text-foreground'
+                                }`}
+                              >
+                                {vol}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {volumeFilter && availableActs.length > 0 && (
+                          <>
+                            <div className="border-t border-border/30 pt-2">
+                              <span className="text-xs font-medium text-muted-foreground block mb-2">选择幕</span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {availableActs.map((act) => (
+                                  <button
+                                    key={act}
+                                    onClick={() => setActFilter(actFilter === act ? null : act)}
+                                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                                      actFilter === act
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-accent/10 hover:bg-accent/20 text-foreground'
+                                    }`}
+                                  >
+                                    {act}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-xs text-muted-foreground text-center py-4">
+                        暂无章节数据
+                      </div>
+                    )}
+
+                    {(volumeFilter || actFilter) && (
+                      <div className="border-t border-border/30 pt-2">
+                        <button
+                          onClick={handleClearAppearanceFilter}
+                          className="w-full py-1.5 text-xs text-primary hover:bg-primary/5 rounded-md transition-colors"
+                        >
+                          清除出场筛选
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 底部清除全部 */}
+                {hasActiveFilter && (
+                  <div className="border-t border-border/40 p-2 bg-accent/5">
+                    <button
+                      onClick={() => {
+                        setLevelFilter(null);
+                        setSourceFilter('all');
+                        setVolumeFilter(null);
+                        setActFilter(null);
+                      }}
+                      className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <X className="h-3 w-3" />
+                      清除全部筛选
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -690,7 +754,7 @@ export const CharacterSidebar = ({
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading ? (
           <EmptyState type="loading" />
-        ) : characters.length === 0 ? (
+        ) : filteredBySource.length === 0 ? (
           <EmptyState
             type={searchKeyword ? 'no-search-results' : hasActiveFilter ? 'no-filter-results' : 'no-characters'}
             onAction={handleCreateCharacter}
@@ -703,11 +767,11 @@ export const CharacterSidebar = ({
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={characters.map((c) => c.id)}
+              items={filteredBySource.map((c) => c.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
-                {characters.map((character) => (
+                {filteredBySource.map((character) => (
                   <SortableCharacterCard
                     key={character.id}
                     character={character}
@@ -722,7 +786,7 @@ export const CharacterSidebar = ({
           </DndContext>
         ) : isBatchMode ? (
           // 批量模式 - 带复选框
-          characters.map((character) => (
+          filteredBySource.map((character) => (
             <div
               key={character.id}
               className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
@@ -750,7 +814,7 @@ export const CharacterSidebar = ({
             </div>
           ))
         ) : (
-          characters.map((character) => (
+          filteredBySource.map((character) => (
             <CharacterBarCard
               key={character.id}
               character={character}
@@ -771,7 +835,7 @@ export const CharacterSidebar = ({
             <div>
               <h4 className="text-xs font-medium text-muted-foreground mb-2">角色等级分布</h4>
               <div className="space-y-1.5">
-                {(['protagonist', 'major_support', 'support', 'minor'] as const).map((level) => {
+                {(['protagonist', 'major_support', 'support', 'minor', 'past'] as const).map((level) => {
                   const count = stats.by_level[level] || 0;
                   const percentage = stats.total > 0 ? (count / stats.total) * 100 : 0;
                   return (
@@ -844,7 +908,7 @@ export const CharacterSidebar = ({
 
         <div className="p-3 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span>共 {characters.length} 位人物</span>
+            <span>共 {filteredBySource.length} 位人物</span>
             {stats && (
               <button
                 onClick={() => setShowStats(!showStats)}
@@ -861,11 +925,17 @@ export const CharacterSidebar = ({
               </button>
             )}
           </div>
-          {levelFilter && (
+          {hasActiveFilter && (
             <button
-              onClick={() => handleLevelFilter(null)}
-              className="text-primary hover:underline"
+              onClick={() => {
+                setLevelFilter(null);
+                setSourceFilter('all');
+                setVolumeFilter(null);
+                setActFilter(null);
+              }}
+              className="text-primary hover:underline flex items-center gap-1"
             >
+              <X className="h-3 w-3" />
               清除筛选
             </button>
           )}

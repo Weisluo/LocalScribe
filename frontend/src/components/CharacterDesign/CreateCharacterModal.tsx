@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crown, Star, User, Circle } from 'lucide-react';
+import { X, Crown, Star, User, Circle, History } from 'lucide-react';
 import type { CharacterLevel, CharacterGender } from '@/types/character';
 import { CharacterLevelLabels, CharacterLevelColors, CharacterGenderLabels } from '@/types/character';
 
@@ -15,7 +15,7 @@ interface CreateCharacterModalProps {
   isLoading?: boolean;
 }
 
-const levelOptions: CharacterLevel[] = ['protagonist', 'major_support', 'support', 'minor'];
+const levelOptions: CharacterLevel[] = ['protagonist', 'major_support', 'support', 'minor', 'past'];
 const genderOptions: CharacterGender[] = ['male', 'female', 'other', 'unknown'];
 
 const levelIcons: Record<CharacterLevel, React.ReactNode> = {
@@ -23,6 +23,7 @@ const levelIcons: Record<CharacterLevel, React.ReactNode> = {
   major_support: <Star className="h-5 w-5" />,
   support: <User className="h-5 w-5" />,
   minor: <Circle className="h-5 w-5" />,
+  past: <History className="h-5 w-5" />,
 };
 
 export const CreateCharacterModal = ({
@@ -98,7 +99,7 @@ export const CreateCharacterModal = ({
                 <label className="block text-sm font-medium text-muted-foreground mb-2">
                   角色等级
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {levelOptions.map((lvl) => {
                     const colors = CharacterLevelColors[lvl];
                     const isSelected = level === lvl;
@@ -106,7 +107,7 @@ export const CreateCharacterModal = ({
                       <button
                         key={lvl}
                         onClick={() => setLevel(lvl)}
-                        className={`flex items-center gap-2 px-4 py-3 text-sm rounded-lg border transition-all ${
+                        className={`flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg border transition-all ${
                           isSelected
                             ? 'ring-2 ring-primary/30'
                             : 'hover:bg-accent/10'

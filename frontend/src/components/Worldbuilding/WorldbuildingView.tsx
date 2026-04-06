@@ -1107,7 +1107,7 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
   );
 };
 
-export const WorldbuildingView = () => {
+export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToCharacter?: (characterId: string) => void }) => {
   const [activeTab, setActiveTab] = useState<TabType>('map');
   const { currentProjectId } = useProjectStore();
   const queryClient = useQueryClient();
@@ -1436,7 +1436,7 @@ export const WorldbuildingView = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : activeTab === 'history' && currentModule ? (
-              <HistoryView moduleId={currentModule.id} />
+              <HistoryView moduleId={currentModule.id} projectId={currentProjectId || ''} onNavigateToCharacter={onNavigateToCharacter} />
             ) : activeTab === 'economy' && currentModule ? (
               <EconomyView moduleId={currentModule.id} />
             ) : currentModule ? (

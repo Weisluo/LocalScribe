@@ -114,8 +114,9 @@ def build_character_query(db: Session, project_id: str):
 获取指定项目下的人物列表，支持多种筛选和排序方式。
 
 **功能特性：**
-- 按角色等级筛选（主角/重要配角/配角/小角色）
+- 按角色等级筛选（主角/重要配角/配角/小角色/过往）
 - 按姓名或别名模糊搜索
+- 按来源筛选（history-历史背景，null-主线故事）
 - 自定义排序字段和排序方向
 - 预加载别名数据，避免 N+1 查询问题
 
@@ -123,18 +124,20 @@ def build_character_query(db: Session, project_id: str):
 1. 左侧人物栏展示：按排序索引升序排列
 2. 搜索功能：通过 search 参数模糊匹配
 3. 等级筛选：通过 level 参数筛选特定等级角色
+4. 来源筛选：通过 source 参数筛选历史背景或主线人物
     """,
 )
 def list_characters(
     project_id: str = Path(..., description="项目ID"),
     level: Optional[CharacterLevel] = Query(
         None,
-        description="角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色)",
+        description="角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色), past(过往)",
     ),
     search: Optional[str] = Query(None, description="搜索关键词，匹配姓名或别名"),
     volume: Optional[str] = Query(None, description="筛选卷"),
     act: Optional[str] = Query(None, description="筛选幕"),
     chapter: Optional[str] = Query(None, description="筛选章"),
+    source: Optional[str] = Query(None, description="来源筛选：history(历史背景), main(主线故事), all(全部)"),
     sort_by: str = Query(
         "default",
         description="排序字段：default(默认-按等级+出场时间), order_index(自定义排序), name, created_at, updated_at",
@@ -163,6 +166,14 @@ def list_characters(
     # 应用筛选
     if level:
         query = query.filter(Character.level == level.value)
+
+    # 按来源筛选
+    if source:
+        if source == 'history':
+            # 历史背景人物：source == 'history' 或 level == 'past'
+            query = query.filter(or_(Character.source == 'history', Character.level == 'past'))
+        elif source == 'main':
+            query = query.filter(or_(Character.source.is_(None), Character.source != 'history'))
 
     if search:
         # 搜索姓名或别名 - 使用子查询避免 join 导致的重复记录问题
@@ -193,13 +204,14 @@ def list_characters(
     # 应用排序
     if sort_by == "default":
         # 默认排序：先按等级排序，同等级按出场时间排序
-        # 等级顺序：protagonist(1) > major_support(2) > support(3) > minor(4)
+        # 等级顺序：protagonist(1) > major_support(2) > support(3) > minor(4) > past(5)
         level_order = case(
             (Character.level == "protagonist", 1),
             (Character.level == "major_support", 2),
             (Character.level == "support", 3),
             (Character.level == "minor", 4),
-            else_=5,
+            (Character.level == "past", 5),
+            else_=6,
         )
         if sort_order.lower() == "desc":
             query = query.order_by(desc(level_order), desc(Character.first_appearance_volume), desc(Character.first_appearance_act), desc(Character.first_appearance_chapter))
@@ -281,6 +293,7 @@ def create_character(
             last_appearance_act=character_data.last_appearance_act,
             last_appearance_chapter=character_data.last_appearance_chapter,
             order_index=character_data.order_index,
+            source=character_data.source,
         )
         db.add(character)
         db.flush()  # 获取character.id
@@ -389,9 +402,55 @@ def list_characters_simple(
             name=c.name,
             level=c.level,
             avatar=c.avatar,
+            source=c.source,
         )
         for c in characters
     ]
+
+
+# ==================== 统计接口 ====================
+
+
+@router.get("/projects/{project_id}/characters/stats", response_model=CharacterStats)
+def get_character_stats(
+    project_id: str,
+    db: Session = Depends(get_db),
+):
+    """获取人物统计数据"""
+    # 检查项目是否存在
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"项目不存在: {project_id}",
+        )
+
+    # 统计总数
+    total = db.query(Character).filter(Character.project_id == project_id).count()
+
+    # 按等级统计
+    level_stats = (
+        db.query(Character.level, func.count(Character.id))
+        .filter(Character.project_id == project_id)
+        .group_by(Character.level)
+        .all()
+    )
+    by_level = {level: count for level, count in level_stats}
+
+    # 按性别统计
+    gender_stats = (
+        db.query(Character.gender, func.count(Character.id))
+        .filter(Character.project_id == project_id)
+        .group_by(Character.gender)
+        .all()
+    )
+    by_gender = {gender: count for gender, count in gender_stats}
+
+    return CharacterStats(
+        total=total,
+        by_level=by_level,
+        by_gender=by_gender,
+    )
 
 
 @router.get(
@@ -1125,48 +1184,3 @@ def delete_artifact(
     db.delete(artifact)
     db.commit()
     return None
-
-
-# ==================== 统计接口 ====================
-
-
-@router.get("/projects/{project_id}/characters/stats", response_model=CharacterStats)
-def get_character_stats(
-    project_id: str,
-    db: Session = Depends(get_db),
-):
-    """获取人物统计数据"""
-    # 检查项目是否存在
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"项目不存在: {project_id}",
-        )
-
-    # 统计总数
-    total = db.query(Character).filter(Character.project_id == project_id).count()
-
-    # 按等级统计
-    level_stats = (
-        db.query(Character.level, func.count(Character.id))
-        .filter(Character.project_id == project_id)
-        .group_by(Character.level)
-        .all()
-    )
-    by_level = {level: count for level, count in level_stats}
-
-    # 按性别统计
-    gender_stats = (
-        db.query(Character.gender, func.count(Character.id))
-        .filter(Character.project_id == project_id)
-        .group_by(Character.gender)
-        .all()
-    )
-    by_gender = {gender: count for gender, count in gender_stats}
-
-    return CharacterStats(
-        total=total,
-        by_level=by_level,
-        by_gender=by_gender,
-    )

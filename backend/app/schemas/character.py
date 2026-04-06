@@ -20,6 +20,7 @@ class CharacterLevel(str, Enum):
     MAJOR_SUPPORT = "major_support"  # 重要配角
     SUPPORT = "support"  # 配角
     MINOR = "minor"  # 小角色
+    PAST = "past"  # 过往（历史背景人物特有）
 
 
 class CharacterGender(str, Enum):
@@ -298,6 +299,9 @@ class CharacterBase(BaseModel):
 class CharacterCreate(CharacterBase):
     """创建人物 Schema"""
 
+    source: Optional[str] = Field(
+        None, max_length=50, description="来源: history(历史背景), None(主线故事)"
+    )
     aliases: List[CharacterAliasCreate] = Field(
         default_factory=list, description="别名列表"
     )
@@ -332,6 +336,7 @@ class CharacterUpdate(BaseModel):
     last_appearance_act: Optional[str] = Field(None, max_length=100)
     last_appearance_chapter: Optional[str] = Field(None, max_length=100)
     order_index: Optional[int] = Field(None, ge=0)
+    source: Optional[str] = Field(None, max_length=50, description="来源: history(历史背景), None(主线故事)")
 
 
 class CharacterListItem(BaseModel):
@@ -350,6 +355,7 @@ class CharacterListItem(BaseModel):
     first_appearance_act: Optional[str] = None
     first_appearance_chapter: Optional[str] = None
     order_index: int
+    source: Optional[str] = None
     # 别名摘要
     aliases: List[CharacterAliasResponse] = []
     created_at: datetime
@@ -363,6 +369,7 @@ class CharacterDetailResponse(CharacterBase):
 
     id: str
     project_id: str
+    source: Optional[str] = None
     aliases: List[CharacterAliasResponse] = []
     cards: List[CharacterCardResponse] = []
     relationships: List[CharacterRelationshipResponse] = []
@@ -380,6 +387,7 @@ class CharacterSimpleResponse(BaseModel):
     name: str
     level: str
     avatar: Optional[str] = None
+    source: Optional[str] = None
 
 
 # ==================== 筛选和排序 Schema ====================
@@ -394,6 +402,7 @@ class CharacterFilter(BaseModel):
     volume: Optional[str] = Field(None, description="筛选卷")
     act: Optional[str] = Field(None, description="筛选幕")
     chapter: Optional[str] = Field(None, description="筛选章")
+    source: Optional[str] = Field(None, description="来源筛选: history(历史背景), null(主线故事)")
 
 
 class CharacterSort(BaseModel):

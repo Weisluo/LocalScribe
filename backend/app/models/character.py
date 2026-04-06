@@ -38,6 +38,7 @@ class CharacterLevel(str, Enum):
     MAJOR_SUPPORT = "major_support"  # 重要配角
     SUPPORT = "support"  # 配角
     MINOR = "minor"  # 小角色
+    PAST = "past"  # 过往（历史背景人物特有）
 
 
 class CharacterGender(str, Enum):
@@ -133,6 +134,11 @@ class Character(Base):
     # 排序索引
     order_index: Mapped[int] = mapped_column(
         Integer, default=0, comment="排序索引"
+    )
+
+    # 来源
+    source: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True, comment="来源: history(历史背景), None(主线故事)"
     )
 
     # 元数据

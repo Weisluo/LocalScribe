@@ -6,7 +6,7 @@
 
 // ==================== 枚举定义 ====================
 
-export type CharacterLevel = 'protagonist' | 'major_support' | 'support' | 'minor';
+export type CharacterLevel = 'protagonist' | 'major_support' | 'support' | 'minor' | 'past';
 export type CharacterGender = 'male' | 'female' | 'other' | 'unknown';
 export type AliasType = 'zi' | 'hao' | 'nickname' | 'title' | 'other';
 export type RelationType = 'family' | 'love' | 'friend' | 'master' | 'apprentice' | 'enemy' | 'other';
@@ -19,6 +19,7 @@ export const CharacterLevelLabels: Record<CharacterLevel, string> = {
   major_support: '重要配角',
   support: '配角',
   minor: '小角色',
+  past: '过往',
 };
 
 // 角色等级颜色配置
@@ -47,6 +48,12 @@ export const CharacterLevelColors: Record<CharacterLevel, { border: string; bg: 
     bar: 'hsl(0 0% 60%)',
     barWidth: 2,
   },
+  past: {
+    border: 'hsl(280 30% 55%)',
+    bg: 'hsl(280 30% 97%)',
+    bar: 'hsl(280 30% 55%)',
+    barWidth: 2,
+  },
 };
 
 // 角色等级尺寸配置
@@ -55,6 +62,7 @@ export const CharacterLevelSizes: Record<CharacterLevel, { height: number; paddi
   major_support: { height: 90, padding: 12, avatar: 62, radius: 7 },
   support: { height: 82, padding: 12, avatar: 54, radius: 6 },
   minor: { height: 74, padding: 10, avatar: 48, radius: 5 },
+  past: { height: 74, padding: 10, avatar: 48, radius: 5 },
 };
 
 // 性别显示名称
@@ -215,6 +223,7 @@ export interface Character {
   last_appearance_act?: string;
   last_appearance_chapter?: string;
   order_index: number;
+  source?: 'history' | null;
   aliases: CharacterAlias[];
   cards: CharacterCard[];
   relationships: CharacterRelationship[];
@@ -241,6 +250,7 @@ export interface CharacterListItem {
   last_appearance_act?: string;
   last_appearance_chapter?: string;
   order_index: number;
+  source?: 'history' | null;
   aliases: CharacterAlias[];
   created_at: string;
   updated_at: string;
@@ -252,6 +262,7 @@ export interface CharacterSimple {
   name: string;
   avatar?: string;
   level: CharacterLevel;
+  source?: 'history' | null;
 }
 
 // ==================== 请求/响应类型 ====================
@@ -271,6 +282,7 @@ export interface CreateCharacterRequest {
   first_appearance_act?: string;
   first_appearance_chapter?: string;
   order_index?: number;
+  source?: string;
   aliases?: Omit<CharacterAlias, 'id' | 'character_id' | 'created_at' | 'updated_at'>[];
   cards?: Omit<CharacterCard, 'id' | 'character_id' | 'created_at' | 'updated_at'>[];
   relationships?: Omit<CharacterRelationship, 'id' | 'character_id' | 'target_character' | 'created_at' | 'updated_at'>[];
@@ -295,6 +307,7 @@ export interface UpdateCharacterRequest {
   last_appearance_act?: string;
   last_appearance_chapter?: string;
   order_index?: number;
+  source?: string | null;
 }
 
 export interface CharacterFilter {
@@ -303,6 +316,7 @@ export interface CharacterFilter {
   volume?: string;
   act?: string;
   chapter?: string;
+  source?: 'history' | 'main' | 'all';
   sort_by?: 'default' | 'order_index' | 'name' | 'created_at' | 'updated_at';
   sort_order?: 'asc' | 'desc';
 }

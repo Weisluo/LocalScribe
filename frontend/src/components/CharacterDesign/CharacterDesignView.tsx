@@ -13,6 +13,7 @@ interface CharacterDesignViewProps {
   projectId: string;
   onClose: () => void;
   onNavigateToNote?: (noteId: string) => void;
+  initialCharacterId?: string | null;
 }
 
 type ViewMode = 'list' | 'cloud';
@@ -24,7 +25,7 @@ type ViewMode = 'list' | 'cloud';
  * - 列表视图：左右分栏，左侧人物列表，右侧详情编辑
  * - 云图视图：力导向图展示人物关系网络
  */
-export const CharacterDesignView = ({ projectId, onNavigateToNote }: CharacterDesignViewProps) => {
+export const CharacterDesignView = ({ projectId, onNavigateToNote, initialCharacterId }: CharacterDesignViewProps) => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const hasInitializedSelection = useRef(false);
@@ -53,7 +54,16 @@ export const CharacterDesignView = ({ projectId, onNavigateToNote }: CharacterDe
 
     hasInitializedSelection.current = true;
 
-    // 优先选择主角
+    // 优先使用传入的 initialCharacterId
+    if (initialCharacterId) {
+      const targetChar = characters.find((c) => c.id === initialCharacterId);
+      if (targetChar) {
+        setSelectedCharacterId(initialCharacterId);
+        return;
+      }
+    }
+
+    // 其次选择主角
     const protagonist = characters.find((c) => c.level === 'protagonist');
     if (protagonist) {
       setSelectedCharacterId(protagonist.id);
@@ -61,7 +71,7 @@ export const CharacterDesignView = ({ projectId, onNavigateToNote }: CharacterDe
       // 没有主角则选择第一个角色
       setSelectedCharacterId(characters[0].id);
     }
-  }, [characters]);
+  }, [characters, initialCharacterId]);
 
   // 处理选择人物
   const handleSelectCharacter = useCallback((characterId: string) => {
