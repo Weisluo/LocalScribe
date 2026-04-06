@@ -38,6 +38,7 @@ import { EraSwitchContainer } from './HistoryView/EraSwitchContainer';
 import { EraContentPanel } from './HistoryView/EraContentPanel';
 import { HistoryModuleConfig } from './HistoryView/types';
 import { ConfigModal } from './HistoryView/modals/ConfigModal';
+import { DeleteConfirmModal } from './HistoryView/modals/DeleteConfirmModal';
 
 export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: HistoryViewProps) => {
   const queryClient = useQueryClient();
@@ -59,6 +60,8 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
   const [searchQuery, setSearchQuery] = useState('');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'event' | 'era'; id: string; name: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: submodules, isLoading } = useQuery({
@@ -127,13 +130,28 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
       const iconValue = sub.icon || '';
       const isDateIcon = iconValue.startsWith('date:');
       const eventType = parseEventType(sub.color);
+      
+      let eventDate: string | undefined;
+      let eventEndDate: string | undefined;
+      let icon: string | undefined;
+      
+      if (isDateIcon) {
+        const datePart = iconValue.replace('date:', '');
+        const dateParts = datePart.split(':');
+        eventDate = dateParts[0] || undefined;
+        eventEndDate = dateParts[1] || undefined;
+      } else {
+        icon = iconValue || undefined;
+      }
+      
       return {
         id: sub.id,
         name: sub.name,
         description: sub.description,
         level: parseEventLevel(sub.color),
-        eventDate: isDateIcon ? iconValue.replace('date:', '') : undefined,
-        icon: isDateIcon ? undefined : iconValue || undefined,
+        eventDate,
+        eventEndDate,
+        icon,
         order_index: sub.order_index,
         eraId: sub.parent_id || undefined,
         items: (items || []).filter((item) => item.submodule_id === sub.id).map((item) => ({
@@ -268,8 +286,13 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
   });
 
   const createEventMutation = useMutation({
-    mutationFn: (data: { name: string; description: string; level: EventLevel; eventDate: string; icon: string; eraId?: string; eventType?: EventType }) => {
-      const iconValue = data.eventDate ? `date:${data.eventDate}` : data.icon;
+    mutationFn: (data: { name: string; description: string; level: EventLevel; eventDate: string; eventEndDate: string; icon: string; eraId?: string; eventType?: EventType }) => {
+      let iconValue: string | undefined;
+      if (data.eventDate) {
+        iconValue = data.eventEndDate ? `date:${data.eventDate}:${data.eventEndDate}` : `date:${data.eventDate}`;
+      } else {
+        iconValue = data.icon || undefined;
+      }
       const colorValue = data.eventType ? formatEventType(data.eventType, data.level) : formatEventLevel(data.level);
       return worldbuildingApi.createSubmodule(moduleId, {
         name: data.name,
@@ -300,11 +323,16 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
   });
 
   const updateEventMutation = useMutation({
-    mutationFn: (data: { name: string; description: string; level: EventLevel; eventDate: string; icon: string; eraId?: string; eventType?: EventType }) => {
+    mutationFn: (data: { name: string; description: string; level: EventLevel; eventDate: string; eventEndDate: string; icon: string; eraId?: string; eventType?: EventType }) => {
       if (!selectedEvent) {
         return Promise.reject(new Error('请先选择一个事件'));
       }
-      const iconValue = data.eventDate ? `date:${data.eventDate}` : data.icon;
+      let iconValue: string | undefined;
+      if (data.eventDate) {
+        iconValue = data.eventEndDate ? `date:${data.eventDate}:${data.eventEndDate}` : `date:${data.eventDate}`;
+      } else {
+        iconValue = data.icon || undefined;
+      }
       const colorValue = data.eventType ? formatEventType(data.eventType, data.level) : formatEventLevel(data.level);
       return worldbuildingApi.updateSubmodule(selectedEvent.id, {
         name: data.name,
@@ -425,10 +453,27 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
     },
   });
 
-  const handleDeleteEvent = (eventId: string) => {
-    if (confirm('确定要删除此事件吗？所有相关条目也将被删除。')) {
-      deleteEventMutation.mutate(eventId);
+  const handleDeleteEvent = (eventId: string, eventName?: string) => {
+    setDeleteTarget({ type: 'event', id: eventId, name: eventName || '此事件' });
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteEra = (eraId: string, eraName?: string) => {
+    setDeleteTarget({ type: 'era', id: eraId, name: eraName || '此时代' });
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      deleteEventMutation.mutate(deleteTarget.id);
+      setShowDeleteConfirmModal(false);
+      setDeleteTarget(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmModal(false);
+    setDeleteTarget(null);
   };
 
   const handleAddItem = (event: Event) => {
@@ -627,10 +672,10 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
                   era={era}
                   events={isStandaloneEra ? filteredOrphanEvents : filteredEvents.filter(e => e.eraId === era.id)}
                   onEditEra={() => { setSelectedEra(era); setShowEditEraModal(true); }}
-                  onDeleteEra={() => { if(confirm('确定要删除此时代吗？所有相关事件也将被删除。')) deleteEventMutation.mutate(era.id); }}
+                  onDeleteEra={() => handleDeleteEra(era.id, era.name)}
                   onAddEvent={() => { setSelectedEraId(isStandaloneEra ? undefined : era.id); setShowAddEventModal(true); }}
                   onEditEvent={handleEditEvent}
-                  onDeleteEvent={handleDeleteEvent}
+                  onDeleteEvent={(eventId) => handleDeleteEvent(eventId)}
                   onAddItem={handleAddItem}
                   onEditItem={handleEditItem}
                   onDeleteItem={handleDeleteItem}
@@ -711,6 +756,19 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
         config={moduleConfig}
         onSave={(config) => saveConfigMutation.mutate(config)}
         isLoading={saveConfigMutation.isPending}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirmModal}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title={deleteTarget?.type === 'era' ? '删除时代' : '删除事件'}
+        message={
+          deleteTarget?.type === 'era'
+            ? `确定要删除时代「${deleteTarget.name}」吗？该时代下的所有事件也将被删除。`
+            : `确定要删除事件「${deleteTarget?.name}」吗？所有相关条目也将被删除。`
+        }
+        isLoading={deleteEventMutation.isPending}
       />
 
       <TimelineTooltip event={null} position={null} />

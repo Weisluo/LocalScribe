@@ -20,6 +20,7 @@ export interface Event {
   description?: string;
   level: EventLevel;
   eventDate?: string;
+  eventEndDate?: string;
   icon?: string;
   order_index: number;
   eraId?: string;
@@ -75,7 +76,7 @@ export interface EventLevelConfig {
 }
 
 export interface TimelineTooltipProps {
-  event: { name: string; eventDate?: string } | null;
+  event: { name: string; eventDate?: string; eventEndDate?: string } | null;
   position: { x: number; y: number } | null;
 }
 
@@ -99,7 +100,7 @@ export interface EditEraModalProps {
 export interface AddEventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { name: string; description: string; level: EventLevel; eventDate: string; icon: string; eraId?: string; eventType?: EventType }) => void;
+  onSubmit: (data: { name: string; description: string; level: EventLevel; eventDate: string; eventEndDate: string; icon: string; eraId?: string; eventType?: EventType }) => void;
   eras: Era[];
   selectedEraId?: string;
   isLoading?: boolean;
@@ -109,7 +110,7 @@ export interface AddEventModalProps {
 export interface EditEventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { name: string; description: string; level: EventLevel; eventDate: string; icon: string; eraId?: string; eventType?: EventType }) => void;
+  onSubmit: (data: { name: string; description: string; level: EventLevel; eventDate: string; eventEndDate: string; icon: string; eraId?: string; eventType?: EventType }) => void;
   event: Event | null;
   eras: Era[];
   isLoading?: boolean;
@@ -231,6 +232,7 @@ export interface CharacterPickerModalProps {
   onClose: () => void;
   onSelect: (characterId: string, characterName: string) => void;
   projectId: string;
+  allowedCharacterIds?: string[];
 }
 
 // 历史模块配置

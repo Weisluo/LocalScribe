@@ -75,6 +75,21 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
     return links;
   }, [event.items, allCharacters]);
 
+  const participantCharacterIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const item of event.items) {
+      for (const key of Object.keys(item.content)) {
+        if (key.startsWith('_char_ref:')) {
+          const charId = key.slice('_char_ref:'.length);
+          if (charId && !ids.includes(charId)) {
+            ids.push(charId);
+          }
+        }
+      }
+    }
+    return ids;
+  }, [event.items]);
+
   const updateItemMutation = useMutation({
     mutationFn: (data: { itemId: string; name: string; content: Record<string, string> }) => {
       return worldbuildingApi.updateItem(data.itemId, {
@@ -166,6 +181,12 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
               <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 <span className="truncate">{event.eventDate}</span>
+                {event.eventEndDate && (
+                  <>
+                    <span className="text-muted-foreground/60">至</span>
+                    <span className="truncate">{event.eventEndDate}</span>
+                  </>
+                )}
               </div>
             )}
             {event.description && (
@@ -182,13 +203,13 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
         </div>
         <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 flex gap-0.5">
           <button 
-            onClick={onEdit} 
+            onClick={(e) => { e.stopPropagation(); onEdit(); }} 
             className="p-1.5 hover:bg-background/60 rounded-md text-muted-foreground hover:text-foreground transition-colors"
           >
             <Edit2 className="h-3 w-3" />
           </button>
           <button 
-            onClick={onDelete} 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }} 
             className="p-1.5 hover:bg-destructive/15 rounded-md text-destructive/70 hover:text-destructive transition-colors"
           >
             <Trash2 className="h-3 w-3" />
@@ -327,7 +348,7 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
           </div>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 flex gap-1 shrink-0">
             <motion.button 
-              onClick={onEdit} 
+              onClick={(e) => { e.stopPropagation(); onEdit(); }} 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className="p-1.5 hover:bg-background/60 rounded-lg transition-colors"
@@ -335,7 +356,7 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
               <Edit2 className="h-4 w-4" />
             </motion.button>
             <motion.button 
-              onClick={onDelete} 
+              onClick={(e) => { e.stopPropagation(); onDelete(); }} 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className="p-1.5 hover:bg-destructive/15 rounded-lg text-destructive transition-colors"
@@ -364,6 +385,12 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
               <Calendar className="h-3.5 w-3.5" />
             </div>
             <span className="font-medium">{event.eventDate}</span>
+            {event.eventEndDate && (
+              <>
+                <span className="text-muted-foreground/60 mx-1">至</span>
+                <span className="font-medium">{event.eventEndDate}</span>
+              </>
+            )}
           </motion.div>
         )}
         
@@ -613,6 +640,7 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
             }
           }}
           projectId={projectId}
+          allowedCharacterIds={participantCharacterIds}
         />
       )}
     </motion.div>

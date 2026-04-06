@@ -8,23 +8,23 @@ const CHINESE_NUMBER_CHARS = ['零', '〇', '一', '二', '三', '四', '五', '
 
 function chineseNumberToArabic(chineseNum: string): number | null {
   if (!chineseNum) return null;
-  
+
   if (/^\d+$/.test(chineseNum)) {
     return parseInt(chineseNum, 10);
   }
-  
+
   if (chineseNum === '元') return 1;
-  
+
   let result = 0;
   let temp = 0;
   let lastUnit = 1;
-  
+
   for (let i = 0; i < chineseNum.length; i++) {
     const char = chineseNum[i];
     const value = CHINESE_NUMBERS[char];
-    
+
     if (value === undefined) return null;
-    
+
     if (value >= 10) {
       if (temp === 0) temp = 1;
       if (value > lastUnit) {
@@ -38,9 +38,9 @@ function chineseNumberToArabic(chineseNum: string): number | null {
       temp = temp * 10 + value;
     }
   }
-  
+
   result += temp;
-  
+
   return result || null;
 }
 
@@ -49,7 +49,7 @@ function extractYearFromText(text: string): { year: number; isFound: boolean } {
   if (arabicMatch) {
     return { year: parseInt(arabicMatch[1], 10), isFound: true };
   }
-  
+
   const chineseYearMatch = text.match(new RegExp(`([${CHINESE_NUMBER_CHARS.join('')}]+)`));
   if (chineseYearMatch) {
     const year = chineseNumberToArabic(chineseYearMatch[1]);
@@ -57,7 +57,7 @@ function extractYearFromText(text: string): { year: number; isFound: boolean } {
       return { year, isFound: true };
     }
   }
-  
+
   return { year: 0, isFound: false };
 }
 
@@ -79,9 +79,21 @@ export function parseChineseTime(timeText: string): ParsedTime {
       sortValue: 0,
     };
   }
-  
+
   const text = timeText.trim();
-  
+
+  // 处理纯数字年份（如 "100"、"350"）
+  if (/^\d+$/.test(text)) {
+    const year = parseInt(text, 10);
+    return {
+      eraName: '',
+      year,
+      isYuanNian: false,
+      originalText: text,
+      sortValue: year,
+    };
+  }
+
   const yuanNianMatch = text.match(/^(.+?)(元年|元年)$/) || text.match(/^(.+?)元[年]?$/);
   if (yuanNianMatch) {
     const eraName = yuanNianMatch[1].trim();
@@ -93,13 +105,13 @@ export function parseChineseTime(timeText: string): ParsedTime {
       sortValue: generateSortValue(eraName, 1, true),
     };
   }
-  
+
   const yearMatch = text.match(new RegExp(`^(.+?)(\\d+|[${CHINESE_NUMBER_CHARS.join('')}]+)年?$`));
   if (yearMatch) {
     const eraName = yearMatch[1].trim();
     const yearText = yearMatch[2];
     const year = chineseNumberToArabic(yearText) || parseInt(yearText, 10) || 0;
-    
+
     return {
       eraName,
       year,
@@ -108,7 +120,7 @@ export function parseChineseTime(timeText: string): ParsedTime {
       sortValue: generateSortValue(eraName, year, false),
     };
   }
-  
+
   const { year, isFound } = extractYearFromText(text);
   if (isFound) {
     const eraName = text.replace(/[\d零〇一二三四五六七八九十百千万年]/g, '').trim();
@@ -120,7 +132,7 @@ export function parseChineseTime(timeText: string): ParsedTime {
       sortValue: generateSortValue(eraName, year, false),
     };
   }
-  
+
   return {
     eraName: text,
     year: 0,
@@ -134,18 +146,18 @@ function generateSortValue(eraName: string, year: number, _isYuanNian: boolean):
   const eraHash = eraName.split('').reduce((acc, char, index) => {
     return acc + char.charCodeAt(0) * Math.pow(10, index % 5);
   }, 0);
-  
+
   return eraHash * 100000 + year;
 }
 
 export function compareTimes(a: string, b: string): number {
   const parsedA = parseChineseTime(a);
   const parsedB = parseChineseTime(b);
-  
+
   if (parsedA.eraName === parsedB.eraName) {
     return parsedA.year - parsedB.year;
   }
-  
+
   return parsedA.sortValue - parsedB.sortValue;
 }
 
@@ -161,11 +173,11 @@ export function formatTimeDisplay(parsed: ParsedTime): string {
   if (parsed.isYuanNian) {
     return `${parsed.eraName}元年`;
   }
-  
+
   if (parsed.year > 0) {
     return `${parsed.eraName}${parsed.year}年`;
   }
-  
+
   return parsed.originalText;
 }
 
@@ -178,16 +190,16 @@ export interface TimeRange {
 
 export function calculateTimeRange(times: string[]): TimeRange | null {
   if (times.length === 0) return null;
-  
+
   const parsedTimes = times
     .filter(t => t && t.trim())
     .map(t => parseChineseTime(t));
-  
+
   if (parsedTimes.length === 0) return null;
-  
+
   const sortValues = parsedTimes.map(p => p.sortValue);
   const years = parsedTimes.map(p => p.year);
-  
+
   return {
     minSortValue: Math.min(...sortValues),
     maxSortValue: Math.max(...sortValues),
@@ -204,18 +216,18 @@ export function calculateTimePosition(
   if (!timeText || !timeText.trim()) {
     return -1;
   }
-  
+
   const parsed = parseChineseTime(timeText);
-  
+
   const { minSortValue, maxSortValue } = timeRange;
-  
+
   if (minSortValue === maxSortValue) {
     return 50;
   }
-  
+
   const range = maxSortValue - minSortValue;
   const position = ((parsed.sortValue - minSortValue) / range) * (100 - 2 * padding) + padding;
-  
+
   return Math.max(padding, Math.min(100 - padding, position));
 }
 
@@ -242,23 +254,23 @@ export function calculateEraBasedPositions<T extends { id: string; eventDate?: s
   } = {}
 ): Array<T & { position: number }> {
   const { padding = 5, minSpacing = 2 } = options;
-  
+
   if (events.length === 0) return [];
-  
+
   const eventsWithDates = events.filter(e => e.eventDate && e.eventDate.trim());
-  
+
   if (eventsWithDates.length === 0) {
     return events.map((event, index) => ({
       ...event,
       position: padding + (index / Math.max(1, events.length - 1)) * (100 - 2 * padding),
     }));
   }
-  
+
   const sortedEras = [...eras].sort((a, b) => compareTimes(a.startDate || '', b.startDate || ''));
-  
+
   const eraEventsMap = new Map<string, T[]>();
   const orphanEvents: T[] = [];
-  
+
   events.forEach(event => {
     if (event.eraId) {
       if (!eraEventsMap.has(event.eraId)) {
@@ -269,18 +281,18 @@ export function calculateEraBasedPositions<T extends { id: string; eventDate?: s
       orphanEvents.push(event);
     }
   });
-  
+
   const eraRanges = new Map<string, { start: number; end: number }>();
-  
+
   sortedEras.forEach(era => {
     const eraEvents = eraEventsMap.get(era.id) || [];
     const sortedEraEvents = [...eraEvents]
       .filter(e => e.eventDate)
       .sort((a, b) => compareTimes(a.eventDate || '', b.eventDate || ''));
-    
+
     const startParsed = parseChineseTime(era.startDate || '');
     let startSortValue = startParsed.sortValue;
-    
+
     let endSortValue: number;
     if (era.endDate && era.endDate.trim()) {
       const endParsed = parseChineseTime(era.endDate);
@@ -292,94 +304,94 @@ export function calculateEraBasedPositions<T extends { id: string; eventDate?: s
     } else {
       endSortValue = startSortValue;
     }
-    
+
     if (sortedEraEvents.length > 0) {
       const firstEventParsed = parseChineseTime(sortedEraEvents[0].eventDate!);
       startSortValue = Math.min(startSortValue, firstEventParsed.sortValue);
-      
+
       const lastEventParsed = parseChineseTime(sortedEraEvents[sortedEraEvents.length - 1].eventDate!);
       endSortValue = Math.max(endSortValue, lastEventParsed.sortValue);
     }
-    
+
     eraRanges.set(era.id, { start: startSortValue, end: endSortValue });
   });
-  
+
   const allTimePoints: number[] = [];
-  
+
   sortedEras.forEach(era => {
     const range = eraRanges.get(era.id);
     if (range) {
       allTimePoints.push(range.start, range.end);
     }
   });
-  
+
   orphanEvents.forEach(event => {
     if (event.eventDate) {
       const parsed = parseChineseTime(event.eventDate);
       allTimePoints.push(parsed.sortValue);
     }
   });
-  
+
   if (allTimePoints.length === 0) {
     return events.map((event, index) => ({
       ...event,
       position: padding + (index / Math.max(1, events.length - 1)) * (100 - 2 * padding),
     }));
   }
-  
+
   const globalMin = Math.min(...allTimePoints);
   const globalMax = Math.max(...allTimePoints);
   const globalRange = globalMax - globalMin || 1;
-  
+
   const eraPositionRanges = new Map<string, { startPos: number; endPos: number }>();
-  
+
   sortedEras.forEach(era => {
     const range = eraRanges.get(era.id);
     if (range) {
       const startPos = padding + ((range.start - globalMin) / globalRange) * (100 - 2 * padding);
       const endPos = padding + ((range.end - globalMin) / globalRange) * (100 - 2 * padding);
-      eraPositionRanges.set(era.id, { 
-        startPos: Math.max(padding, startPos), 
-        endPos: Math.min(100 - padding, endPos) 
+      eraPositionRanges.set(era.id, {
+        startPos: Math.max(padding, startPos),
+        endPos: Math.min(100 - padding, endPos)
       });
     }
   });
-  
+
   const eventPositions = new Map<string, number>();
   const usedPositions: number[] = [];
-  
+
   const allEventsSorted = [...events]
     .filter(e => e.eventDate)
     .sort((a, b) => compareTimes(a.eventDate || '', b.eventDate || ''));
-  
+
   allEventsSorted.forEach(event => {
     const parsed = parseChineseTime(event.eventDate!);
     let position: number;
-    
+
     if (event.eraId && eraPositionRanges.has(event.eraId)) {
       const eraRange = eraRanges.get(event.eraId)!;
       const eraPosRange = eraPositionRanges.get(event.eraId)!;
       const eraTimeRange = eraRange.end - eraRange.start || 1;
-      
-      position = eraPosRange.startPos + 
+
+      position = eraPosRange.startPos +
         ((parsed.sortValue - eraRange.start) / eraTimeRange) * (eraPosRange.endPos - eraPosRange.startPos);
     } else {
       position = padding + ((parsed.sortValue - globalMin) / globalRange) * (100 - 2 * padding);
     }
-    
+
     for (const usedPos of usedPositions) {
       if (Math.abs(position - usedPos) < minSpacing) {
         position = Math.max(position, usedPos + minSpacing);
       }
     }
-    
+
     position = Math.max(padding, Math.min(100 - padding, position));
     eventPositions.set(event.id, position);
     usedPositions.push(position);
   });
-  
+
   const result: Array<T & { position: number }> = [];
-  
+
   events.forEach(event => {
     if (eventPositions.has(event.id)) {
       result.push({
@@ -396,7 +408,7 @@ export function calculateEraBasedPositions<T extends { id: string; eventDate?: s
       usedPositions.push(newPosition);
     }
   });
-  
+
   return result.sort((a, b) => a.position - b.position);
 }
 
@@ -408,58 +420,58 @@ export function calculateEventsPositions<T extends { eventDate?: string }>(
   } = {}
 ): Array<T & { position: number }> {
   const { padding = 5, minSpacing = 2 } = options;
-  
+
   if (events.length === 0) return [];
-  
+
   const eventsWithDates = events.filter(e => e.eventDate && e.eventDate.trim());
-  
+
   if (eventsWithDates.length === 0) {
     return events.map((event, index) => ({
       ...event,
       position: padding + (index / Math.max(1, events.length - 1)) * (100 - 2 * padding),
     }));
   }
-  
+
   const times = eventsWithDates.map(e => e.eventDate!);
   const timeRange = calculateTimeRange(times);
-  
+
   if (!timeRange) {
     return events.map((event, index) => ({
       ...event,
       position: padding + (index / Math.max(1, events.length - 1)) * (100 - 2 * padding),
     }));
   }
-  
-  const sortedEventsWithDates = [...eventsWithDates].sort((a, b) => 
+
+  const sortedEventsWithDates = [...eventsWithDates].sort((a, b) =>
     compareTimes(a.eventDate || '', b.eventDate || '')
   );
-  
+
   const positionsMap = new Map<string, number>();
-  
+
   sortedEventsWithDates.forEach(event => {
     const rawPosition = calculateTimePosition(event.eventDate!, timeRange, padding);
     positionsMap.set(event.eventDate!, rawPosition);
   });
-  
+
   const adjustedPositions = new Map<string, number>();
   const usedPositions: number[] = [];
-  
+
   sortedEventsWithDates.forEach(event => {
     let position = positionsMap.get(event.eventDate!)!;
-    
+
     for (const usedPos of usedPositions) {
       if (Math.abs(position - usedPos) < minSpacing) {
         position = Math.max(position, usedPos + minSpacing);
       }
     }
-    
+
     position = Math.min(position, 100 - padding);
     adjustedPositions.set(event.eventDate!, position);
     usedPositions.push(position);
   });
-  
+
   const result: Array<T & { position: number }> = [];
-  
+
   events.forEach(event => {
     if (event.eventDate && adjustedPositions.has(event.eventDate)) {
       result.push({
@@ -476,6 +488,6 @@ export function calculateEventsPositions<T extends { eventDate?: string }>(
       usedPositions.push(newPosition);
     }
   });
-  
+
   return result.sort((a, b) => a.position - b.position);
 }

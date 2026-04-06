@@ -9,6 +9,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<EventLevel>('normal');
   const [eventDate, setEventDate] = useState('');
+  const [eventEndDate, setEventEndDate] = useState('');
   const [icon, setIcon] = useState('📜');
   const [eraId, setEraId] = useState<string | undefined>();
   const [eventType, setEventType] = useState<EventType | undefined>(undefined);
@@ -19,6 +20,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
       setDescription(event.description || '');
       setLevel(event.level);
       setEventDate(event.eventDate || '');
+      setEventEndDate(event.eventEndDate || '');
       setIcon(event.icon || '📜');
       setEraId(event.eraId);
       setEventType(event.eventType);
@@ -27,7 +29,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
 
   const handleSubmit = () => {
     if (name.trim()) {
-      onSubmit({ name: name.trim(), description: description.trim(), level, eventDate: eventDate.trim(), icon, eraId, eventType });
+      onSubmit({ name: name.trim(), description: description.trim(), level, eventDate: eventDate.trim(), eventEndDate: eventEndDate.trim(), icon, eraId, eventType });
     }
   };
 
@@ -116,7 +118,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2 text-foreground">发生时间</label>
+            <label className="block text-sm font-medium mb-2 text-foreground">开始时间</label>
             <input
               type="text"
               value={eventDate}
@@ -127,15 +129,26 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
             <p className="text-xs text-muted-foreground mt-1">支持：元年、阿拉伯数字、中文数字</p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2 text-foreground">图标</label>
+            <label className="block text-sm font-medium mb-2 text-foreground">结束时间</label>
             <input
               type="text"
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              placeholder="emoji图标"
+              value={eventEndDate}
+              onChange={(e) => setEventEndDate(e.target.value)}
+              placeholder="如：阳阙历三年"
               className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-[border-color,box-shadow]"
             />
+            <p className="text-xs text-muted-foreground mt-1">可选，用于持续事件</p>
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2 text-foreground">图标</label>
+          <input
+            type="text"
+            value={icon}
+            onChange={(e) => setIcon(e.target.value)}
+            placeholder="emoji图标"
+            className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-[border-color,box-shadow]"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium mb-2 text-foreground">事件描述</label>

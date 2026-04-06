@@ -34,6 +34,12 @@ export const TimelineTooltip = ({ event, position }: TimelineTooltipProps) => {
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-4 flex items-center gap-1.5">
             <Calendar className="h-3 w-3" />
             {event.eventDate}
+            {event.eventEndDate && (
+              <>
+                <span className="text-gray-400">→</span>
+                {event.eventEndDate}
+              </>
+            )}
           </div>
         )}
       </div>

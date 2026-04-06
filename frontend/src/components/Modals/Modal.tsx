@@ -6,6 +6,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const FOCUSABLE_ELEMENTS = [
@@ -17,7 +18,22 @@ const FOCUSABLE_ELEMENTS = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
-export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+  };
+  const paddingClasses = {
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-6',
+  };
+  const titleSizeClasses = {
+    sm: 'text-base',
+    md: 'text-lg',
+    lg: 'text-lg',
+  };
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,7 +141,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
         aria-modal="true"
         aria-labelledby="modal-title"
         className={`
-          relative bg-background border border-border rounded-lg shadow-lg w-full max-w-md max-h-[85vh] flex flex-col z-10
+          relative bg-background border border-border rounded-lg shadow-lg w-full ${sizeClasses[size]} max-h-[85vh] flex flex-col z-10
           transition-all duration-200 ease-out
           ${isVisible 
             ? 'opacity-100 scale-100' 
@@ -133,19 +149,19 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
           }
         `}
       >
-        <div className="flex items-center justify-between p-6 pb-0 shrink-0">
-          <h3 id="modal-title" className="text-lg font-semibold">{title}</h3>
+        <div className={`flex items-center justify-between ${paddingClasses[size]} pb-0 shrink-0`}>
+          <h3 id="modal-title" className={`${titleSizeClasses[size]} font-semibold`}>{title}</h3>
           <button 
             onClick={onClose}
             aria-label="关闭对话框"
             className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/20"
           >
-            <X className="h-5 w-5" />
+            <X className={`${size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'}`} />
           </button>
         </div>
         
         <div className={`
-          overflow-y-auto overflow-x-hidden p-6 pt-4
+          overflow-y-auto overflow-x-hidden ${paddingClasses[size]} ${size === 'sm' ? 'pt-3' : 'pt-4'}
           transition-all duration-200 ease-out
           ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}
         `}>
