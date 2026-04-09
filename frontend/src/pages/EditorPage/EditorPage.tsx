@@ -504,8 +504,8 @@ export const EditorPage = () => {
     const deltaPercent = (deltaX / containerWidth) * 100;
     let newWidth = startWidthPercentRef.current + deltaPercent;
 
-    // 限制最小和最大宽度：最小 25%，最大 50%
-    newWidth = Math.max(25, Math.min(50, newWidth));
+    // 限制最小和最大宽度：最小 25%(1/4)，最大 33.3%(1/3)
+    newWidth = Math.max(25, Math.min(33.3, newWidth));
 
     setRightPanelWidth(newWidth);
   }, []);

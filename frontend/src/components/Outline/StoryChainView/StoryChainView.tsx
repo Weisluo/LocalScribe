@@ -1017,24 +1017,28 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
 
               return (
                 <div key={volume.id} className="rounded-xl overflow-hidden ring-1 ring-border/40 bg-card/20">
-                  <button
-                    onClick={() => toggleVolume(volume.id)}
+                  <div
                     className={`
                       w-full flex items-center gap-3 px-5 py-3.5 text-left
-                      transition-all duration-200 group
+                      transition-all duration-200 group cursor-pointer
                       ${isVolumeExpanded ? 'bg-accent/10' : 'hover:bg-accent/5'}
                     `}
                   >
-                    <div className={`transition-transform duration-200 ${isVolumeExpanded ? 'rotate-0' : '-rotate-90'}`}>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    <div
+                      onClick={() => toggleVolume(volume.id)}
+                      className="flex items-center gap-3 flex-1"
+                    >
+                      <div className={`transition-transform duration-200 ${isVolumeExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <BookOpen className="h-4 w-4 text-primary/60" />
+                      <span className="text-lg font-semibold text-foreground">
+                        第{vIndex + 1}卷：{volume.name}
+                      </span>
+                      <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                        {volume.acts.length} 幕
+                      </span>
                     </div>
-                    <BookOpen className="h-4 w-4 text-primary/60" />
-                    <span className="text-lg font-semibold text-foreground">
-                      第{vIndex + 1}卷：{volume.name}
-                    </span>
-                    <span className="ml-auto text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                      {volume.acts.length} 幕
-                    </span>
                     <button
                       onClick={(e) => handleCreateAct(e, volume.id)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1.5 rounded-md hover:bg-accent/20"
@@ -1042,7 +1046,7 @@ export const StoryChainView = ({ projectId, outlineData }: StoryChainViewProps) 
                     >
                       <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                     </button>
-                  </button>
+                  </div>
 
                   <div 
                     className={`

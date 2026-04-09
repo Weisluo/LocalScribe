@@ -213,6 +213,7 @@ export interface EraContentPanelProps {
 export interface EraTimelineProps {
   events: Event[];
   eraId: string;
+  theme?: EraTheme;
 }
 
 export interface CharacterReferenceProps {

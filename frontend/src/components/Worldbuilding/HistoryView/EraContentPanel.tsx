@@ -130,19 +130,19 @@ export const EraContentPanel = ({
             className={`relative px-4 py-3.5 text-sm leading-relaxed ${isStandalone ? '' : 'cursor-text'}`}
             style={{
               background: `linear-gradient(145deg,
-                rgba(248, 250, 252, 0.9) 0%,
-                rgba(241, 245, 249, 0.8) 50%,
-                rgba(248, 250, 252, 0.85) 100%
+                rgba(248, 250, 252, 0.6) 0%,
+                rgba(241, 245, 249, 0.4) 50%,
+                rgba(248, 250, 252, 0.2) 100%
               )`,
               boxShadow: `
                 inset 2px 2px 8px rgba(0, 0, 0, 0.04),
                 inset -1px -1px 5px rgba(255, 255, 255, 0.6),
-                inset 0 0 15px rgba(180, 165, 145, 0.04)
+                inset 0 0 15px ${themeConfig.accentColor}24
               `,
               borderRadius: '10px',
-              border: '1px solid rgba(100, 116, 139, 0.08)',
+              border: `1px solid ${themeConfig.accentColor}36`,
             }}
-            whileHover={isStandalone ? undefined : { boxShadow: 'inset 2px 2px 10px rgba(0, 0, 0, 0.06), inset -1px -1px 6px rgba(255, 255, 255, 0.7), inset 0 0 18px rgba(180, 165, 145, 0.06)' }}
+            whileHover={isStandalone ? undefined : { boxShadow: `inset 2px 2px 10px rgba(0, 0, 0, 0.06), inset -1px -1px 6px rgba(255, 255, 255, 0.7), inset 0 0 18px ${themeConfig.accentColor}0C` }}
             transition={{ duration: 0.2 }}
           >
             <p
@@ -163,17 +163,17 @@ export const EraContentPanel = ({
             className="relative px-4 py-3.5 text-sm leading-relaxed"
             style={{
               background: `linear-gradient(145deg,
-                rgba(248, 250, 252, 0.9) 0%,
-                rgba(241, 245, 249, 0.8) 50%,
-                rgba(248, 250, 252, 0.85) 100%
+                rgba(248, 250, 252, 0.6) 0%,
+                rgba(241, 245, 249, 0.4) 50%,
+                rgba(248, 250, 252, 0.2) 100%
               )`,
               boxShadow: `
                 inset 2px 2px 8px rgba(0, 0, 0, 0.04),
                 inset -1px -1px 5px rgba(255, 255, 255, 0.6),
-                inset 0 0 15px rgba(180, 165, 145, 0.04)
+                inset 0 0 15px ${themeConfig.accentColor}08
               `,
               borderRadius: '10px',
-              border: '1px solid rgba(100, 116, 139, 0.08)',
+              border: `1px solid ${themeConfig.accentColor}14`,
             }}
           >
             <textarea
@@ -219,8 +219,8 @@ export const EraContentPanel = ({
         transition={{ type: 'spring', stiffness: 280, damping: 28, delay: 0.12 }}
       >
         {!isStandalone && (
-          <div className="shrink-0 mr-5 self-stretch">
-            <EraTimeline events={events} eraId={era.id} />
+          <div className="shrink-0 mr-4 self-stretch">
+            <EraTimeline events={events} eraId={era.id} theme={era.theme} />
           </div>
         )}
 

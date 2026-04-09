@@ -418,10 +418,12 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
                 boxShadow: `
                   inset 2px 2px 8px rgba(0, 0, 0, 0.04),
                   inset -1px -1px 5px rgba(255, 255, 255, 0.6),
-                  inset 0 0 15px rgba(180, 165, 145, 0.04)
+                  inset 0 0 15px ${typeConfig ? `${typeConfig.color}08` : event.level === 'critical' ? 'rgba(99, 102, 241, 0.04)' : event.level === 'major' ? 'rgba(245, 158, 11, 0.04)' : 'rgba(100, 116, 139, 0.04)'}
                 `,
                 borderRadius: '10px',
-                border: event.level === 'critical' 
+                border: typeConfig 
+                  ? `1px solid ${typeConfig.color}14`
+                  : event.level === 'critical' 
                   ? '1px solid rgba(99, 102, 241, 0.1)' 
                   : event.level === 'major'
                   ? '1px solid rgba(245, 158, 11, 0.1)'

@@ -75,7 +75,7 @@ class ModuleType(str, Enum):
 # 基础 Schema
 class WorldBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="世界名称")
-    description: Optional[str] = Field(None, max_length=1000, description="世界描述")
+    description: Optional[str] = Field(None, description="世界描述")
     cover_image: Optional[str] = Field(None, max_length=500, description="封面图片 URL")
     tags: Optional[List[str]] = Field(None, max_length=10, description="标签列表")
 
@@ -124,7 +124,7 @@ class WorldTemplateResponse(WorldBase):
 class WorldModuleBase(BaseModel):
     module_type: ModuleType = Field(..., description="模块类型")
     name: str = Field(..., min_length=1, max_length=255, description="模块名称")
-    description: Optional[str] = Field(None, max_length=1000, description="模块描述")
+    description: Optional[str] = Field(None, description="模块描述")
     icon: Optional[str] = Field(None, max_length=100, description="模块图标")
     order_index: int = Field(0, ge=0, description="排序索引")
     is_collapsible: bool = Field(True, description="是否可折叠")
@@ -139,7 +139,7 @@ class WorldModuleUpdate(BaseModel):
     name: Optional[str] = Field(
         None, min_length=1, max_length=255, description="模块名称"
     )
-    description: Optional[str] = Field(None, max_length=1000, description="模块描述")
+    description: Optional[str] = Field(None, description="模块描述")
     icon: Optional[str] = Field(None, max_length=100, description="模块图标")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
     is_collapsible: Optional[bool] = Field(None, description="是否可折叠")
@@ -160,7 +160,7 @@ class WorldModuleResponse(WorldModuleBase):
 # 子模块 Schema
 class WorldSubmoduleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="子模块名称")
-    description: Optional[str] = Field(None, max_length=1000, description="子模块描述")
+    description: Optional[str] = Field(None, description="子模块描述")
     order_index: int = Field(0, ge=0, description="排序索引")
     color: Optional[str] = Field(
         None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）"
@@ -179,7 +179,7 @@ class WorldSubmoduleUpdate(BaseModel):
     name: Optional[str] = Field(
         None, min_length=1, max_length=255, description="子模块名称"
     )
-    description: Optional[str] = Field(None, max_length=1000, description="子模块描述")
+    description: Optional[str] = Field(None, description="子模块描述")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
     color: Optional[str] = Field(
         None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）"
@@ -247,7 +247,7 @@ class WorldModuleItemResponse(WorldModuleItemBase):
 # 世界实例 Schema
 class WorldInstanceBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="实例名称")
-    description: Optional[str] = Field(None, max_length=1000, description="实例描述")
+    description: Optional[str] = Field(None, description="实例描述")
     custom_data: Optional[Dict[str, Any]] = Field(None, description="自定义数据")
 
     @field_validator("custom_data")
@@ -267,7 +267,7 @@ class WorldInstanceUpdate(BaseModel):
     name: Optional[str] = Field(
         None, min_length=1, max_length=255, description="实例名称"
     )
-    description: Optional[str] = Field(None, max_length=1000, description="实例描述")
+    description: Optional[str] = Field(None, description="实例描述")
     custom_data: Optional[Dict[str, Any]] = Field(None, description="自定义数据")
 
 
@@ -476,7 +476,7 @@ class WorldviewPreset(BaseModel):
 class WorldviewConfigBase(BaseModel):
     type: WorldviewType
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: Optional[str] = Field(None)
     timeScale: TimeScale = TimeScale.MEDIEVAL
     techLevel: TechLevel = TechLevel.MEDIEVAL
     magicLevel: MagicLevel = MagicLevel.NONE
@@ -494,7 +494,7 @@ class WorldviewConfigCreate(WorldviewConfigBase):
 
 class WorldviewConfigUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: Optional[str] = Field(None)
     timeScale: Optional[TimeScale] = None
     techLevel: Optional[TechLevel] = None
     magicLevel: Optional[MagicLevel] = None
