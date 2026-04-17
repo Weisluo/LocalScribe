@@ -23,6 +23,7 @@ from app.models.character import (
     CharacterArtifact,
     CharacterCard,
     CharacterRelationship,
+    CharacterSnapshot,
 )
 from app.models.project import Project
 from app.schemas.character import (
@@ -45,6 +46,9 @@ from app.schemas.character import (
     CharacterRelationshipResponse,
     CharacterRelationshipUpdate,
     CharacterSimpleResponse,
+    CharacterSnapshotCreate,
+    CharacterSnapshotResponse,
+    CharacterSnapshotUpdate,
     CharacterStats,
     CharacterUpdate,
 )
@@ -104,6 +108,42 @@ def build_character_query(db: Session, project_id: str):
 
 
 # ==================== 人物主接口 ====================
+
+
+@router.get(
+    "/projects/{project_id}/characters/details",
+    response_model=List[CharacterDetailResponse],
+    summary="批量获取人物详情",
+    description="""
+批量获取指定项目下所有人物的完整详情，包括别名、卡片、关系、器物。
+
+**性能优化：**
+- 使用 selectinload 预加载所有关联数据
+- 一次请求获取所有数据，避免 N+1 查询
+
+**适用场景：**
+- 人物关系云图需要所有人物的完整数据
+- 批量展示人物详情
+    """,
+)
+def list_characters_details(
+    project_id: str = Path(..., description="项目ID"),
+    db: Session = Depends(get_db),
+):
+    """批量获取人物详情"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"项目不存在: {project_id}",
+        )
+
+    characters = (
+        build_character_query(db, project_id)
+        .order_by(Character.order_index, Character.name)
+        .all()
+    )
+    return characters
 
 
 @router.get(
@@ -1183,4 +1223,181 @@ def delete_artifact(
 
     db.delete(artifact)
     db.commit()
+    return None
+
+
+# ==================== 快照管理接口 ====================
+
+
+@router.get(
+    "/projects/{project_id}/characters/{character_id}/snapshots",
+    response_model=List[CharacterSnapshotResponse],
+    summary="获取人物快照列表",
+    description="""
+获取指定人物的快照列表，按创建时间倒序排列。
+
+**返回数据包含：**
+- 快照ID、标题、类型
+- 位置信息（卷/幕/章ID）
+- 属性数据（JSON格式）
+- 创建和更新时间
+    """,
+)
+def list_snapshots(
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
+    db: Session = Depends(get_db),
+):
+    """获取人物快照列表"""
+    get_character_or_404(db, character_id, project_id)
+    snapshots = (
+        db.query(CharacterSnapshot)
+        .filter(CharacterSnapshot.character_id == character_id)
+        .order_by(CharacterSnapshot.created_at.desc())
+        .all()
+    )
+    return snapshots
+
+
+@router.post(
+    "/projects/{project_id}/characters/{character_id}/snapshots",
+    response_model=CharacterSnapshotResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建人物快照",
+    description="""
+为指定人物创建一个新的状态快照。
+
+**请求数据：**
+- snapshot_type: 快照类型（如：chapter, event, custom）
+- title: 快照标题（必填）
+- description: 快照描述（可选）
+- volume_id/act_id/chapter_id: 位置信息（可选）
+- attributes: 属性数据（JSON格式，存储人物在该时间点的各项属性）
+
+**使用场景：**
+- 记录人物在特定章节的状态
+- 保存人物属性变化的历史记录
+    """,
+)
+def create_snapshot(
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
+    snapshot_data: CharacterSnapshotCreate = Body(..., description="快照创建数据"),
+    db: Session = Depends(get_db),
+):
+    """创建人物快照"""
+    character = get_character_or_404(db, character_id, project_id)
+
+    snapshot = CharacterSnapshot(
+        character_id=character_id,
+        snapshot_type=snapshot_data.snapshot_type.value,
+        title=snapshot_data.title,
+        description=snapshot_data.description,
+        volume_id=snapshot_data.volume_id,
+        act_id=snapshot_data.act_id,
+        chapter_id=snapshot_data.chapter_id,
+        attributes=snapshot_data.attributes,
+    )
+    db.add(snapshot)
+    db.commit()
+    db.refresh(snapshot)
+
+    logger.info(f"创建快照成功: {character.name} - {snapshot.title}")
+    return snapshot
+
+
+@router.put(
+    "/projects/{project_id}/characters/{character_id}/snapshots/{snapshot_id}",
+    response_model=CharacterSnapshotResponse,
+    summary="更新人物快照",
+    description="""
+更新指定快照的信息。
+
+**可更新字段：**
+- 快照类型、标题、描述
+- 位置信息（卷/幕/章ID）
+- 属性数据（JSON格式）
+
+**注意：**
+- 仅更新请求中包含的字段（部分更新）
+    """,
+)
+def update_snapshot(
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
+    snapshot_id: str = Path(..., description="快照ID"),
+    snapshot_data: CharacterSnapshotUpdate = Body(..., description="快照更新数据"),
+    db: Session = Depends(get_db),
+):
+    """更新人物快照"""
+    _ = get_character_or_404(db, character_id, project_id)
+
+    snapshot = (
+        db.query(CharacterSnapshot)
+        .filter(
+            CharacterSnapshot.id == snapshot_id,
+            CharacterSnapshot.character_id == character_id,
+        )
+        .first()
+    )
+    if not snapshot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"快照不存在: {snapshot_id}",
+        )
+
+    update_data = snapshot_data.model_dump(exclude_unset=True)
+
+    if "snapshot_type" in update_data and update_data["snapshot_type"]:
+        update_data["snapshot_type"] = update_data["snapshot_type"].value
+
+    for field, value in update_data.items():
+        setattr(snapshot, field, value)
+
+    db.commit()
+    db.refresh(snapshot)
+
+    logger.info(f"更新快照成功: {snapshot.title}")
+    return snapshot
+
+
+@router.delete(
+    "/projects/{project_id}/characters/{character_id}/snapshots/{snapshot_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="删除人物快照",
+    description="""
+删除指定的人物快照。
+
+**警告：**
+- 此操作不可逆
+- 删除后无法恢复快照数据
+    """,
+)
+def delete_snapshot(
+    project_id: str = Path(..., description="项目ID"),
+    character_id: str = Path(..., description="人物ID"),
+    snapshot_id: str = Path(..., description="快照ID"),
+    db: Session = Depends(get_db),
+):
+    """删除人物快照"""
+    _ = get_character_or_404(db, character_id, project_id)
+
+    snapshot = (
+        db.query(CharacterSnapshot)
+        .filter(
+            CharacterSnapshot.id == snapshot_id,
+            CharacterSnapshot.character_id == character_id,
+        )
+        .first()
+    )
+    if not snapshot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"快照不存在: {snapshot_id}",
+        )
+
+    db.delete(snapshot)
+    db.commit()
+
+    logger.info(f"删除快照成功: {snapshot_id}")
     return None

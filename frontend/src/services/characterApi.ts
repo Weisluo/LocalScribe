@@ -21,6 +21,9 @@ import type {
   UpdateArtifactRequest,
   BatchDeleteRequest,
   BatchUpdateOrderRequest,
+  CharacterSnapshot,
+  CreateSnapshotRequest,
+  UpdateSnapshotRequest,
 } from '@/types/character';
 
 /**
@@ -95,6 +98,13 @@ export const getCharacterStats = (projectId: string) => {
 export const getCharactersSimple = (projectId: string, excludeId?: string) => {
   const config = excludeId ? { params: { exclude_id: excludeId } } : undefined;
   return api.get<CharacterSimple[]>(`/projects/${projectId}/characters/simple`, config);
+};
+
+/**
+ * 批量获取人物详情（包含别名、卡片、关系、器物）
+ */
+export const getCharactersWithDetails = (projectId: string) => {
+  return api.get<Character[]>(`/projects/${projectId}/characters/details`);
 };
 
 // ==================== 别名管理 ====================
@@ -217,6 +227,36 @@ export const deleteArtifact = (projectId: string, characterId: string, artifactI
   return api.delete<void>(`/projects/${projectId}/characters/${characterId}/artifacts/${artifactId}`);
 };
 
+// ==================== 快照管理 ====================
+
+/**
+ * 获取快照列表
+ */
+export const getSnapshots = (projectId: string, characterId: string) => {
+  return api.get<CharacterSnapshot[]>(`/projects/${projectId}/characters/${characterId}/snapshots`);
+};
+
+/**
+ * 创建快照
+ */
+export const createSnapshot = (projectId: string, characterId: string, data: CreateSnapshotRequest) => {
+  return api.post<CharacterSnapshot>(`/projects/${projectId}/characters/${characterId}/snapshots`, data);
+};
+
+/**
+ * 更新快照
+ */
+export const updateSnapshot = (projectId: string, characterId: string, snapshotId: string, data: UpdateSnapshotRequest) => {
+  return api.put<CharacterSnapshot>(`/projects/${projectId}/characters/${characterId}/snapshots/${snapshotId}`, data);
+};
+
+/**
+ * 删除快照
+ */
+export const deleteSnapshot = (projectId: string, characterId: string, snapshotId: string) => {
+  return api.delete<void>(`/projects/${projectId}/characters/${characterId}/snapshots/${snapshotId}`);
+};
+
 // ==================== 导出 API 对象 ====================
 
 export const characterApi = {
@@ -230,6 +270,7 @@ export const characterApi = {
   batchUpdateCharacterOrder,
   getCharacterStats,
   getCharactersSimple,
+  getCharactersWithDetails,
 
   // 别名管理
   getAliases,
@@ -254,6 +295,12 @@ export const characterApi = {
   createArtifact,
   updateArtifact,
   deleteArtifact,
+
+  // 快照管理
+  getSnapshots,
+  createSnapshot,
+  updateSnapshot,
+  deleteSnapshot,
 };
 
 export default characterApi;

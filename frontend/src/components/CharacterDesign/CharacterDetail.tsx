@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -12,9 +12,13 @@ import {
   X,
   Settings,
   ArrowRightLeft,
+  Camera,
+  Clock,
+  GitCompare,
 } from 'lucide-react';
 import { characterApi } from '@/services/characterApi';
 import { api } from '@/utils/request';
+import { toast } from '@/stores/toastStore';
 import { AliasEditor } from './AliasEditor';
 import { InfoCard } from './InfoCard';
 import { RelationshipList } from './RelationshipList';
@@ -22,6 +26,9 @@ import { ArtifactList } from './ArtifactList';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { CharacterEditForm } from './CharacterEditForm';
 import { EmptyState } from './EmptyState';
+import { SnapshotEditorModal } from './SnapshotEditorModal';
+import { SnapshotCompareModal } from './SnapshotCompareModal';
+import { CharacterTimeline } from './CharacterTimeline';
 import type {
   CharacterLevel,
   CharacterGender,
@@ -29,6 +36,8 @@ import type {
   RelationType,
   ArtifactRarity,
   CardContentItem,
+  CharacterSnapshot,
+  CharacterSnapshotType,
 } from '@/types/character';
 import type { TreeNodeType } from '@/types';
 import {
@@ -37,6 +46,9 @@ import {
   CharacterLevelLabels,
 } from '@/types/character';
 import type { ProjectOutline } from '@/components/Outline/types';
+
+// 支持快照系统的角色等级
+const SNAPSHOT_SUPPORTED_LEVELS: CharacterLevel[] = ['protagonist', 'major_support'];
 
 interface CharacterDetailProps {
   projectId: string;
@@ -72,12 +84,27 @@ export const CharacterDetail = ({
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [convertLevel, setConvertLevel] = useState<CharacterLevel>('minor');
 
+  // 快照相关状态
+  const [activeTab, setActiveTab] = useState<'overview' | 'timeline'>('overview');
+  const [isSnapshotEditorOpen, setIsSnapshotEditorOpen] = useState(false);
+  const [editingSnapshot, setEditingSnapshot] = useState<CharacterSnapshot | null>(null);
+  const [isSnapshotCompareOpen, setIsSnapshotCompareOpen] = useState(false);
+  const [deletingSnapshotId, setDeletingSnapshotId] = useState<string | null>(null);
+
   // 获取人物详情
   const { data: character, isLoading } = useQuery({
     queryKey: ['character', projectId, characterId],
     queryFn: () => characterApi.getCharacter(projectId, characterId),
     enabled: !!projectId && !!characterId,
   });
+
+  // 当人物数据加载完成时，如果不是主角或重要配角，自动切换到概览标签
+  useEffect(() => {
+    if (character && !SNAPSHOT_SUPPORTED_LEVELS.includes(character.level) && activeTab === 'timeline') {
+      setActiveTab('overview');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character, activeTab]);
 
   // 获取大纲数据
   const { data: outline } = useQuery({
@@ -93,6 +120,13 @@ export const CharacterDetail = ({
     enabled: !!projectId && !!characterId,
   });
 
+  // 获取人物快照列表
+  const { data: snapshots = [], isLoading: isLoadingSnapshots } = useQuery({
+    queryKey: ['character-snapshots', projectId, characterId],
+    queryFn: () => characterApi.getSnapshots(projectId, characterId),
+    enabled: !!projectId && !!characterId,
+  });
+
   // 更新人物
   const updateCharacterMutation = useMutation({
     mutationFn: (data: Parameters<typeof characterApi.updateCharacter>[2]) =>
@@ -100,6 +134,7 @@ export const CharacterDetail = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['character', projectId, characterId] });
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['characters-with-details', projectId] });
     },
   });
 
@@ -126,6 +161,7 @@ export const CharacterDetail = ({
     onSuccess: () => {
       onDelete?.(characterId);
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['characters-with-details', projectId] });
     },
   });
 
@@ -139,6 +175,7 @@ export const CharacterDetail = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['character', projectId, characterId] });
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['characters-with-details', projectId] });
       setShowConvertModal(false);
     },
   });
@@ -150,6 +187,7 @@ export const CharacterDetail = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['character', projectId, characterId] });
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['characters-with-details', projectId] });
     },
   });
 
@@ -159,6 +197,7 @@ export const CharacterDetail = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['character', projectId, characterId] });
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['characters-with-details', projectId] });
     },
   });
 
@@ -167,6 +206,7 @@ export const CharacterDetail = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['character', projectId, characterId] });
       queryClient.invalidateQueries({ queryKey: ['characters', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['characters-with-details', projectId] });
     },
   });
 
@@ -259,6 +299,49 @@ export const CharacterDetail = ({
     },
   });
 
+  // 快照操作 mutations
+  const createSnapshotMutation = useMutation({
+    mutationFn: (data: {
+      snapshot_type: CharacterSnapshotType;
+      volume_id?: string;
+      act_id?: string;
+      chapter_id?: string;
+      title: string;
+      description?: string;
+      attributes: Record<string, unknown>;
+    }) => characterApi.createSnapshot(projectId, characterId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['character-snapshots', projectId, characterId] });
+    },
+    onError: (error: Error) => {
+      console.error('创建快照失败:', error);
+      toast.error('创建快照失败', error.message || '未知错误');
+    },
+  });
+
+  const updateSnapshotMutation = useMutation({
+    mutationFn: ({ snapshotId, data }: { snapshotId: string; data: Parameters<typeof characterApi.updateSnapshot>[3] }) =>
+      characterApi.updateSnapshot(projectId, characterId, snapshotId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['character-snapshots', projectId, characterId] });
+    },
+    onError: (error: Error) => {
+      console.error('更新快照失败:', error);
+      toast.error('更新快照失败', error.message || '未知错误');
+    },
+  });
+
+  const deleteSnapshotMutation = useMutation({
+    mutationFn: (snapshotId: string) => characterApi.deleteSnapshot(projectId, characterId, snapshotId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['character-snapshots', projectId, characterId] });
+    },
+    onError: (error: Error) => {
+      console.error('删除快照失败:', error);
+      toast.error('删除快照失败', error.message || '未知错误');
+    },
+  });
+
   // 处理删除人物
   const handleDelete = useCallback(() => {
     setShowDeleteModal(true);
@@ -301,6 +384,62 @@ export const CharacterDetail = ({
     },
     [uploadImageMutation]
   );
+
+  // 快照操作回调
+  const handleOpenCreateSnapshot = useCallback(() => {
+    setEditingSnapshot(null);
+    setIsSnapshotEditorOpen(true);
+  }, []);
+
+  const handleOpenEditSnapshot = useCallback((snapshot: CharacterSnapshot) => {
+    setEditingSnapshot(snapshot);
+    setIsSnapshotEditorOpen(true);
+  }, []);
+
+  const handleSaveSnapshot = useCallback(
+    (data: {
+      snapshot_type: CharacterSnapshotType;
+      volume_id?: string;
+      act_id?: string;
+      chapter_id?: string;
+      title: string;
+      description?: string;
+      attributes: Record<string, unknown>;
+    }) => {
+      if (editingSnapshot) {
+        updateSnapshotMutation.mutate(
+          { snapshotId: editingSnapshot.id, data },
+          {
+            onSuccess: () => {
+              setIsSnapshotEditorOpen(false);
+              setEditingSnapshot(null);
+            },
+          }
+        );
+      } else {
+        createSnapshotMutation.mutate(data, {
+          onSuccess: () => {
+            setIsSnapshotEditorOpen(false);
+          },
+        });
+      }
+    },
+    [editingSnapshot, createSnapshotMutation, updateSnapshotMutation]
+  );
+
+  const handleDeleteSnapshot = useCallback(
+    (snapshotId: string) => {
+      setDeletingSnapshotId(snapshotId);
+    },
+    []
+  );
+
+  const handleConfirmDeleteSnapshot = useCallback(() => {
+    if (deletingSnapshotId) {
+      deleteSnapshotMutation.mutate(deletingSnapshotId);
+      setDeletingSnapshotId(null);
+    }
+  }, [deletingSnapshotId, deleteSnapshotMutation]);
 
   // 获取别名显示
   const aliasDisplay = useMemo(() => {
@@ -471,7 +610,7 @@ export const CharacterDetail = ({
       <div className={`flex-1 overflow-y-auto ${isEditing && isBasicInfoEditing ? 'hidden' : ''}`}>
         {/* 头部区域 */}
         <div 
-          className="pt-12 px-6 pb-6 border-b border-border/60"
+          className="pt-12 px-6 pb-4 border-b border-border/60"
           onMouseEnter={() => setIsHeaderHovered(true)}
           onMouseLeave={() => setIsHeaderHovered(false)}
         >
@@ -712,7 +851,58 @@ export const CharacterDetail = ({
           </div>
         </div>
 
-        {/* 小卡片区域 */}
+        {/* 标签页导航 */}
+        <div className="px-6 pb-2 border-b border-border/60">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
+                activeTab === 'overview'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
+              }`}
+            >
+              <User className="h-4 w-4" />
+              概览
+              {activeTab === 'overview' && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                />
+              )}
+            </button>
+            {/* 只有主角和重要配角才显示成长记录标签 */}
+            {SNAPSHOT_SUPPORTED_LEVELS.includes(character.level) && (
+              <button
+                onClick={() => setActiveTab('timeline')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
+                  activeTab === 'timeline'
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
+                }`}
+              >
+                <Clock className="h-4 w-4" />
+                成长记录
+                {snapshots.length > 0 && (
+                  <span className="ml-1 text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">
+                    {snapshots.length}
+                  </span>
+                )}
+                {activeTab === 'timeline' && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  />
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 概览标签内容 */}
+        {activeTab === 'overview' && (
+          <>
+            {/* 小卡片区域 */}
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">详细信息</h3>
@@ -857,6 +1047,49 @@ export const CharacterDetail = ({
             </div>
           </div>
         </div>
+            </>
+          )}
+
+        {/* 成长记录标签内容 */}
+        {activeTab === 'timeline' && (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Camera className="h-5 w-5 text-primary" />
+                  人物成长快照
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  记录人物在故事不同阶段的状态变化
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsSnapshotCompareOpen(true)}
+                  disabled={snapshots.length < 2}
+                  className="flex items-center gap-2 px-4 py-2 text-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={snapshots.length < 2 ? '需要至少2个快照才能进行对比' : '对比快照'}
+                >
+                  <GitCompare className="h-4 w-4" />
+                  对比快照
+                </button>
+                <button
+                  onClick={handleOpenCreateSnapshot}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  添加快照
+                </button>
+              </div>
+            </div>
+            <CharacterTimeline
+              snapshots={snapshots}
+              onEdit={handleOpenEditSnapshot}
+              onDelete={handleDeleteSnapshot}
+              isLoading={isLoadingSnapshots}
+            />
+          </div>
+        )}
       </div>
 
       {/* 删除确认弹窗 */}
@@ -868,6 +1101,17 @@ export const CharacterDetail = ({
         message={`确定要删除人物 "${character?.name || ''}" 吗？此操作将同时删除该人物的所有信息（别名、卡片、关系、器物），且不可恢复。`}
         confirmText="确认删除"
         isLoading={deleteCharacterMutation.isPending}
+      />
+
+      {/* 快照删除确认弹窗 */}
+      <DeleteConfirmModal
+        isOpen={deletingSnapshotId !== null}
+        onClose={() => setDeletingSnapshotId(null)}
+        onConfirm={handleConfirmDeleteSnapshot}
+        title="删除快照"
+        message="确定要删除这个快照吗？此操作不可恢复。"
+        confirmText="确认删除"
+        isLoading={deleteSnapshotMutation.isPending}
       />
 
       {/* 转换历史人物确认弹窗 */}
@@ -948,6 +1192,28 @@ export const CharacterDetail = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 快照编辑器弹窗 */}
+      <SnapshotEditorModal
+        isOpen={isSnapshotEditorOpen}
+        onClose={() => {
+          setIsSnapshotEditorOpen(false);
+          setEditingSnapshot(null);
+        }}
+        onSave={handleSaveSnapshot}
+        character={character}
+        snapshot={editingSnapshot || undefined}
+        projectId={projectId}
+        tree={tree}
+        isLoading={createSnapshotMutation.isPending || updateSnapshotMutation.isPending}
+      />
+
+      {/* 快照对比弹窗 */}
+      <SnapshotCompareModal
+        isOpen={isSnapshotCompareOpen}
+        onClose={() => setIsSnapshotCompareOpen(false)}
+        snapshots={snapshots}
+      />
     </div>
   );
 };

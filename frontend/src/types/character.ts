@@ -410,3 +410,49 @@ export interface UpdateArtifactRequest {
   image?: string;
   order_index?: number;
 }
+
+// ==================== 快照相关 ====================
+
+export type CharacterSnapshotType = 'volume' | 'act' | 'chapter' | 'custom';
+
+// 快照类型显示名称
+export const SnapshotTypeLabels: Record<CharacterSnapshotType, string> = {
+  volume: '卷快照',
+  act: '幕快照',
+  chapter: '章快照',
+  custom: '自定义快照',
+};
+
+export interface CharacterSnapshot {
+  id: string;
+  character_id: string;
+  snapshot_type: CharacterSnapshotType;
+  volume_id?: string;
+  act_id?: string;
+  chapter_id?: string;
+  title: string;
+  description?: string;
+  attributes: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSnapshotRequest {
+  snapshot_type: CharacterSnapshotType;
+  volume_id?: string;
+  act_id?: string;
+  chapter_id?: string;
+  title: string;
+  description?: string;
+  attributes?: Record<string, unknown>;
+}
+
+export interface UpdateSnapshotRequest {
+  snapshot_type?: CharacterSnapshotType;
+  volume_id?: string;
+  act_id?: string;
+  chapter_id?: string;
+  title?: string;
+  description?: string;
+  attributes?: Record<string, unknown>;
+}

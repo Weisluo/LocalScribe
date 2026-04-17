@@ -85,12 +85,9 @@ export const CharacterDesignView = ({ projectId, onNavigateToNote, initialCharac
     }
   }, [selectedCharacterId]);
 
-  // 切换到云图视图时清空选中
+  // 切换视图模式
   const handleSwitchView = useCallback((mode: ViewMode) => {
     setViewMode(mode);
-    if (mode === 'cloud') {
-      setSelectedCharacterId(null);
-    }
   }, []);
 
   return (

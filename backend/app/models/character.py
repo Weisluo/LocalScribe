@@ -173,6 +173,11 @@ class Character(Base):
         cascade="all, delete-orphan",
         order_by="CharacterArtifact.order_index",
     )
+    snapshots: Mapped[List["CharacterSnapshot"]] = relationship(
+        back_populates="character",
+        cascade="all, delete-orphan",
+        order_by="CharacterSnapshot.created_at.desc()",
+    )
 
     def __repr__(self) -> str:
         return f"<Character {self.name}>"
@@ -433,3 +438,69 @@ class CharacterArtifact(Base):
 
     def __repr__(self) -> str:
         return f"<CharacterArtifact {self.name}>"
+
+
+class CharacterSnapshot(Base):
+    """
+    人物快照表
+
+    存储人物在特定时间点或特定章节的状态快照
+    用于追踪人物属性、状态的变化历程
+    """
+
+    __tablename__ = "character_snapshots"
+
+    # 主键
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+
+    # 所属人物
+    character_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("characters.id"), nullable=False
+    )
+
+    # 快照类型
+    snapshot_type: Mapped[str] = mapped_column(
+        String(50), nullable=False, comment="快照类型"
+    )
+
+    # 位置信息（可选）
+    volume_id: Mapped[Optional[str]] = mapped_column(
+        String(36), nullable=True, comment="卷ID"
+    )
+    act_id: Mapped[Optional[str]] = mapped_column(
+        String(36), nullable=True, comment="幕ID"
+    )
+    chapter_id: Mapped[Optional[str]] = mapped_column(
+        String(36), nullable=True, comment="章ID"
+    )
+
+    # 快照信息
+    title: Mapped[str] = mapped_column(
+        String(255), nullable=False, comment="快照标题"
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, comment="快照描述"
+    )
+
+    # 属性数据（JSON格式，存储人物在该时间点的各项属性）
+    attributes: Mapped[dict] = mapped_column(
+        JSON, default=dict, comment="属性数据"
+    )
+
+    # 元数据
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    # ORM关系
+    character: Mapped["Character"] = relationship(back_populates="snapshots")
+
+    def __repr__(self) -> str:
+        return f"<CharacterSnapshot {self.title}>"

@@ -215,3 +215,7 @@ Avoid creating migration branches. Always base new migrations on the current hea
 - The frontend dev server proxies `/api` to `http://localhost:8000` (see `frontend/vite.config.ts`).
 - Backend environment variables are in `backend/.env` (currently only `DATABASE_URL`).
 - The project uses Chinese‑language comments and logs throughout.
+
+## Frontend Development Guidelines
+
+- **使用 toast 替代 alert** - 使用 Sonner 的 `toast.success()` / `toast.error()` 替代原生 `alert()`

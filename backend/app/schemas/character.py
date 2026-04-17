@@ -436,3 +436,56 @@ class CharacterStats(BaseModel):
     total: int = Field(..., description="人物总数")
     by_level: Dict[str, int] = Field(default_factory=dict, description="按等级统计")
     by_gender: Dict[str, int] = Field(default_factory=dict, description="按性别统计")
+
+
+# ==================== 人物快照 Schema ====================
+
+
+class CharacterSnapshotType(str, Enum):
+    """快照类型枚举"""
+
+    VOLUME = "volume"  # 卷快照
+    ACT = "act"  # 幕快照
+    CHAPTER = "chapter"  # 章快照
+    CUSTOM = "custom"  # 自定义快照
+
+
+class CharacterSnapshotBase(BaseModel):
+    """人物快照基础 Schema"""
+
+    snapshot_type: CharacterSnapshotType = Field(..., description="快照类型")
+    title: str = Field(..., min_length=1, max_length=255, description="快照标题")
+    description: Optional[str] = Field(None, description="快照描述")
+    volume_id: Optional[str] = Field(None, max_length=36, description="卷ID")
+    act_id: Optional[str] = Field(None, max_length=36, description="幕ID")
+    chapter_id: Optional[str] = Field(None, max_length=36, description="章ID")
+    attributes: Dict[str, Any] = Field(default_factory=dict, description="属性数据(JSON格式)")
+
+
+class CharacterSnapshotCreate(CharacterSnapshotBase):
+    """创建快照 Schema"""
+
+    pass
+
+
+class CharacterSnapshotUpdate(BaseModel):
+    """更新快照 Schema"""
+
+    snapshot_type: Optional[CharacterSnapshotType] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    volume_id: Optional[str] = Field(None, max_length=36)
+    act_id: Optional[str] = Field(None, max_length=36)
+    chapter_id: Optional[str] = Field(None, max_length=36)
+    attributes: Optional[Dict[str, Any]] = None
+
+
+class CharacterSnapshotResponse(CharacterSnapshotBase):
+    """快照响应 Schema"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    character_id: str
+    created_at: datetime
+    updated_at: datetime

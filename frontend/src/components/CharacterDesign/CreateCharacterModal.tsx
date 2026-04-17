@@ -33,7 +33,7 @@ export const CreateCharacterModal = ({
   isLoading = false,
 }: CreateCharacterModalProps) => {
   const [name, setName] = useState('');
-  const [level, setLevel] = useState<CharacterLevel>('support');
+  const [level, setLevel] = useState<CharacterLevel>('protagonist');
   const [gender, setGender] = useState<CharacterGender>('unknown');
 
   const handleConfirm = useCallback(() => {
@@ -45,7 +45,7 @@ export const CreateCharacterModal = ({
 
   const handleClose = useCallback(() => {
     setName('');
-    setLevel('support');
+    setLevel('protagonist');
     setGender('unknown');
     onClose();
   }, [onClose]);
@@ -89,10 +89,20 @@ export const CreateCharacterModal = ({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && name.trim()) {
+                      handleConfirm();
+                    }
+                  }}
                   placeholder="输入人物姓名"
                   className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                   autoFocus
                 />
+                {name.trim() === '' && (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    请输入人物姓名后创建
+                  </p>
+                )}
               </div>
 
               <div>
