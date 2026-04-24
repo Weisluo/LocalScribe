@@ -333,7 +333,7 @@ export const cardVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: 'blur(0px)',
+    filter: 'blur(0.01px)',
     transition: {
       type: 'spring' as const,
       stiffness: 260,
@@ -359,7 +359,7 @@ export const eraVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: 'blur(0px)',
+    filter: 'blur(0.01px)',
     transition: {
       type: 'spring' as const,
       stiffness: 260,

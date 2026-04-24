@@ -21,17 +21,33 @@ export const defaultCarouselConfig: Required<CarouselConfig> = {
   exitScale: 0.65,
 
   spring: {
-    stiffness: 200,
-    damping: 25,
-    mass: 1.2,
+    stiffness: 300,
+    damping: 30,
+    mass: 0.8,
   },
 };
 
 export const cardTransition = {
   type: 'spring' as const,
-  stiffness: 200,
-  damping: 25,
-  mass: 1.2,
+  stiffness: 300,
+  damping: 30,
+  mass: 0.8,
+};
+
+// 内部元素缩放动画配置（更柔和）
+export const innerTransition = {
+  type: 'spring' as const,
+  stiffness: 350,
+  damping: 35,
+  mass: 0.6,
+};
+
+// Filter 动画配置（使用更保守的参数避免性能问题）
+export const filterTransition = {
+  type: 'spring' as const,
+  stiffness: 250,
+  damping: 35,
+  mass: 0.5,
 };
 
 export const SWIPE_THRESHOLD = 60;

@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { type PanInfo } from 'framer-motion';
-import { flushSync } from 'react-dom';
 import { UseCardCarouselOptions, UseCardCarouselReturn, ViewMode } from '../types';
 import { SWIPE_THRESHOLD, SWIPE_VELOCITY_THRESHOLD } from '../config';
 
-export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardCarouselReturn<T> {
+export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardCarouselReturn {
   const {
     items,
     activeIndex: controlledActiveIndex,
@@ -28,14 +27,11 @@ export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardC
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>(defaultViewMode);
   const viewMode = isViewModeControlled ? controlledViewMode : internalViewMode;
 
-  const [direction, setDirection] = useState(0);
-  const [exitingCard, setExitingCard] = useState<{ index: number; item: T; direction: number } | null>(null);
   const [hierarchyStack, setHierarchyStack] = useState<number[]>([]);
 
   const prevActiveIndexRef = useRef<number>(activeIndex);
   const isTransitioningRef = useRef(false);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isInternalSwitchRef = useRef(false);
 
   const clearTransitionTimer = useCallback(() => {
     if (transitionTimerRef.current) {
@@ -45,9 +41,7 @@ export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardC
   }, []);
 
   const finishTransition = useCallback(() => {
-    setExitingCard(null);
     isTransitioningRef.current = false;
-    isInternalSwitchRef.current = false;
   }, []);
 
   const visibleRange = useMemo(() => {
@@ -88,27 +82,16 @@ export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardC
   }, [viewMode, hierarchyStack, activeIndex]);
 
   useEffect(() => {
-    if (
-      prevActiveIndexRef.current !== activeIndex &&
-      !isTransitioningRef.current &&
-      !isInternalSwitchRef.current
-    ) {
-      const prevIdx = prevActiveIndexRef.current;
-      const prevItem = items[prevIdx];
-      if (prevIdx >= 0 && prevIdx < items.length && activeIndex >= 0 && activeIndex < items.length) {
-        const newDirection = activeIndex > prevIdx ? 1 : -1;
-        setDirection(newDirection);
-        setExitingCard({ index: prevIdx, item: prevItem, direction: newDirection });
-        isTransitioningRef.current = true;
+    if (prevActiveIndexRef.current !== activeIndex) {
+      isTransitioningRef.current = true;
 
-        clearTransitionTimer();
-        transitionTimerRef.current = setTimeout(() => {
-          finishTransition();
-        }, 600);
-      }
+      clearTransitionTimer();
+      transitionTimerRef.current = setTimeout(() => {
+        finishTransition();
+      }, 500);
     }
     prevActiveIndexRef.current = activeIndex;
-  }, [activeIndex, items, clearTransitionTimer, finishTransition]);
+  }, [activeIndex, clearTransitionTimer, finishTransition]);
 
   const handleSwitch = useCallback(
     (rawIndex: number) => {
@@ -118,17 +101,6 @@ export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardC
         if (!loop) return;
         targetIndex = ((targetIndex % items.length) + items.length) % items.length;
       }
-
-      const currentItem = items[activeIndex];
-      const newDirection = targetIndex > activeIndex ? 1 : -1;
-
-      isInternalSwitchRef.current = true;
-      flushSync(() => {
-        setDirection(newDirection);
-        if (currentItem) {
-          setExitingCard({ index: activeIndex, item: currentItem, direction: newDirection });
-        }
-      });
 
       isTransitioningRef.current = true;
 
@@ -142,9 +114,9 @@ export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardC
       clearTransitionTimer();
       transitionTimerRef.current = setTimeout(() => {
         finishTransition();
-      }, 600);
+      }, 500);
     },
-    [activeIndex, items, loop, isControlled, onChange, clearTransitionTimer, finishTransition]
+    [items, loop, isControlled, onChange, clearTransitionTimer, finishTransition]
   );
 
   const handleDragEnd = useCallback(
@@ -237,8 +209,6 @@ export function useCardCarousel<T>(options: UseCardCarouselOptions<T>): UseCardC
 
   return {
     activeIndex,
-    direction,
-    exitingCard,
     viewMode,
     visibleRange,
     relatedIndices,

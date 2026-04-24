@@ -474,7 +474,7 @@ export const EraTimeline = ({ events, eraId: _eraId, theme }: EraTimelineProps) 
                   top: position.hasDuration ? `-${glowSpread}px` : `-${glowSpread + DOT_SIZE / 2}px`,
                   marginTop: position.hasDuration ? 0 : DOT_SIZE / 2,
                   backgroundColor: typeColor,
-                  filter: `blur(${glowSpread}px)`,
+                  filter: `blur(${Math.max(0.1, glowSpread)}px)`,
                   borderRadius: position.hasDuration ? '4px' : '50%',
                   zIndex: -1,
                 }}

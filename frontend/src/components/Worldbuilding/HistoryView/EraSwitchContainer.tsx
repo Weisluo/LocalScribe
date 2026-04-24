@@ -19,7 +19,7 @@ const EraTabs = ({
     <div className="flex items-center justify-center gap-1 mb-4">
       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
       <div className="grid auto-cols-fr grid-flow-col items-center gap-1.5 px-4">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="sync">
           {sortedEras.map((era) => {
             const theme = era.theme ? ERA_THEME_CONFIG[era.theme] : ERA_THEME_CONFIG.ochre;
             const isActive = era.id === activeEraId;

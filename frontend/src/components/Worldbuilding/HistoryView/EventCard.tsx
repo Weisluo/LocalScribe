@@ -458,7 +458,7 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
                 </div>
               ) : (
                 <p 
-                  className="relative z-10 text-foreground/85 cursor-text hover:text-foreground transition-colors group/desc"
+                  className="relative z-10 text-foreground/85 cursor-text hover:text-foreground transition-colors group/desc whitespace-pre-wrap break-words"
                   onClick={handleStartEditDesc}
                   title="点击编辑描述"
                 >

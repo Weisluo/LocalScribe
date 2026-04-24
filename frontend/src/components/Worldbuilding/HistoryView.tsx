@@ -541,9 +541,9 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-lg transition-colors"
+                  className="absolute right-2 top-1/2 -mt-[11px] flex items-center justify-center h-6 w-6 hover:bg-muted rounded-full transition-colors"
                 >
-                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  <X className="h-4 w-4 text-muted-foreground" />
                 </motion.button>
               )}
             </AnimatePresence>

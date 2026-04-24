@@ -77,8 +77,6 @@ export interface AnimatedCardProps<T> {
   index: number;
   context: CardContext;
   config: Required<CarouselConfig>;
-  isExiting?: boolean;
-  exitDirection?: number;
   onClick?: () => void;
   onDragEnd?: (_event: MouseEvent | TouchEvent | PointerEvent, info: import('framer-motion').PanInfo) => void;
   renderItem: (item: T, context: CardContext) => React.ReactNode;
@@ -100,10 +98,8 @@ export interface CardConnectionsProps {
   renderConnection?: (fromIndex: number, toIndex: number, fromRect: DOMRect, toRect: DOMRect) => React.ReactNode;
 }
 
-export interface UseCardCarouselReturn<T> {
+export interface UseCardCarouselReturn {
   activeIndex: number;
-  direction: number;
-  exitingCard: { index: number; item: T; direction: number } | null;
   viewMode: ViewMode;
   visibleRange: { start: number; end: number };
   relatedIndices: number[];

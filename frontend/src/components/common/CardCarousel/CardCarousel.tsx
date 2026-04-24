@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CardCarouselProps, CardContext, ViewMode } from './types';
 import { AnimatedCard } from './AnimatedCard';
 import { CardTabs } from './CardTabs';
@@ -48,8 +48,6 @@ export function CardCarousel<T>({
 
   const {
     activeIndex,
-    direction,
-    exitingCard,
     viewMode,
     relatedIndices,
     primaryIndex,
@@ -109,7 +107,6 @@ export function CardCarousel<T>({
     const position = index - activeIndex;
     if (position >= 0 && position < visibleCount) return true;
     if (showSideCards && (position === -1 || position === visibleCount)) return true;
-    if (exitingCard?.index === index) return true;
 
     return false;
   };
@@ -160,31 +157,26 @@ export function CardCarousel<T>({
           perspective: config.perspective,
         }}
       >
-        <AnimatePresence mode="popLayout" initial={false}>
-          {items.map((item, index) => {
-            if (!shouldRenderCard(index)) return null;
+        {items.map((item, index) => {
+          if (!shouldRenderCard(index)) return null;
 
-            const context = getCardContext(index, viewMode);
-            const isExiting = exitingCard?.index === index;
-            const cardKey = getItemId ? getItemId(item, index) : String(index);
+          const context = getCardContext(index, viewMode);
+          const cardKey = getItemId ? getItemId(item, index) : String(index);
 
-            return (
-              <AnimatedCard<T>
-                key={cardKey}
-                item={item}
-                index={index}
-                context={context}
-                config={config}
-                isExiting={isExiting}
-                exitDirection={isExiting ? exitingCard.direction : direction}
-                onClick={() => handleSwitch(index)}
-                onDragEnd={handleDragEnd}
-                renderItem={renderItem}
-                enableDrag={enableDrag}
-              />
-            );
-          })}
-        </AnimatePresence>
+          return (
+            <AnimatedCard<T>
+              key={cardKey}
+              item={item}
+              index={index}
+              context={context}
+              config={config}
+              onClick={() => handleSwitch(index)}
+              onDragEnd={handleDragEnd}
+              renderItem={renderItem}
+              enableDrag={enableDrag}
+            />
+          );
+        })}
         {relatedIndices.length > 0 && (
           <CardConnectionsLayer
             connections={relatedIndices.map((ri) => ({ from: activeIndex, to: ri }))}
