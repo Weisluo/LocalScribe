@@ -1,5 +1,5 @@
-﻿# LocalScribe Project Startup Script (Windows)
-# Usage: Run .\start.ps1 in PowerShell
+﻿# LocalScribe 项目启动脚本 (Windows)
+# 使用方法: 在 PowerShell 中运行 .\start.ps1
 
 param(
     [switch]$BackendOnly,
@@ -14,11 +14,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Save original directory at script start
+# 脚本启动时保存原始目录
 $script:OriginalDir = Get-Location
 
 # ========================================
-# Check Execution Policy
+# 检查执行策略
 # ========================================
 $CurrentPolicy = Get-ExecutionPolicy -Scope Process
 if ($CurrentPolicy -eq "Restricted" -or $CurrentPolicy -eq "AllSigned") {
@@ -34,7 +34,7 @@ if ($CurrentPolicy -eq "Restricted" -or $CurrentPolicy -eq "AllSigned") {
 }
 
 # ========================================
-# Color Output Functions
+# 颜色输出函数
 # ========================================
 function Write-Header {
     param($Message)
@@ -47,11 +47,11 @@ function Write-Header {
 function Write-Step { param($Step, $Message) Write-Host "[$Step] $Message" -ForegroundColor Cyan }
 function Write-Success { param($Message) Write-Host "[OK] $Message" -ForegroundColor Green }
 function Write-Warning { param($Message) Write-Host "[WARN] $Message" -ForegroundColor Yellow }
-function Write-Error { param($Message) Write-Host "[ERROR] $Message" -ForegroundColor Red }
+function Write-ErrorMsg { param($Message) Write-Host "[ERROR] $Message" -ForegroundColor Red }
 function Write-Info { param($Message) Write-Host "[INFO] $Message" -ForegroundColor Gray }
 
 # ========================================
-# Get Project Root Directory
+# 获取项目根目录
 # ========================================
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BackendDir = Join-Path $ProjectRoot "backend"
@@ -60,11 +60,86 @@ $VenvDir = Join-Path $BackendDir "venv"
 $DataDir = Join-Path $BackendDir "data"
 $UploadsDir = Join-Path $BackendDir "uploads"
 
-# Python executable path (venv or global)
-$PythonExe = if ($UseGlobalPython -or -not (Test-Path $VenvDir)) { "python" } else { Join-Path $VenvDir "Scripts\python.exe" }
+# 查找可用的 Python 解释器
+function Find-Python {
+    # 1. 首先尝试使用 Get-Command 查找候选命令
+    $candidates = @("python", "python3", "py")
+    foreach ($cmd in $candidates) {
+        $command = Get-Command $cmd -ErrorAction SilentlyContinue
+        if ($command) {
+            try {
+                $version = & $command.Source --version 2>&1
+                if ($version -match "Python 3\.(\d+)") {
+                    return $command.Source
+                }
+            } catch {
+                continue
+            }
+        }
+    }
+
+    # 2. 检查 Windows 常见 Python 安装路径
+    $commonPaths = @(
+        # Windows Store Python
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe",
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe",
+        # 常见安装路径 (用户目录)
+        "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+        # 常见安装路径 (系统目录)
+        "C:\Python3*\python.exe",
+        "C:\Program Files\Python3*\python.exe",
+        "C:\Program Files (x86)\Python3*\python.exe"
+    )
+
+    foreach ($path in $commonPaths) {
+        if ($path -contains "*") {
+            # 处理通配符路径
+            $matchedItems = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | 
+                Sort-Object FullName -Descending | Select-Object -First 1
+            if ($matchedItems) {
+                $path = $matchedItems.FullName
+            } else {
+                continue
+            }
+        }
+
+        if (Test-Path $path) {
+            try {
+                $version = & $path --version 2>&1
+                if ($version -match "Python 3\.(\d+)") {
+                    return $path
+                }
+            } catch {
+                continue
+            }
+        }
+    }
+
+    # 3. 最后尝试原始方式作为后备
+    foreach ($cmd in $candidates) {
+        try {
+            $version = & $cmd --version 2>&1
+            if ($version -match "Python 3\.(\d+)") {
+                return $cmd
+            }
+        } catch {
+            continue
+        }
+    }
+
+    return $null
+}
+
+# Python 可执行文件路径 (venv 或全局)
+$GlobalPython = Find-Python
+if (-not $GlobalPython) {
+    Write-ErrorMsg "Python not found, please install Python 3.10+"
+    exit 1
+}
+$PythonExe = if ($UseGlobalPython -or -not (Test-Path $VenvDir)) { $GlobalPython } else { Join-Path $VenvDir "Scripts\python.exe" }
 
 # ========================================
-# Error Handling and Cleanup
+# 错误处理和清理
 # ========================================
 $script:Processes = @()
 
@@ -76,15 +151,15 @@ function Register-Process {
 function Stop-ProcessTree {
     param([int]$ParentProcessId)
     try {
-        # Get child processes
+        # 获取子进程
         $children = Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $ParentProcessId }
         foreach ($child in $children) {
             Stop-ProcessTree -ParentProcessId $child.ProcessId
         }
-        # Stop the parent process
+        # 停止父进程
         Stop-Process -Id $ParentProcessId -Force -ErrorAction SilentlyContinue
     } catch {
-        # Process may already be gone
+        # 进程可能已经结束
     }
 }
 
@@ -95,35 +170,44 @@ function Cleanup {
         foreach ($proc in $script:Processes) {
             if ($proc -and -not $proc.HasExited) {
                 try {
-                    # Stop process tree to ensure child processes are also terminated
+                    # 停止进程树以确保子进程也被终止
                     Stop-ProcessTree -ParentProcessId $proc.Id
                     Write-Info "Stopped process PID $($proc.Id)"
                 } catch {
-                    # Process may already be gone
+                    # 进程可能已经结束
                 }
             }
         }
-        # Also clean up any remaining processes on our ports (use actual ports if available)
+        # 清理端口上剩余的进程（使用实际端口）
         if (-not $FrontendOnly -and $script:ActualBackendPort) {
-            Stop-ProcessOnPort -Port $script:ActualBackendPort -Confirm:$false
+            Stop-ProcessOnPort -Port $script:ActualBackendPort -Force
         }
         if (-not $BackendOnly -and $script:ActualFrontendPort) {
-            Stop-ProcessOnPort -Port $script:ActualFrontendPort -Confirm:$false
+            Stop-ProcessOnPort -Port $script:ActualFrontendPort -Force
         }
         Write-Success "Cleanup completed"
     } catch {
-        # Ignore cleanup errors
+        # 忽略清理错误
     }
-    # Always restore original directory
+    # 始终恢复原始目录
     if ($script:OriginalDir) {
         Set-Location $script:OriginalDir -ErrorAction SilentlyContinue
     }
 }
 
-Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Cleanup }
+# Ctrl+C 处理 — 确保 finally 块能执行清理
+$script:CtrlCPressed = $false
+try {
+    [Console]::CancelKeyPress = {
+        $script:CtrlCPressed = $true
+        Write-Host "`n[INFO] Ctrl+C pressed, shutting down..." -ForegroundColor Yellow
+    }
+} catch {
+    # 在某些 PowerShell 宿主中可能不支持，忽略
+}
 
 # ========================================
-# Check Node.js Version (>= 22.x)
+# 检查 Node.js 版本 (>= 22.x)
 # ========================================
 function Test-NodeVersion {
     try {
@@ -139,12 +223,12 @@ function Test-NodeVersion {
 }
 
 # ========================================
-# Install Node.js (using fnm)
+# 安装 Node.js (使用 fnm)
 # ========================================
 function Install-NodeJS {
     Write-Step "Node.js" "Node.js 22.x required..."
 
-    # Detect if in China
+    # 检测是否在中国
     $isCN = $false
     try {
         $null = Invoke-WebRequest -Uri "https://www.google.com" -TimeoutSec 3 -ErrorAction Stop
@@ -153,7 +237,7 @@ function Install-NodeJS {
         Write-Info "China network detected, using mirror..."
     }
 
-    # Check if fnm is installed
+    # 检查 fnm 是否已安装
     $fnmInstalled = $null -ne (Get-Command fnm -ErrorAction SilentlyContinue)
 
     if (-not $fnmInstalled) {
@@ -164,16 +248,40 @@ function Install-NodeJS {
                 $env:FNM_NODE_DIST_MIRROR = "https://npmmirror.com/mirrors/node"
             }
             winget install Schniz.fnm
-            Write-Success "fnm installed, please restart terminal and run script again"
-            exit 1
+            Write-Success "fnm installed"
+
+            # 配置 PowerShell 配置文件（下次打开终端自动加载）
+            if (-not (Test-Path $profile)) {
+                New-Item $profile -Force | Out-Null
+            }
+            $profileContent = Get-Content $profile -Raw -ErrorAction SilentlyContinue
+            $fnmInitLine = 'fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression'
+            if ($profileContent -notmatch [regex]::Escape($fnmInitLine)) {
+                Add-Content $profile $fnmInitLine
+                Write-Success "fnm auto-initialization added to PowerShell profile"
+            }
         } catch {
-            Write-Error "fnm installation failed, please install Node.js 22.x manually"
+            Write-ErrorMsg "fnm installation failed, please install Node.js 22.x manually"
             Write-Info "Download: https://nodejs.org/dist/v22.11.0/node-v22.11.0-x64.msi"
             exit 1
         }
     }
 
-    # Install Node.js 22 using fnm
+    # 确保 fnm 在当前会话中可用（Windows 默认安装路径）
+    $fnmDir = $env:FNM_DIR
+    if (-not $fnmDir) {
+        $fnmDir = "$env:APPDATA\fnm"
+    }
+    if (Test-Path $fnmDir) {
+        $env:PATH = "$fnmDir;$env:PATH"
+        $env:FNM_DIR = $fnmDir
+    }
+
+    # 初始化 fnm 环境（让 fnm use/default 在当前会话生效，避免报错）
+    $fnmEnv = fnm env --shell powershell 2>&1 | Out-String
+    Invoke-Expression $fnmEnv
+
+    # 使用 fnm 安装 Node.js 22
     Write-Step "Node.js" "Installing Node.js 22.x using fnm..."
     if ($isCN) {
         $env:FNM_NODE_DIST_MIRROR = "https://npmmirror.com/mirrors/node"
@@ -182,25 +290,16 @@ function Install-NodeJS {
     fnm use 22
     fnm default 22
 
-    # Reload environment variables via fnm
-    $fnmEnv = fnm env --power-shell | Out-String
-    if ($fnmEnv) {
-        Invoke-Expression $fnmEnv
-    }
-
-    # Also update PATH directly as fallback
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "User") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-
     if (Test-NodeVersion) {
         Write-Success "Node.js $(node --version) installed"
     } else {
-        Write-Error "Node.js version verification failed"
+        Write-ErrorMsg "Node.js version verification failed"
         exit 1
     }
 }
 
 # ========================================
-# Show Migration Repair Menu
+# 显示迁移修复菜单
 # ========================================
 function Show-MigrationMenu {
     Write-Host ""
@@ -226,7 +325,7 @@ function Show-MigrationMenu {
 }
 
 # ========================================
-# Check and Fix Database Migrations
+# 检查并修复数据库迁移
 # ========================================
 function Test-AndFixMigrations {
     Write-Step "Database" "Checking migration status..."
@@ -242,17 +341,24 @@ function Test-AndFixMigrations {
             return $false
         }
 
-        # Get current migration version (using cmd to avoid PowerShell error handling)
-        $currentRevOutput = cmd /c "$PythonExe -m alembic current 2>&1" | Out-String
-        # Match 12-character hex revision ID (alembic revision format)
-        $currentRev = $currentRevOutput | Select-String -Pattern "[a-f0-9]{12}" | Select-Object -First 1
-        $currentRev = if ($currentRev) { $currentRev.Matches[0].Value } else { "none" }
+        # 临时关闭终止错误处理，避免 alembic 的 stderr 日志触发异常
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            # 获取当前迁移版本（2>&1 将 stderr 合并到 stdout 避免错误记录）
+            $currentRevOutput = & $PythonExe -m alembic current 2>&1 | Out-String
+            # 匹配 12 字符十六进制修订 ID (alembic 修订格式)
+            $currentRev = $currentRevOutput | Select-String -Pattern "[a-f0-9]{12}" | Select-Object -First 1
+            $currentRev = if ($currentRev) { $currentRev.Matches[0].Value } else { "none" }
 
-        # Get latest migration version
-        $headRevOutput = cmd /c "$PythonExe -m alembic heads 2>&1" | Out-String
-        # Match 12-character hex revision ID
-        $headRev = $headRevOutput | Select-String -Pattern "[a-f0-9]{12}" | Select-Object -First 1
-        $headRev = if ($headRev) { $headRev.Matches[0].Value } else { "none" }
+            # 获取最新迁移版本
+            $headRevOutput = & $PythonExe -m alembic heads 2>&1 | Out-String
+            # 匹配 12 字符十六进制修订 ID
+            $headRev = $headRevOutput | Select-String -Pattern "[a-f0-9]{12}" | Select-Object -First 1
+            $headRev = if ($headRev) { $headRev.Matches[0].Value } else { "none" }
+        } finally {
+            $ErrorActionPreference = $prevEAP
+        }
 
         Write-Step "Database" "Current: $currentRev, Latest: $headRev"
 
@@ -271,7 +377,7 @@ function Test-AndFixMigrations {
                     return $false
                 }
                 default {
-                    Write-Error "Invalid option"
+                    Write-ErrorMsg "Invalid option"
                     exit 1
                 }
             }
@@ -286,7 +392,7 @@ function Test-AndFixMigrations {
         $needsReset = $true
     }
 
-    # Create data directory
+    # 创建数据目录
     if (-not (Test-Path $DataDir)) {
         New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
     }
@@ -295,7 +401,7 @@ function Test-AndFixMigrations {
 }
 
 # ========================================
-# Find Available Port
+# 查找可用端口
 # ========================================
 function Get-AvailablePort {
     param([int]$StartPort)
@@ -316,44 +422,46 @@ function Get-AvailablePort {
 }
 
 # ========================================
-# Stop Process on Port
+# 停止端口上的进程
 # ========================================
 function Stop-ProcessOnPort {
     param(
         [int]$Port,
-        [switch]$Confirm = $true
+        [switch]$Force
     )
-    $connections = netstat -ano | Select-String ":$Port\s+.*LISTENING"
+    try {
+        $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop
+    } catch {
+        return
+    }
     foreach ($conn in $connections) {
-        if ($conn -match "\s+(\d+)\s*$") {
-            $processId = $Matches[1]
-            $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
-            $procName = if ($proc) { $proc.ProcessName } else { "unknown" }
+        $processId = $conn.OwningProcess
+        $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        $procName = if ($proc) { $proc.ProcessName } else { "unknown" }
 
-            if ($Confirm -and -not $NonInteractive) {
-                $choice = Read-Host "Port $Port is occupied by $procName (PID: $processId). Kill it? [Y/n]"
-                if ($choice -ne "" -and $choice -notmatch "^[Yy]$") {
-                    continue
-                }
+        if (-not $Force -and -not $NonInteractive) {
+            $choice = Read-Host "Port $Port is occupied by $procName (PID: $processId). Kill it? [Y/n]"
+            if ($choice -ne "" -and $choice -notmatch "^[Yy]$") {
+                continue
             }
+        }
 
-            Write-Warning "Stopping $procName on port $Port (PID: $processId)"
-            
-            if ($proc) {
-                Stop-ProcessTree -ParentProcessId $processId
-            } else {
-                $children = Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $processId }
-                foreach ($child in $children) {
-                    Write-Warning "Stopping orphan child process (PID: $($child.ProcessId))"
-                    Stop-ProcessTree -ParentProcessId $child.ProcessId
-                }
+        Write-Warning "Stopping $procName on port $Port (PID: $processId)"
+        
+        if ($proc) {
+            Stop-ProcessTree -ParentProcessId $processId
+        } else {
+            $children = Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $processId }
+            foreach ($child in $children) {
+                Write-Warning "Stopping orphan child process (PID: $($child.ProcessId))"
+                Stop-ProcessTree -ParentProcessId $child.ProcessId
             }
         }
     }
 }
 
 # ========================================
-# Wait for Service to be Ready
+# 等待服务就绪
 # ========================================
 function Wait-ForService {
     param(
@@ -377,33 +485,62 @@ function Wait-ForService {
 }
 
 # ========================================
-# Main Program
+# 等待端口释放
+# ========================================
+function Wait-PortReleased {
+    param(
+        [int]$Port,
+        [int]$MaxWait = 10
+    )
+    $waited = 0
+    while ($waited -lt $MaxWait) {
+        Start-Sleep -Milliseconds 500
+        $waited++
+        try {
+            $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $Port)
+            $listener.Start()
+            $listener.Stop()
+            return
+        } catch {
+            if ($listener) { $listener.Stop() }
+        }
+    }
+}
+
+# ========================================
+# 主程序
 # ========================================
 function Main {
     Write-Header "LocalScribe Project Startup Script"
 
+    # 验证互斥标志
+    if ($BackendOnly -and $FrontendOnly) {
+        Write-ErrorMsg "-BackendOnly and -FrontendOnly cannot be used together"
+        exit 1
+    }
+
     # ========================================
-    # 1. Check Environment
+    # 1. 检查环境
     # ========================================
     Write-Step "1/6" "Checking environment..."
 
-    # Check Python
+    # 检查 Python
     try {
-        $PythonVersion = python --version 2>&1
+        $PythonVersion = & $GlobalPython --version 2>&1
         if ($PythonVersion -match "Python 3\.(\d+)") {
             $MinorVersion = [int]$Matches[1]
             if ($MinorVersion -lt 10) {
-                Write-Error "Python 3.10+ required, current: $PythonVersion"
+                Write-ErrorMsg "Python 3.10+ required, current: $PythonVersion"
                 exit 1
             }
             Write-Success "Python version: $PythonVersion"
         }
     } catch {
-        Write-Error "Python not found, please install Python 3.10+"
+        Write-ErrorMsg "Python not found, please install Python 3.10+"
         exit 1
     }
 
-    # Check Node.js
+    # 检查 Node.js
     if (-not $BackendOnly) {
         if (-not (Test-NodeVersion)) {
             if (Get-Command node -ErrorAction SilentlyContinue) {
@@ -421,7 +558,7 @@ function Main {
                 if ($choice -eq "" -or $choice -match "^[Yy]$") {
                     Install-NodeJS
                 } else {
-                    Write-Error "Node.js 22.x required but not installed"
+                    Write-ErrorMsg "Node.js 22.x required but not installed"
                     exit 1
                 }
             }
@@ -431,38 +568,55 @@ function Main {
     }
 
     # ========================================
-    # 2. Backend Dependencies
+    # 2. 后端依赖
     # ========================================
     if (-not $FrontendOnly) {
         Write-Host ""
         Write-Step "2/6" "Setting up Python virtual environment and installing backend dependencies..."
 
         if (-not (Test-Path $BackendDir)) {
-            Write-Error "Backend directory not found: $BackendDir"
+            Write-ErrorMsg "Backend directory not found: $BackendDir"
             exit 1
         }
 
         Set-Location $BackendDir
 
-        # Create virtual environment if not exists and not using global Python
+        # 如果不存在虚拟环境且不使用全局 Python，则创建虚拟环境
         if (-not $UseGlobalPython -and -not (Test-Path $VenvDir)) {
             Write-Step "Venv" "Creating virtual environment..."
-            python -m venv $VenvDir
+            & $GlobalPython -m venv $VenvDir
+            if ($LASTEXITCODE -ne 0) {
+                Write-ErrorMsg "Virtual environment creation failed"
+                exit 1
+            }
             Write-Success "Virtual environment created"
+            # 创建 venv 后更新 PythonExe 指向 venv 内的 Python
+            $PythonExe = Join-Path $VenvDir "Scripts\python.exe"
         } elseif ($UseGlobalPython) {
             Write-Info "Using global Python environment"
         } else {
             Write-Success "Virtual environment already exists"
         }
 
-        # Install backend dependencies
-        Write-Step "Deps" "Installing backend dependencies..."
-        & $PythonExe -m pip install --upgrade pip
-        & $PythonExe -m pip install -r (Join-Path $BackendDir "requirements.txt")
-        & $PythonExe -m pip install -r (Join-Path $BackendDir "requirements-dev.txt")
-        Write-Success "Backend dependencies installed"
+        # 检查依赖是否已安装
+        Write-Step "Deps" "Checking backend dependencies..."
+        $depsInstalled = $false
+        try {
+            $null = & $PythonExe -c "import fastapi, sqlalchemy, alembic, uvicorn" 2>$null
+            $depsInstalled = $true
+        } catch {}
 
-        # Verify alembic installation
+        if (-not $depsInstalled) {
+            Write-Step "Deps" "Installing backend dependencies..."
+            & $PythonExe -m pip install --upgrade pip
+            & $PythonExe -m pip install -r (Join-Path $BackendDir "requirements.txt")
+            & $PythonExe -m pip install -r (Join-Path $BackendDir "requirements-dev.txt")
+            Write-Success "Backend dependencies installed"
+        } else {
+            Write-Success "Backend dependencies already installed"
+        }
+
+        # 验证 alembic 安装
         Write-Step "Verify" "Checking alembic installation..."
         try {
             $alembicVersion = & $PythonExe -c "import alembic; print(alembic.__version__)" 2>$null
@@ -473,17 +627,7 @@ function Main {
         }
     }
 
-    # ========================================
-    # 3. Check and Fix Database Migrations
-    # ========================================
-    $needsDbInit = $false
-    if (-not $FrontendOnly) {
-        Write-Host ""
-        Write-Step "3/6" "Checking and fixing database migrations..."
-        $needsDbInit = Test-AndFixMigrations
-    }
-
-    # Create required directories (even in SetupOnly mode)
+    # 创建必需的目录（即使在仅设置模式下）
     if (-not (Test-Path $DataDir)) {
         New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
     }
@@ -491,13 +635,12 @@ function Main {
         New-Item -ItemType Directory -Path $UploadsDir -Force | Out-Null
     }
 
-    # Exit if setup only
+    # 如果是仅设置模式则退出（跳过迁移检查——用户只想安装依赖）
     if ($SetupOnly) {
         Write-Header "Setup Complete!"
         Write-Info "Run the following commands to start services:"
         Write-Host "  Backend: cd backend; .\venv\Scripts\python.exe -m uvicorn app.main:app --reload"
         Write-Host "  Frontend: cd frontend; npm run dev"
-        # Restore original directory before exit
         if ($script:OriginalDir) {
             Set-Location $script:OriginalDir
         }
@@ -505,34 +648,47 @@ function Main {
     }
 
     # ========================================
-    # 4. Frontend Dependencies
+    # 3. 检查并修复数据库迁移
+    # ========================================
+    if (-not $FrontendOnly) {
+        Write-Host ""
+        Write-Step "3/6" "Checking and fixing database migrations..."
+        Test-AndFixMigrations | Out-Null
+    }
+
+    # ========================================
+    # 4. 前端依赖
     # ========================================
     if (-not $BackendOnly) {
         Write-Host ""
         Write-Step "4/6" "Installing frontend Node.js dependencies..."
 
         if (-not (Test-Path $FrontendDir)) {
-            Write-Error "Frontend directory not found: $FrontendDir"
+            Write-ErrorMsg "Frontend directory not found: $FrontendDir"
             exit 1
         }
 
         Set-Location $FrontendDir
 
         if (-not (Test-Path (Join-Path $FrontendDir "package.json"))) {
-            Write-Error "package.json not found"
+            Write-ErrorMsg "package.json not found"
             exit 1
         }
 
-        npm install
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Frontend dependencies installation failed"
-            exit 1
+        if (Test-Path (Join-Path $FrontendDir "node_modules")) {
+            Write-Success "Frontend dependencies already installed"
+        } else {
+            npm install
+            if ($LASTEXITCODE -ne 0) {
+                Write-ErrorMsg "Frontend dependencies installation failed"
+                exit 1
+            }
+            Write-Success "Frontend dependencies installed"
         }
-        Write-Success "Frontend dependencies installed"
     }
 
     # ========================================
-    # 5. Database Migration
+    # 5. 数据库迁移
     # ========================================
     if (-not $FrontendOnly) {
         Write-Host ""
@@ -542,13 +698,13 @@ function Main {
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Database initialized"
         } else {
-            Write-Error "Database initialization failed"
+            Write-ErrorMsg "Database initialization failed"
             exit 1
         }
     }
 
     # ========================================
-    # 6. Verify Installation
+    # 6. 验证安装
     # ========================================
     Write-Host ""
     Write-Step "6/6" "Verifying installation..."
@@ -571,44 +727,30 @@ function Main {
     }
 
     # ========================================
-    # Start Services
+    # 启动服务
     # ========================================
     Write-Header "Starting Services"
 
-    # Start Backend
+    # 启动后端
     if (-not $FrontendOnly) {
         Write-Host "[Backend Service Starting]" -ForegroundColor Magenta
 
-        # Find available port
+        # 查找可用端口
         Write-Step "Port" "Finding available port..."
-        Stop-ProcessOnPort -Port $BackendPort -Confirm:$false
-        # Wait for port to be fully released
-        $maxWait = 10
-        $waited = 0
-        while ($waited -lt $maxWait) {
-            Start-Sleep -Milliseconds 500
-            $waited++
-            try {
-                $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $BackendPort)
-                $listener.Start()
-                $listener.Stop()
-                break
-            } catch {
-                if ($listener) { $listener.Stop() }
-            }
-        }
+        Stop-ProcessOnPort -Port $BackendPort -Force
+        Wait-PortReleased -Port $BackendPort
         $script:ActualBackendPort = Get-AvailablePort -StartPort $BackendPort
         if ($script:ActualBackendPort -ne $BackendPort) {
             Write-Warning "Port $BackendPort occupied, using port $script:ActualBackendPort"
         }
 
-        # Start backend service
+        # 启动后端服务
         Write-Step "Start" "Starting backend service (port: $script:ActualBackendPort)..."
 
         $BackendProcess = Start-Process -FilePath $PythonExe -ArgumentList "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", $script:ActualBackendPort, "--reload" -WorkingDirectory $BackendDir -PassThru -WindowStyle Hidden
         Register-Process -Process $BackendProcess
 
-        # Wait for backend to start
+        # 等待后端启动
         Write-Step "Wait" "Waiting for backend service to start..."
         $backendReady = Wait-ForService -Url "http://127.0.0.1:$($script:ActualBackendPort)/health" -Name "Backend" -MaxWaitSeconds 30
 
@@ -618,47 +760,33 @@ function Main {
             if (-not $BackendProcess.HasExited) {
                 Write-Warning "Backend service may still be starting, please check later"
             } else {
-                Write-Error "Backend service failed to start (process exited)"
+                Write-ErrorMsg "Backend service failed to start (process exited)"
                 exit 1
             }
         }
     }
 
-    # Start Frontend
+    # 启动前端
     if (-not $BackendOnly) {
         Write-Host ""
         Write-Host "[Frontend Service Starting]" -ForegroundColor Magenta
 
-        # Find available port
+        # 查找可用端口
         Write-Step "Port" "Finding available port..."
-        Stop-ProcessOnPort -Port $FrontendPort -Confirm:$false
-        # Wait for port to be fully released
-        $maxWait = 10
-        $waited = 0
-        while ($waited -lt $maxWait) {
-            Start-Sleep -Milliseconds 500
-            $waited++
-            try {
-                $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $FrontendPort)
-                $listener.Start()
-                $listener.Stop()
-                break
-            } catch {
-                if ($listener) { $listener.Stop() }
-            }
-        }
+        Stop-ProcessOnPort -Port $FrontendPort -Force
+        Wait-PortReleased -Port $FrontendPort
         $script:ActualFrontendPort = Get-AvailablePort -StartPort $FrontendPort
         if ($script:ActualFrontendPort -ne $FrontendPort) {
             Write-Warning "Port $FrontendPort occupied, using port $script:ActualFrontendPort"
         }
 
-        # Start frontend service
+        # 启动前端服务
         Write-Step "Start" "Starting frontend service (port: $script:ActualFrontendPort)..."
 
         $FrontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "npm", "run", "dev", "--", "--port", $script:ActualFrontendPort -WorkingDirectory $FrontendDir -PassThru -WindowStyle Hidden
         Register-Process -Process $FrontendProcess
 
-        # Wait for frontend to start
+        # 等待前端启动
         Write-Step "Wait" "Waiting for frontend service to start..."
         $frontendReady = Wait-ForService -Url "http://localhost:$($script:ActualFrontendPort)" -Name "Frontend" -MaxWaitSeconds 30
 
@@ -668,14 +796,14 @@ function Main {
             if (-not $FrontendProcess.HasExited) {
                 Write-Warning "Frontend service may still be starting, please check later"
             } else {
-                Write-Error "Frontend service failed to start (process exited)"
+                Write-ErrorMsg "Frontend service failed to start (process exited)"
                 exit 1
             }
         }
     }
 
     # ========================================
-    # Complete
+    # 完成
     # ========================================
     Write-Header "All Services Started!"
 
@@ -691,24 +819,24 @@ function Main {
     Write-Warning "Press Ctrl+C to stop services"
     Write-Host ""
 
-    # Keep running
-    try {
-        while ($true) {
-            Start-Sleep -Seconds 1
+    # 保持运行
+    while (-not $script:CtrlCPressed) {
+        Start-Sleep -Seconds 1
 
-            if (-not $FrontendOnly -and $BackendProcess.HasExited) {
-                Write-Error "Backend service exited"
-                break
-            }
-            if (-not $BackendOnly -and $FrontendProcess.HasExited) {
-                Write-Error "Frontend service exited"
-                break
-            }
+        if (-not $FrontendOnly -and $BackendProcess.HasExited) {
+            Write-ErrorMsg "Backend service exited"
+            break
         }
-    } finally {
-        Cleanup
+        if (-not $BackendOnly -and $FrontendProcess.HasExited) {
+            Write-ErrorMsg "Frontend service exited"
+            break
+        }
     }
 }
 
-# Run main program
-Main
+# 运行主程序
+try {
+    Main
+} finally {
+    Cleanup
+}
