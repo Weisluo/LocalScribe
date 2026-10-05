@@ -10,6 +10,7 @@ from .upload import router as upload_router
 from .relations import router as relations_router
 from .characters import router as characters_router
 from .outline import router as outline_router
+from .export import router as export_router
 
 api_router = APIRouter()
 
@@ -23,3 +24,4 @@ api_router.include_router(upload_router, prefix="/upload", tags=["File Upload"])
 api_router.include_router(relations_router, prefix="/relations", tags=["Cross-Module Relations"])
 api_router.include_router(characters_router, tags=["Characters"])
 api_router.include_router(outline_router, prefix="/outline", tags=["Outline"])
+api_router.include_router(export_router, prefix="/export", tags=["Export"])

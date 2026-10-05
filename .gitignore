@@ -38,6 +38,11 @@ htmlcov/
 .bin
 deps
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
 # AI/Claude
 .claude/
 

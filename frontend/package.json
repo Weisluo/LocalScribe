@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "playwright test",
     "gen:types": "openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts"
   },
   "dependencies": {
@@ -28,8 +29,6 @@
     "date-fns": "^4.1.0",
     "docx": "^9.6.1",
     "framer-motion": "^12.38.0",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.453.0",
     "picomatch": "^4.0.4",

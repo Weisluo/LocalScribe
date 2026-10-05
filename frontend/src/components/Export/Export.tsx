@@ -1,27 +1,27 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FileDown, Loader2, ChevronDown } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak } from 'docx';
 import type { components } from '@/types/api';
 import { api } from '@/utils/request';
+import { useEditorSettingsStore } from '@/stores/editorSettingsStore';
+import { ExportChapter, ExportTextSettings, parseNoteHtml } from '@/utils/export/blocks';
 
 type VolumeNode = components['schemas']['VolumeNode'];
 type ActNode = components['schemas']['ActNode'];
 type NoteNode = components['schemas']['NoteNode'];
 
 interface ExportProps {
-  projectId: string;
   projectTitle?: string;
   tree: VolumeNode[];
 }
 
-interface ChapterData {
+interface ChapterMeta {
   id: string;
   title: string;
-  content: string;
   volumeTitle: string;
   actTitle: string;
+  volumeId?: string;
+  actId?: string;
 }
 
 type ExportFormat = 'pdf' | 'epub' | 'txt' | 'docx';
@@ -30,521 +30,90 @@ export const Export = ({ projectTitle, tree }: ExportProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  const paragraphIndent = useEditorSettingsStore((state) => state.paragraphIndent);
+  const paragraphSpacing = useEditorSettingsStore((state) => state.paragraphSpacing);
+  const lineSpacing = useEditorSettingsStore((state) => state.lineSpacing);
+  const fontSize = useEditorSettingsStore((state) => state.fontSize);
+
   const collectAllChapters = (
     nodes: (VolumeNode | ActNode | NoteNode)[],
     volumeTitle: string = '',
-    actTitle: string = ''
-  ): ChapterData[] => {
-    let chapters: ChapterData[] = [];
+    actTitle: string = '',
+    volumeId?: string,
+    actId?: string
+  ): ChapterMeta[] => {
+    let chapters: ChapterMeta[] = [];
     for (const node of nodes) {
       if (node.type === 'volume') {
-        chapters = chapters.concat(
-          collectAllChapters(node.children, node.name, actTitle)
-        );
+        chapters = chapters.concat(collectAllChapters(node.children, node.name, actTitle, node.id, actId));
       } else if (node.type === 'act') {
-        chapters = chapters.concat(
-          collectAllChapters(node.children, volumeTitle, node.name)
-        );
+        chapters = chapters.concat(collectAllChapters(node.children, volumeTitle, node.name, volumeId, node.id));
       } else if (node.type === 'note') {
         chapters.push({
           id: node.id,
           title: node.title || '无标题章节',
-          content: '',
           volumeTitle,
           actTitle,
+          volumeId,
+          actId,
         });
       }
     }
     return chapters;
   };
 
-  const htmlToPlainText = (html: string): string => {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    return tempDiv.textContent || tempDiv.innerText || '';
-  };
+  /** 拉取各章节内容，并把编辑器 HTML 解析成带段落结构的数据 */
+  const loadChapters = async (): Promise<ExportChapter[]> => {
+    const metas = collectAllChapters(tree);
+    const chapters: ExportChapter[] = [];
 
-  const exportToPDF = async (chapters: ChapterData[], date: string) => {
-    const pdf = new jsPDF({
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-    });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const marginLeft = 20;
-    const marginRight = 20;
-    const marginTop = 25;
-    const marginBottom = 25;
-    const contentWidth = pageWidth - marginLeft - marginRight;
-    const lineHeight = 6;
-    const fontSize = 12;
-    const titleFontSize = 16;
-
-    pdf.setFont('helvetica');
-    pdf.setFontSize(fontSize);
-
-    let finalPage = 1;
-    let finalY = marginTop;
-
-    const finalAddHeader = () => {
-      pdf.setFontSize(10);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(projectTitle || '我的小说', marginLeft, 15);
-      pdf.text(`第 ${finalPage} 页`, pageWidth - marginRight, 15, { align: 'right' });
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(fontSize);
-    };
-
-    const finalAddNewPage = () => {
-      pdf.addPage();
-      finalPage++;
-      finalY = marginTop;
-      finalAddHeader();
-    };
-
-    const checkAndAddPage = (neededSpace: number) => {
-      if (finalY + neededSpace > pageHeight - marginBottom) {
-        finalAddNewPage();
-      }
-    };
-
-    const addText = (text: string, size: number = fontSize) => {
-      pdf.setFontSize(size);
-      const lines = pdf.splitTextToSize(text, contentWidth);
-      for (const line of lines) {
-        checkAndAddPage(lineHeight);
-        pdf.text(line, marginLeft, finalY);
-        finalY += lineHeight;
-      }
-      pdf.setFontSize(fontSize);
-    };
-
-    finalAddHeader();
-
-    pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'bold');
-    const titleY = pageHeight / 3;
-    pdf.text(projectTitle || '我的小说', pageWidth / 2, titleY, { align: 'center' });
-    
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(date, pageWidth / 2, titleY + 20, { align: 'center' });
-
-    finalAddNewPage();
-
-    pdf.setFontSize(20);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('目 录', pageWidth / 2, finalY, { align: 'center' });
-    finalY += 15;
-
-    const tocChapters: { title: string; pageNumber: number }[] = [];
-
-    for (let i = 0; i < chapters.length; i++) {
-      const chapter = chapters[i];
-      const tocEntry = `${chapter.volumeTitle ? chapter.volumeTitle + ' - ' : ''}${chapter.actTitle ? chapter.actTitle + ' - ' : ''}${chapter.title}`;
-      tocChapters.push({ title: tocEntry, pageNumber: 0 });
+    for (const meta of metas) {
+      const note = await api.get<components['schemas']['NoteResponse']>(`/notes/${meta.id}`);
+      chapters.push({ ...meta, blocks: parseNoteHtml(note.content || '') });
     }
 
-    for (let i = 0; i < tocChapters.length; i++) {
-      if (finalY + lineHeight * 2 > pageHeight - marginBottom) {
-        finalAddNewPage();
-      }
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(tocChapters[i].title, marginLeft, finalY);
-      finalY += lineHeight;
-    }
-
-    finalAddNewPage();
-
-    for (let i = 0; i < chapters.length; i++) {
-      const chapter = chapters[i];
-      
-      if (finalY + lineHeight * 4 > pageHeight - marginBottom) {
-        finalAddNewPage();
-      }
-      
-      finalY += 5;
-      
-      if (chapter.volumeTitle) {
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(chapter.volumeTitle, marginLeft, finalY);
-        finalY += lineHeight + 2;
-      }
-      
-      if (chapter.actTitle) {
-        pdf.setFontSize(13);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(chapter.actTitle, marginLeft, finalY);
-        finalY += lineHeight + 2;
-      }
-      
-      pdf.setFontSize(titleFontSize);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(chapter.title, marginLeft, finalY);
-      finalY += lineHeight + 5;
-      
-      tocChapters[i].pageNumber = finalPage;
-      
-      if (chapter.content) {
-        pdf.setFontSize(fontSize);
-        pdf.setFont('helvetica', 'normal');
-        addText(chapter.content);
-      }
-      
-      finalY += 10;
-      
-      if (i < chapters.length - 1) {
-        finalAddNewPage();
-      }
-    }
-
-    pdf.save(`${projectTitle || '我的小说'}_${date.replace(/\//g, '-')}.pdf`);
-  };
-
-  const generateEPUB = async (chapters: ChapterData[], date: string) => {
-    const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-
-    const bookId = uuid();
-    const bookTitle = projectTitle || '我的小说';
-    
-    let contentOpf = `<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
-  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-    <dc:title>${bookTitle}</dc:title>
-    <dc:language>zh-CN</dc:language>
-    <dc:identifier id="BookId" opf:scheme="UUID">${bookId}</dc:identifier>
-    <dc:date>${new Date().toISOString().split('T')[0]}</dc:date>
-  </metadata>
-  <manifest>
-    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-    <item id="titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml"/>`;
-
-    let spine = `<spine toc="ncx">
-    <itemref idref="titlepage"/>`;
-
-    let tocNcx = `<?xml version="1.0" encoding="UTF-8"?>
-<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-  <head>
-    <meta name="dtb:uid" content="${bookId}"/>
-    <meta name="dtb:depth" content="3"/>
-    <meta name="dtb:totalPageCount" content="0"/>
-    <meta name="dtb:maxPageNumber" content="0"/>
-  </head>
-  <docTitle>
-    <text>${bookTitle}</text>
-  </docTitle>
-  <navMap>`;
-
-    let navPoints = '';
-    let allXhtml = '';
-
-    for (let i = 0; i < chapters.length; i++) {
-      const chapter = chapters[i];
-      const chapterId = `chapter${i + 1}`;
-      const fileName = `${chapterId}.xhtml`;
-      
-      contentOpf += `
-    <item id="${chapterId}" href="${fileName}" media-type="application/xhtml+xml"/>`;
-      
-      spine += `
-    <itemref idref="${chapterId}"/>`;
-      
-      navPoints += `
-    <navPoint id="navPoint-${i + 1}" playOrder="${i + 1}">
-      <navLabel>
-        <text>${chapter.title}</text>
-      </navLabel>
-      <content src="${fileName}"/>
-    </navPoint>`;
-
-      const chapterTitle = `${chapter.volumeTitle ? chapter.volumeTitle + ' - ' : ''}${chapter.actTitle ? chapter.actTitle + ' - ' : ''}${chapter.title}`;
-      const chapterContent = chapter.content.replace(/\n/g, '<br/>');
-      
-      const xhtml = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>${chapterTitle}</title>
-    <style type="text/css">
-      body { font-family: serif; line-height: 1.8; margin: 5%; }
-      h1 { font-size: 1.8em; font-weight: bold; margin-bottom: 1em; }
-    </style>
-  </head>
-  <body>
-    <h1>${chapterTitle}</h1>
-    <p>${chapterContent}</p>
-  </body>
-</html>`;
-
-      allXhtml += `--boundary
-Content-Type: application/xhtml+xml
-Content-Location: OEBPS/${fileName}
-
-${xhtml}
-`;
-    }
-
-    contentOpf += `
-  </manifest>
-${spine}
-  </spine>
-</package>`;
-
-    tocNcx += navPoints + `
-  </navMap>
-</ncx>`;
-
-    const titlePage = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>${bookTitle}</title>
-    <style type="text/css">
-      body { font-family: serif; text-align: center; margin-top: 30%; }
-      h1 { font-size: 2em; font-weight: bold; }
-    </style>
-  </head>
-  <body>
-    <h1>${bookTitle}</h1>
-    <p>${date}</p>
-  </body>
-</html>`;
-
-    const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-  </rootfiles>
-</container>`;
-
-    const mimetype = 'application/epub+zip';
-
-    const epubContent = `--boundary
-Content-Type: application/octet-stream
-Content-Location: mimetype
-
-${mimetype}
---boundary
-Content-Type: application/xml
-Content-Location: META-INF/container.xml
-
-${containerXml}
---boundary
-Content-Type: application/oebps-package+xml
-Content-Location: OEBPS/content.opf
-
-${contentOpf}
---boundary
-Content-Type: application/x-dtbncx+xml
-Content-Location: OEBPS/toc.ncx
-
-${tocNcx}
---boundary
-Content-Type: application/xhtml+xml
-Content-Location: OEBPS/titlepage.xhtml
-
-${titlePage}
-${allXhtml}
---boundary--`;
-
-    const parts = epubContent.split('--boundary');
-    const files: { path: string; content: string | Blob }[] = [];
-    
-    files.push({ path: 'mimetype', content: mimetype });
-    
-    for (const part of parts) {
-      if (!part.trim()) continue;
-      
-      const headersMatch = part.match(/Content-Type: ([^\n]+)\s+Content-Location: ([^\n]+)/);
-      if (headersMatch) {
-        const path = headersMatch[2].trim();
-        const content = part.substring(part.indexOf('\n\n') + 2).trim();
-        files.push({ path, content });
-      }
-    }
-
-    try {
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-      
-      for (const file of files) {
-        zip.file(file.path, file.content);
-      }
-      
-      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${projectTitle || '我的小说'}_${date.replace(/\//g, '-')}.epub`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (_error) {
-      toast.error('请安装jszip库以支持EPUB导出');
-    }
-  };
-
-  const exportToTXT = async (chapters: ChapterData[], date: string) => {
-    let txtContent = '';
-    
-    txtContent += '='.repeat(50) + '\n';
-    txtContent += (projectTitle || '我的小说') + '\n';
-    txtContent += date + '\n';
-    txtContent += '='.repeat(50) + '\n\n';
-    
-    for (let i = 0; i < chapters.length; i++) {
-      const chapter = chapters[i];
-      
-      if (chapter.volumeTitle) {
-        txtContent += '\n' + '# ' + chapter.volumeTitle + '\n\n';
-      }
-      
-      if (chapter.actTitle) {
-        txtContent += '## ' + chapter.actTitle + '\n\n';
-      }
-      
-      txtContent += '### ' + chapter.title + '\n\n';
-      txtContent += chapter.content + '\n\n';
-      txtContent += '-'.repeat(40) + '\n\n';
-    }
-    
-    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${projectTitle || '我的小说'}_${date.replace(/\//g, '-')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const exportToDOCX = async (chapters: ChapterData[], date: string) => {
-    const docChildren: Paragraph[] = [];
-    
-    docChildren.push(
-      new Paragraph({
-        text: projectTitle || '我的小说',
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 200 },
-      })
-    );
-    
-    docChildren.push(
-      new Paragraph({
-        text: date,
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 400 },
-      })
-    );
-    
-    for (let i = 0; i < chapters.length; i++) {
-      const chapter = chapters[i];
-      
-      if (chapter.volumeTitle) {
-        docChildren.push(
-          new Paragraph({
-            text: chapter.volumeTitle,
-            heading: HeadingLevel.HEADING_1,
-            spacing: { before: 200, after: 200 },
-          })
-        );
-      }
-      
-      if (chapter.actTitle) {
-        docChildren.push(
-          new Paragraph({
-            text: chapter.actTitle,
-            heading: HeadingLevel.HEADING_2,
-            spacing: { before: 200, after: 200 },
-          })
-        );
-      }
-      
-      docChildren.push(
-        new Paragraph({
-          text: chapter.title,
-          heading: HeadingLevel.HEADING_3,
-          spacing: { before: 200, after: 200 },
-        })
-      );
-      
-      const contentParagraphs = chapter.content.split(/\n+/);
-      for (const para of contentParagraphs) {
-        if (para.trim()) {
-          docChildren.push(
-            new Paragraph({
-              children: [new TextRun(para)],
-              spacing: { after: 200 },
-            })
-          );
-        }
-      }
-      
-      if (i < chapters.length - 1) {
-        docChildren.push(
-          new Paragraph({
-            children: [new PageBreak()],
-          })
-        );
-      }
-    }
-    
-    const doc = new Document({
-      sections: [
-        {
-          properties: {},
-          children: docChildren,
-        },
-      ],
-    });
-    
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${projectTitle || '我的小说'}_${date.replace(/\//g, '-')}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    return chapters;
   };
 
   const handleExport = async (format: ExportFormat) => {
     setIsExporting(true);
     setShowMenu(false);
     try {
-      const chapters = collectAllChapters(tree);
-      
-      for (const chapter of chapters) {
-        const note = await api.get<components['schemas']['NoteResponse']>(`/notes/${chapter.id}`);
-        chapter.content = htmlToPlainText(note.content || '');
+      const chapters = await loadChapters();
+      if (chapters.length === 0) {
+        toast.error('没有可导出的章节');
+        return;
       }
+      const settings: ExportTextSettings = {
+        paragraphIndent,
+        paragraphSpacing,
+        lineSpacing,
+        fontSize,
+      };
+      const options = {
+        title: projectTitle || '我的小说',
+        date: new Date().toLocaleDateString('zh-CN'),
+        settings,
+      };
 
-      const date = new Date().toLocaleDateString('zh-CN');
-
+      // 各格式的导出器按需加载，避免 pdf/docx/epub 依赖进入首屏包
       if (format === 'pdf') {
-        await exportToPDF(chapters, date);
+        const { exportToPdf } = await import('@/utils/export/pdf');
+        await exportToPdf(chapters, options);
       } else if (format === 'epub') {
-        await generateEPUB(chapters, date);
+        const { exportToEpub } = await import('@/utils/export/epub');
+        await exportToEpub(chapters, options);
       } else if (format === 'txt') {
-        await exportToTXT(chapters, date);
-      } else if (format === 'docx') {
-        await exportToDOCX(chapters, date);
+        const { exportToTxt } = await import('@/utils/export/txt');
+        exportToTxt(chapters, options);
+      } else {
+        const { exportToDocx } = await import('@/utils/export/docx');
+        await exportToDocx(chapters, options);
       }
     } catch (error) {
       console.error('导出失败:', error);
-      toast.error('导出失败，请重试');
+      // 导出失败原因（例如"未找到 Edge/Chrome"）由各导出器抛在 message 里
+      toast.error(error instanceof Error && error.message ? error.message : '导出失败，请重试');
     } finally {
       setIsExporting(false);
     }

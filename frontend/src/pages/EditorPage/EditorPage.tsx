@@ -695,7 +695,6 @@ export const EditorPage = () => {
               {tree && tree.length > 0 && (
                 <Suspense fallback={<div className="w-20 h-9 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
                   <Export
-                    projectId={currentProjectId}
                     projectTitle={project?.title}
                     tree={tree}
                   />

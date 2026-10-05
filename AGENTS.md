@@ -35,6 +35,7 @@ LocalScribe is a local writing assistant application with a React/Vite frontend 
 cd backend
 ./venv/bin/uvicorn app.main:app --reload          # Run server
 ./venv/bin/pytest                                 # Run tests
+./venv/bin/pytest tests/test_export_api.py tests/test_pdf_export.py  # Export tests (printing cases need Edge/Chrome)
 ./venv/bin/pytest --cov=app                       # Test with coverage
 ./venv/bin/black app tests && ./venv/bin/isort app tests  # Format
 ./venv/bin/flake8 app tests                       # Lint
@@ -49,6 +50,7 @@ cd frontend
 npm run dev          # Dev server
 npm run build        # Production build
 npm run preview      # Preview build
+npm test             # Playwright export regression suite (uses system Edge; PW_CHANNEL to override)
 npm run gen:types    # Generate TS types from OpenAPI (backend must be running)
 npx eslint src --ext ts,tsx  # Lint
 ```
@@ -99,6 +101,10 @@ SQLite has limited ALTER TABLE support. Follow these rules:
 ## Notes
 
 - Project uses Chinese-language comments and logs throughout.
+- PDF export prints through the **local Chromium-based browser** (Edge/Chrome) instead of
+  bundling a renderer. The backend locates it automatically; override with `PDF_BROWSER_PATH`
+  (setting) or `LOCALSCRIBE_PDF_BROWSER` (env var). Without one, `POST /api/v1/export/pdf`
+  returns 503, and the two printing cases in `tests/test_pdf_export.py` are skipped.
 
 ## Frontend Development Guidelines
 

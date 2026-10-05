@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = MAX_UPLOAD_SIZE
     ALLOWED_IMAGE_TYPES: set = ALLOWED_IMAGE_TYPES
 
+    # PDF 导出：Chromium 内核浏览器路径，留空则自动查找本机 Edge / Chrome
+    PDF_BROWSER_PATH: str = ""
+
     class Config:
         env_file = ".env"
 
