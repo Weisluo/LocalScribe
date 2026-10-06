@@ -692,7 +692,8 @@ export interface paths {
         put?: never;
         /**
          * Create World Instance
-         * @description 基于模板创建世界实例
+         * @deprecated
+         * @description [已弃用] 世界实例概念已取消（D5）：写接口返回 410 并给出迁移指引
          */
         post: operations["create_world_instance_api_v1_worldbuilding_instances_post"];
         delete?: never;
@@ -731,13 +732,15 @@ export interface paths {
         get?: never;
         /**
          * Update World Instance
-         * @description 更新世界实例
+         * @deprecated
+         * @description [已弃用] 世界实例写接口返回 410（D5）
          */
         put: operations["update_world_instance_api_v1_worldbuilding_instances__instance_id__put"];
         post?: never;
         /**
          * Delete World Instance
-         * @description 删除世界实例
+         * @deprecated
+         * @description [已弃用] 世界实例写接口返回 410（D5）
          */
         delete: operations["delete_world_instance_api_v1_worldbuilding_instances__instance_id__delete"];
         options?: never;
@@ -880,7 +883,8 @@ export interface paths {
         put?: never;
         /**
          * Create Worldview
-         * @description 创建自定义世界观配置
+         * @deprecated
+         * @description [已弃用] 世界观预设写接口返回 410（D5）
          */
         post: operations["create_worldview_api_v1_worldbuilding_worldviews_post"];
         delete?: never;
@@ -919,13 +923,15 @@ export interface paths {
         get?: never;
         /**
          * Update Worldview
-         * @description 更新自定义世界观配置
+         * @deprecated
+         * @description [已弃用] 世界观预设写接口返回 410（D5）
          */
         put: operations["update_worldview_api_v1_worldbuilding_worldviews__worldview_id__put"];
         post?: never;
         /**
          * Delete Worldview
-         * @description 删除自定义世界观配置（软删除）
+         * @deprecated
+         * @description [已弃用] 世界观预设写接口返回 410（D5）
          */
         delete: operations["delete_worldview_api_v1_worldbuilding_worldviews__worldview_id__delete"];
         options?: never;
@@ -951,6 +957,154 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Worlds */
+        get: operations["list_worlds_api_v1_worldbuilding_worlds_get"];
+        put?: never;
+        /** Create World */
+        post: operations["create_world_api_v1_worldbuilding_worlds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import World
+         * @description 世界备份恢复：新建世界，实体 id 重新分配并重映射关联端点。
+         */
+        post: operations["import_world_api_v1_worldbuilding_worlds_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/{world_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get World */
+        get: operations["get_world_api_v1_worldbuilding_worlds__world_id__get"];
+        /** Update World */
+        put: operations["update_world_api_v1_worldbuilding_worlds__world_id__put"];
+        post?: never;
+        /** Delete World */
+        delete: operations["delete_world_api_v1_worldbuilding_worlds__world_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/{world_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export World */
+        get: operations["export_world_api_v1_worldbuilding_worlds__world_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/link-registry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Link Registry
+         * @description 契约 §4 的 link_type 全量清单（只读，供前端筛选与校验）
+         */
+        get: operations["get_link_registry_api_v1_worldbuilding_link_registry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/{world_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List World Links */
+        get: operations["list_world_links_api_v1_worldbuilding_worlds__world_id__links_get"];
+        put?: never;
+        /** Create World Link */
+        post: operations["create_world_link_api_v1_worldbuilding_worlds__world_id__links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/{world_id}/links/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get World Link Counts */
+        get: operations["get_world_link_counts_api_v1_worldbuilding_worlds__world_id__links_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get World Link */
+        get: operations["get_world_link_api_v1_worldbuilding_links__link_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete World Link */
+        delete: operations["delete_world_link_api_v1_worldbuilding_links__link_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update World Link */
+        patch: operations["update_world_link_api_v1_worldbuilding_links__link_id__patch"];
         trace?: never;
     };
     "/api/v1/upload/images": {
@@ -1218,6 +1372,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/characters/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 批量获取人物详情
+         * @description 批量获取指定项目下所有人物的完整详情，包括别名、卡片、关系、器物。
+         *
+         *     **性能优化：**
+         *     - 使用 selectinload 预加载所有关联数据
+         *     - 一次请求获取所有数据，避免 N+1 查询
+         *
+         *     **适用场景：**
+         *     - 人物关系云图需要所有人物的完整数据
+         *     - 批量展示人物详情
+         */
+        get: operations["list_characters_details_api_v1_projects__project_id__characters_details_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/characters": {
         parameters: {
             query?: never;
@@ -1230,8 +1412,9 @@ export interface paths {
          * @description 获取指定项目下的人物列表，支持多种筛选和排序方式。
          *
          *     **功能特性：**
-         *     - 按角色等级筛选（主角/重要配角/配角/小角色）
+         *     - 按角色等级筛选（主角/重要配角/配角/小角色/过往）
          *     - 按姓名或别名模糊搜索
+         *     - 按来源筛选（history-历史背景，null-主线故事）
          *     - 自定义排序字段和排序方向
          *     - 预加载别名数据，避免 N+1 查询问题
          *
@@ -1239,6 +1422,7 @@ export interface paths {
          *     1. 左侧人物栏展示：按排序索引升序排列
          *     2. 搜索功能：通过 search 参数模糊匹配
          *     3. 等级筛选：通过 level 参数筛选特定等级角色
+         *     4. 来源筛选：通过 source 参数筛选历史背景或主线人物
          */
         get: operations["list_characters_api_v1_projects__project_id__characters_get"];
         put?: never;
@@ -1264,6 +1448,49 @@ export interface paths {
          *     - 关系目标可以是已创建的人物ID，也可以是名称（待后续创建）
          */
         post: operations["create_character_api_v1_projects__project_id__characters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/simple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Characters Simple
+         * @description 获取人物简要列表（用于选择器）
+         *
+         *     - 返回ID、名称、等级、头像
+         *     - 可排除特定人物（避免选择自己作为关系目标）
+         */
+        get: operations["list_characters_simple_api_v1_projects__project_id__characters_simple_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Character Stats
+         * @description 获取人物统计数据
+         */
+        get: operations["get_character_stats_api_v1_projects__project_id__characters_stats_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1600,7 +1827,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/characters/stats": {
+    "/api/v1/projects/{project_id}/characters/{character_id}/snapshots": {
         parameters: {
             query?: never;
             header?: never;
@@ -1608,10 +1835,87 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Character Stats
-         * @description 获取人物统计数据
+         * 获取人物快照列表
+         * @description 获取指定人物的快照列表，按创建时间倒序排列。
+         *
+         *     **返回数据包含：**
+         *     - 快照ID、标题、类型
+         *     - 位置信息（卷/幕/章ID）
+         *     - 属性数据（JSON格式）
+         *     - 创建和更新时间
          */
-        get: operations["get_character_stats_api_v1_projects__project_id__characters_stats_get"];
+        get: operations["list_snapshots_api_v1_projects__project_id__characters__character_id__snapshots_get"];
+        put?: never;
+        /**
+         * 创建人物快照
+         * @description 为指定人物创建一个新的状态快照。
+         *
+         *     **请求数据：**
+         *     - snapshot_type: 快照类型（如：chapter, event, custom）
+         *     - title: 快照标题（必填）
+         *     - description: 快照描述（可选）
+         *     - volume_id/act_id/chapter_id: 位置信息（可选）
+         *     - attributes: 属性数据（JSON格式，存储人物在该时间点的各项属性）
+         *
+         *     **使用场景：**
+         *     - 记录人物在特定章节的状态
+         *     - 保存人物属性变化的历史记录
+         */
+        post: operations["create_snapshot_api_v1_projects__project_id__characters__character_id__snapshots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/characters/{character_id}/snapshots/{snapshot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 更新人物快照
+         * @description 更新指定快照的信息。
+         *
+         *     **可更新字段：**
+         *     - 快照类型、标题、描述
+         *     - 位置信息（卷/幕/章ID）
+         *     - 属性数据（JSON格式）
+         *
+         *     **注意：**
+         *     - 仅更新请求中包含的字段（部分更新）
+         */
+        put: operations["update_snapshot_api_v1_projects__project_id__characters__character_id__snapshots__snapshot_id__put"];
+        post?: never;
+        /**
+         * 删除人物快照
+         * @description 删除指定的人物快照。
+         *
+         *     **警告：**
+         *     - 此操作不可逆
+         *     - 删除后无法恢复快照数据
+         */
+        delete: operations["delete_snapshot_api_v1_projects__project_id__characters__character_id__snapshots__snapshot_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/projects/{project_id}/outline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Outline
+         * @description 获取项目的完整大纲数据（卷-幕-章层级）
+         */
+        get: operations["get_project_outline_api_v1_outline_projects__project_id__outline_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1620,7 +1924,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/characters/simple": {
+    "/api/v1/outline/projects/{project_id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -1628,15 +1932,161 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Characters Simple
-         * @description 获取人物简要列表（用于选择器）
-         *
-         *     - 返回ID、名称、等级、头像
-         *     - 可排除特定人物（避免选择自己作为关系目标）
+         * Get Project Events
+         * @description 获取项目的所有事件（用于搜索）
          */
-        get: operations["list_characters_simple_api_v1_projects__project_id__characters_simple_get"];
+        get: operations["get_project_events_api_v1_outline_projects__project_id__events_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/volumes/{volume_id}/outline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Volume Outline
+         * @description 更新卷大纲内容
+         */
+        put: operations["update_volume_outline_api_v1_outline_volumes__volume_id__outline_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/notes/{note_id}/outline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Chapter Outline
+         * @description 更新章节大纲内容
+         */
+        put: operations["update_chapter_outline_api_v1_outline_notes__note_id__outline_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/acts/{act_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Act Events
+         * @description 获取幕下的所有事件及连接
+         */
+        get: operations["get_act_events_api_v1_outline_acts__act_id__events_get"];
+        put?: never;
+        /**
+         * Create Event
+         * @description 创建事件
+         */
+        post: operations["create_event_api_v1_outline_acts__act_id__events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/events/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Event
+         * @description 更新事件
+         */
+        put: operations["update_event_api_v1_outline_events__event_id__put"];
+        post?: never;
+        /**
+         * Delete Event
+         * @description 删除事件（同时删除相关连接）
+         */
+        delete: operations["delete_event_api_v1_outline_events__event_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Connection
+         * @description 创建事件连接
+         */
+        post: operations["create_connection_api_v1_outline_connections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outline/connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Connection
+         * @description 更新连接
+         */
+        put: operations["update_connection_api_v1_outline_connections__connection_id__put"];
+        post?: never;
+        /**
+         * Delete Connection
+         * @description 删除连接
+         */
+        delete: operations["delete_connection_api_v1_outline_connections__connection_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/export/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 导出 PDF（浏览器打印） */
+        post: operations["export_pdf_api_v1_export_pdf_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1705,6 +2155,25 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** ActEventsResponse */
+        ActEventsResponse: {
+            /** Act Id */
+            act_id: string;
+            /** Act Name */
+            act_name: string;
+            /** Volume Id */
+            volume_id: string;
+            /**
+             * Events
+             * @default []
+             */
+            events: components["schemas"]["StoryEventResponse"][];
+            /**
+             * Connections
+             * @default []
+             */
+            connections: components["schemas"]["EventConnectionResponse"][];
+        };
         /** ActNode */
         ActNode: {
             /**
@@ -1725,6 +2194,20 @@ export interface components {
              */
             children: components["schemas"]["NoteNode"][];
         };
+        /** ActOutlineResponse */
+        ActOutlineResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Order */
+            order: number;
+            /**
+             * Chapters
+             * @default []
+             */
+            chapters: components["schemas"]["ChapterOutlineResponse"][];
+        };
         /**
          * AliasType
          * @description 别名类型
@@ -1732,11 +2215,11 @@ export interface components {
          */
         AliasType: "zi" | "hao" | "nickname" | "title" | "other";
         /**
-         * ArtifactType
-         * @description 器物类型
+         * ArtifactRarity
+         * @description 器物等级
          * @enum {string}
          */
-        ArtifactType: "weapon" | "armor" | "accessory" | "treasure" | "other";
+        ArtifactRarity: "legendary" | "epic" | "rare" | "common";
         /**
          * BatchRelationCreate
          * @description 批量创建关联请求Schema
@@ -1744,16 +2227,6 @@ export interface components {
         BatchRelationCreate: {
             /** Relations */
             relations: components["schemas"]["RelationCreate"][];
-        };
-        /** BatchUpdateOrderRequest */
-        BatchUpdateOrderRequest: {
-            /**
-             * Items
-             * @description 排序项列表
-             */
-            items: {
-                [key: string]: unknown;
-            }[];
         };
         /** Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post */
         Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post: {
@@ -1798,6 +2271,45 @@ export interface components {
              * @default text
              */
             type: string;
+        };
+        /** ChapterOutlineResponse */
+        ChapterOutlineResponse: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Folder Id */
+            folder_id: string;
+            /** Order */
+            order: number;
+            /** Outline Content */
+            outline_content?: string | null;
+            /**
+             * Word Count
+             * @default 0
+             */
+            word_count: number | null;
+            /**
+             * Scene Count
+             * @default 0
+             */
+            scene_count: number | null;
+            /** Outline Characters */
+            outline_characters?: string[] | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ChapterOutlineUpdate */
+        ChapterOutlineUpdate: {
+            /** Outline Content */
+            outline_content?: string | null;
+            /** Scene Count */
+            scene_count?: number | null;
+            /** Outline Characters */
+            outline_characters?: string[] | null;
         };
         /**
          * CharacterAliasCreate
@@ -1871,12 +2383,22 @@ export interface components {
              */
             name: string;
             /**
+             * Quote
+             * @description 器物判词
+             */
+            quote?: string | null;
+            /**
              * Description
              * @description 器物描述
              */
             description?: string | null;
-            /** @description 器物类型 */
-            artifact_type?: components["schemas"]["ArtifactType"] | null;
+            /**
+             * Artifact Type
+             * @description 器物类型（自定义）
+             */
+            artifact_type?: string | null;
+            /** @description 器物等级 */
+            rarity?: components["schemas"]["ArtifactRarity"] | null;
             /**
              * Image
              * @description 器物图片URL
@@ -1900,12 +2422,22 @@ export interface components {
              */
             name: string;
             /**
+             * Quote
+             * @description 器物判词
+             */
+            quote?: string | null;
+            /**
              * Description
              * @description 器物描述
              */
             description?: string | null;
-            /** @description 器物类型 */
-            artifact_type?: components["schemas"]["ArtifactType"] | null;
+            /**
+             * Artifact Type
+             * @description 器物类型（自定义）
+             */
+            artifact_type?: string | null;
+            /** @description 器物等级 */
+            rarity?: components["schemas"]["ArtifactRarity"] | null;
             /**
              * Image
              * @description 器物图片URL
@@ -1939,9 +2471,13 @@ export interface components {
         CharacterArtifactUpdate: {
             /** Name */
             name?: string | null;
+            /** Quote */
+            quote?: string | null;
             /** Description */
             description?: string | null;
-            artifact_type?: components["schemas"]["ArtifactType"] | null;
+            /** Artifact Type */
+            artifact_type?: string | null;
+            rarity?: components["schemas"]["ArtifactRarity"] | null;
             /** Image */
             image?: string | null;
             /** Order Index */
@@ -2030,10 +2566,10 @@ export interface components {
             order_index?: number | null;
         };
         /**
-         * CharacterDetailResponse
-         * @description 人物详情响应 Schema
+         * CharacterCreate
+         * @description 创建人物 Schema
          */
-        CharacterDetailResponse: {
+        CharacterCreate: {
             /**
              * Name
              * @description 姓名
@@ -2054,6 +2590,16 @@ export interface components {
              * @description 出生地
              */
             birthplace?: string | null;
+            /**
+             * Race
+             * @description 种族
+             */
+            race?: string | null;
+            /**
+             * Faction
+             * @description 阵营归属
+             */
+            faction?: string | null;
             /** @default minor */
             level: components["schemas"]["CharacterLevel"];
             /**
@@ -2087,6 +2633,135 @@ export interface components {
              */
             first_appearance_chapter?: string | null;
             /**
+             * Last Appearance Volume
+             * @description 最后出场卷
+             */
+            last_appearance_volume?: string | null;
+            /**
+             * Last Appearance Act
+             * @description 最后出场幕
+             */
+            last_appearance_act?: string | null;
+            /**
+             * Last Appearance Chapter
+             * @description 最后出场章
+             */
+            last_appearance_chapter?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Source
+             * @description 来源: history(历史背景), None(主线故事)
+             */
+            source?: string | null;
+            /**
+             * Aliases
+             * @description 别名列表
+             */
+            aliases?: components["schemas"]["CharacterAliasCreate"][];
+            /**
+             * Cards
+             * @description 卡片列表
+             */
+            cards?: components["schemas"]["CharacterCardCreate"][];
+            /**
+             * Relationships
+             * @description 关系列表
+             */
+            relationships?: components["schemas"]["CharacterRelationshipCreate"][];
+            /**
+             * Artifacts
+             * @description 器物列表
+             */
+            artifacts?: components["schemas"]["CharacterArtifactCreate"][];
+        };
+        /**
+         * CharacterDetailResponse
+         * @description 人物详情响应 Schema
+         */
+        CharacterDetailResponse: {
+            /**
+             * Name
+             * @description 姓名
+             */
+            name: string;
+            /**
+             * @description 性别
+             * @default unknown
+             */
+            gender: components["schemas"]["CharacterGender"];
+            /**
+             * Birth Date
+             * @description 生辰
+             */
+            birth_date?: string | null;
+            /**
+             * Birthplace
+             * @description 出生地
+             */
+            birthplace?: string | null;
+            /**
+             * Race
+             * @description 种族
+             */
+            race?: string | null;
+            /**
+             * Faction
+             * @description 阵营归属
+             */
+            faction?: string | null;
+            /** @default minor */
+            level: components["schemas"]["CharacterLevel"];
+            /**
+             * Quote
+             * @description 判词/引言
+             */
+            quote?: string | null;
+            /**
+             * Avatar
+             * @description 头像URL
+             */
+            avatar?: string | null;
+            /**
+             * Full Image
+             * @description 全身形象图片URL
+             */
+            full_image?: string | null;
+            /**
+             * First Appearance Volume
+             * @description 首次出场卷
+             */
+            first_appearance_volume?: string | null;
+            /**
+             * First Appearance Act
+             * @description 首次出场幕
+             */
+            first_appearance_act?: string | null;
+            /**
+             * First Appearance Chapter
+             * @description 首次出场章
+             */
+            first_appearance_chapter?: string | null;
+            /**
+             * Last Appearance Volume
+             * @description 最后出场卷
+             */
+            last_appearance_volume?: string | null;
+            /**
+             * Last Appearance Act
+             * @description 最后出场幕
+             */
+            last_appearance_act?: string | null;
+            /**
+             * Last Appearance Chapter
+             * @description 最后出场章
+             */
+            last_appearance_chapter?: string | null;
+            /**
              * Order Index
              * @description 排序索引
              * @default 0
@@ -2096,6 +2771,8 @@ export interface components {
             id: string;
             /** Project Id */
             project_id: string;
+            /** Source */
+            source?: string | null;
             /**
              * Aliases
              * @default []
@@ -2138,7 +2815,7 @@ export interface components {
          * @description 角色等级
          * @enum {string}
          */
-        CharacterLevel: "protagonist" | "major_support" | "support" | "minor";
+        CharacterLevel: "protagonist" | "major_support" | "support" | "minor" | "past";
         /**
          * CharacterListItem
          * @description 人物列表项 Schema（用于左侧人物栏）
@@ -2166,6 +2843,8 @@ export interface components {
             first_appearance_chapter?: string | null;
             /** Order Index */
             order_index: number;
+            /** Source */
+            source?: string | null;
             /**
              * Aliases
              * @default []
@@ -2275,10 +2954,7 @@ export interface components {
             id: string;
             /** Character Id */
             character_id: string;
-            /** Target Character */
-            target_character?: {
-                [key: string]: unknown;
-            } | null;
+            target_character?: components["schemas"]["TargetCharacterInfo"] | null;
             /**
              * Created At
              * Format: date-time
@@ -2324,6 +3000,129 @@ export interface components {
             level: string;
             /** Avatar */
             avatar?: string | null;
+            /** Source */
+            source?: string | null;
+        };
+        /**
+         * CharacterSnapshotCreate
+         * @description 创建快照 Schema
+         */
+        CharacterSnapshotCreate: {
+            /** @description 快照类型 */
+            snapshot_type: components["schemas"]["CharacterSnapshotType"];
+            /**
+             * Title
+             * @description 快照标题
+             */
+            title: string;
+            /**
+             * Description
+             * @description 快照描述
+             */
+            description?: string | null;
+            /**
+             * Volume Id
+             * @description 卷ID
+             */
+            volume_id?: string | null;
+            /**
+             * Act Id
+             * @description 幕ID
+             */
+            act_id?: string | null;
+            /**
+             * Chapter Id
+             * @description 章ID
+             */
+            chapter_id?: string | null;
+            /**
+             * Attributes
+             * @description 属性数据(JSON格式)
+             */
+            attributes?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * CharacterSnapshotResponse
+         * @description 快照响应 Schema
+         */
+        CharacterSnapshotResponse: {
+            /** @description 快照类型 */
+            snapshot_type: components["schemas"]["CharacterSnapshotType"];
+            /**
+             * Title
+             * @description 快照标题
+             */
+            title: string;
+            /**
+             * Description
+             * @description 快照描述
+             */
+            description?: string | null;
+            /**
+             * Volume Id
+             * @description 卷ID
+             */
+            volume_id?: string | null;
+            /**
+             * Act Id
+             * @description 幕ID
+             */
+            act_id?: string | null;
+            /**
+             * Chapter Id
+             * @description 章ID
+             */
+            chapter_id?: string | null;
+            /**
+             * Attributes
+             * @description 属性数据(JSON格式)
+             */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Character Id */
+            character_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CharacterSnapshotType
+         * @description 快照类型枚举
+         * @enum {string}
+         */
+        CharacterSnapshotType: "volume" | "act" | "chapter" | "custom";
+        /**
+         * CharacterSnapshotUpdate
+         * @description 更新快照 Schema
+         */
+        CharacterSnapshotUpdate: {
+            snapshot_type?: components["schemas"]["CharacterSnapshotType"] | null;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Volume Id */
+            volume_id?: string | null;
+            /** Act Id */
+            act_id?: string | null;
+            /** Chapter Id */
+            chapter_id?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * CharacterStats
@@ -2351,10 +3150,58 @@ export interface components {
             };
         };
         /**
+         * CharacterUpdate
+         * @description 更新人物 Schema
+         */
+        CharacterUpdate: {
+            /** Name */
+            name?: string | null;
+            gender?: components["schemas"]["CharacterGender"] | null;
+            /** Birth Date */
+            birth_date?: string | null;
+            /** Birthplace */
+            birthplace?: string | null;
+            /** Race */
+            race?: string | null;
+            /** Faction */
+            faction?: string | null;
+            level?: components["schemas"]["CharacterLevel"] | null;
+            /** Quote */
+            quote?: string | null;
+            /** Avatar */
+            avatar?: string | null;
+            /** Full Image */
+            full_image?: string | null;
+            /** First Appearance Volume */
+            first_appearance_volume?: string | null;
+            /** First Appearance Act */
+            first_appearance_act?: string | null;
+            /** First Appearance Chapter */
+            first_appearance_chapter?: string | null;
+            /** Last Appearance Volume */
+            last_appearance_volume?: string | null;
+            /** Last Appearance Act */
+            last_appearance_act?: string | null;
+            /** Last Appearance Chapter */
+            last_appearance_chapter?: string | null;
+            /** Order Index */
+            order_index?: number | null;
+            /**
+             * Source
+             * @description 来源: history(历史背景), None(主线故事)
+             */
+            source?: string | null;
+        };
+        /**
          * ComplexityLevel
          * @enum {string}
          */
         ComplexityLevel: "simple" | "complex" | "highly_complex";
+        /**
+         * ConnectionType
+         * @enum {string}
+         */
+        ConnectionType: "direct" | "branch" | "parallel" | "merge" | "loop" | "jump";
         /**
          * DiscoveredRelation
          * @description 发现的潜在关联Schema
@@ -2410,6 +3257,18 @@ export interface components {
             tradeMethods: components["schemas"]["WorldviewTradeMethod"][];
         };
         /**
+         * EntityRef
+         * @description 实体引用 {module, kind, id}（契约 §1）
+         */
+        EntityRef: {
+            /** Module */
+            module: string;
+            /** Kind */
+            kind: string;
+            /** Id */
+            id: string;
+        };
+        /**
          * EntityReference
          * @description 实体引用信息
          */
@@ -2422,6 +3281,76 @@ export interface components {
             /** Entity Name */
             entity_name: string;
         };
+        /** EventConnectionCreate */
+        EventConnectionCreate: {
+            /** From Event Id */
+            from_event_id: string;
+            /** To Event Id */
+            to_event_id: string;
+            /** @default direct */
+            connection_type: components["schemas"]["ConnectionType"];
+            /** Label */
+            label?: string | null;
+            /** Condition */
+            condition?: string | null;
+            /** Color */
+            color?: string | null;
+            /**
+             * Dashed
+             * @default false
+             */
+            dashed: boolean;
+            /** Thickness */
+            thickness?: number | null;
+        };
+        /** EventConnectionResponse */
+        EventConnectionResponse: {
+            /** From Event Id */
+            from_event_id: string;
+            /** To Event Id */
+            to_event_id: string;
+            /** @default direct */
+            connection_type: components["schemas"]["ConnectionType"];
+            /** Label */
+            label?: string | null;
+            /** Condition */
+            condition?: string | null;
+            /** Color */
+            color?: string | null;
+            /**
+             * Dashed
+             * @default false
+             */
+            dashed: boolean;
+            /** Thickness */
+            thickness?: number | null;
+            /** Id */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** EventConnectionUpdate */
+        EventConnectionUpdate: {
+            connection_type?: components["schemas"]["ConnectionType"] | null;
+            /** Label */
+            label?: string | null;
+            /** Condition */
+            condition?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Dashed */
+            dashed?: boolean | null;
+            /** Thickness */
+            thickness?: number | null;
+        };
+        /**
+         * EventType
+         * @enum {string}
+         */
+        EventType: "normal" | "decision" | "milestone" | "flashback" | "flashforward";
         /** FolderCreate */
         FolderCreate: {
             /** Name */
@@ -2557,6 +3486,42 @@ export interface components {
             weight?: number | null;
         };
         /**
+         * LinkTimeRange
+         * @description 关联生效时间范围（契约 §2.5 time）
+         */
+        LinkTimeRange: {
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+        };
+        /**
+         * LinkTypeDefResponse
+         * @description link registry 单条定义（契约 §4）
+         */
+        LinkTypeDefResponse: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Reverse Label */
+            reverse_label: string;
+            /** Directed */
+            directed: boolean;
+            /** Icon */
+            icon: string;
+            /** Color */
+            color: string;
+            /** Line Style */
+            line_style: string;
+            /** Group */
+            group: string;
+            /** Source */
+            source?: components["schemas"]["EntityRef"][] | null;
+            /** Target */
+            target?: components["schemas"]["EntityRef"][] | null;
+        };
+        /**
          * MagicLevel
          * @enum {string}
          */
@@ -2575,59 +3540,7 @@ export interface components {
             projectionStyles: string[];
         };
         /** ModuleConfigs */
-        "ModuleConfigs-Input": {
-            /**
-             * @default {
-             *       "timeUnit": "year",
-             *       "eventTypes": [],
-             *       "eraThemes": [],
-             *       "timelineStyle": "linear",
-             *       "recordingMethod": "chronicle"
-             *     }
-             */
-            history: components["schemas"]["HistoryModuleConfig"];
-            /**
-             * @default {
-             *       "entityTypes": [],
-             *       "governmentTypes": [],
-             *       "alignmentSystem": "modern",
-             *       "powerStructure": "centralized"
-             *     }
-             */
-            politics: components["schemas"]["PoliticsModuleConfig"];
-            /**
-             * @default {
-             *       "entityTypes": [],
-             *       "currencyTypes": [],
-             *       "resourceTypes": [],
-             *       "tradeMethods": []
-             *     }
-             */
-            economy: components["schemas"]["EconomyModuleConfig"];
-            /**
-             * @default {
-             *       "mapTypes": [],
-             *       "projectionStyles": []
-             *     }
-             */
-            map: components["schemas"]["MapModuleConfig"];
-            /**
-             * @default {
-             *       "raceTypes": [],
-             *       "traitSystems": []
-             *     }
-             */
-            races: components["schemas"]["RacesModuleConfig"];
-            /**
-             * @default {
-             *       "systemTypes": [],
-             *       "customRules": []
-             *     }
-             */
-            systems: components["schemas"]["SystemsModuleConfig"];
-        };
-        /** ModuleConfigs */
-        "ModuleConfigs-Output": {
+        ModuleConfigs: {
             /**
              * @default {
              *       "timeUnit": "year",
@@ -2796,6 +3709,24 @@ export interface components {
             tags?: string[] | null;
             status?: components["schemas"]["NoteStatus"] | null;
         };
+        /**
+         * PdfExportRequest
+         * @description 打印用 HTML 与文件信息。
+         */
+        PdfExportRequest: {
+            /** Html */
+            html: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Filename
+             * @default 导出.pdf
+             */
+            filename: string;
+        };
         /** PoliticsModuleConfig */
         PoliticsModuleConfig: {
             /**
@@ -2829,6 +3760,24 @@ export interface components {
             description?: string | null;
             /** Cover */
             cover?: string | null;
+        };
+        /** ProjectEventsResponse */
+        ProjectEventsResponse: {
+            /** Project Id */
+            project_id: string;
+            /**
+             * Events
+             * @default []
+             */
+            events: components["schemas"]["StoryEventResponse"][];
+        };
+        /** ProjectOutlineResponse */
+        ProjectOutlineResponse: {
+            /**
+             * Volumes
+             * @default []
+             */
+            volumes: components["schemas"]["VolumeOutlineTreeResponse"][];
         };
         /** ProjectResponse */
         ProjectResponse: {
@@ -3120,6 +4069,111 @@ export interface components {
              */
             pos?: string | null;
         };
+        /** StoryEventCreate */
+        StoryEventCreate: {
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Content
+             * @default
+             */
+            content: string;
+            /** @default normal */
+            event_type: components["schemas"]["EventType"];
+            /** Characters */
+            characters?: string[] | null;
+            /** Location */
+            location?: string | null;
+            /** Timestamp */
+            timestamp?: string | null;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Lane */
+            lane?: number | null;
+            /** Act Id */
+            act_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Order */
+            order?: number | null;
+        };
+        /** StoryEventResponse */
+        StoryEventResponse: {
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Content
+             * @default
+             */
+            content: string;
+            /** @default normal */
+            event_type: components["schemas"]["EventType"];
+            /** Characters */
+            characters?: string[] | null;
+            /** Location */
+            location?: string | null;
+            /** Timestamp */
+            timestamp?: string | null;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Lane */
+            lane?: number | null;
+            /** Id */
+            id: string;
+            /** Act Id */
+            act_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Order */
+            order: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Outgoing Connections
+             * @default []
+             */
+            outgoing_connections: components["schemas"]["EventConnectionResponse"][];
+        };
+        /** StoryEventUpdate */
+        StoryEventUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Content */
+            content?: string | null;
+            event_type?: components["schemas"]["EventType"] | null;
+            /** Characters */
+            characters?: string[] | null;
+            /** Location */
+            location?: string | null;
+            /** Timestamp */
+            timestamp?: string | null;
+            /** Order */
+            order?: number | null;
+            /** Position X */
+            position_x?: number | null;
+            /** Position Y */
+            position_y?: number | null;
+            /** Lane */
+            lane?: number | null;
+        };
         /**
          * StrengthType
          * @description 关联强度枚举
@@ -3140,6 +4194,23 @@ export interface components {
              * @default []
              */
             customRules: string[];
+        };
+        /**
+         * TargetCharacterInfo
+         * @description 目标人物简要信息
+         */
+        TargetCharacterInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Avatar */
+            avatar?: string | null;
+            /**
+             * Level
+             * @default other
+             */
+            level: string;
         };
         /**
          * TechLevel
@@ -3320,6 +4391,43 @@ export interface components {
              */
             children: components["schemas"]["ActNode"][];
         };
+        /** VolumeOutlineResponse */
+        VolumeOutlineResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Order */
+            order: number;
+            /** Outline Content */
+            outline_content?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** VolumeOutlineTreeResponse */
+        VolumeOutlineTreeResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Order */
+            order: number;
+            /** Outline Content */
+            outline_content?: string | null;
+            /**
+             * Acts
+             * @default []
+             */
+            acts: components["schemas"]["ActOutlineResponse"][];
+        };
+        /** VolumeOutlineUpdate */
+        VolumeOutlineUpdate: {
+            /** Outline Content */
+            outline_content?: string | null;
+        };
         /**
          * WordItem
          * @description 单个词语项
@@ -3340,6 +4448,66 @@ export interface components {
              * @description 词性标注
              */
             pos?: string | null;
+        };
+        /** WorldCreate */
+        WorldCreate: {
+            /**
+             * Name
+             * @description 世界名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 世界描述
+             */
+            description?: string | null;
+            /**
+             * Cover Image
+             * @description 封面图片 URL
+             */
+            cover_image?: string | null;
+            /**
+             * Project Id
+             * @description 所属项目
+             */
+            project_id?: string | null;
+            tone?: components["schemas"]["WorldTone"] | null;
+            settings?: components["schemas"]["WorldSettings"] | null;
+        };
+        /**
+         * WorldExport
+         * @description 世界备份（契约 §2.1：世界 JSON 备份 / 恢复，不是模板分发）
+         */
+        WorldExport: {
+            world: components["schemas"]["WorldResponse"];
+            /** Modules */
+            modules: components["schemas"]["WorldModuleWithItemsV2"][];
+            /**
+             * Links
+             * @default []
+             */
+            links: components["schemas"]["WorldLinkExportEntry"][];
+        };
+        /**
+         * WorldImport
+         * @description 世界恢复请求
+         */
+        WorldImport: {
+            world: components["schemas"]["WorldResponse"];
+            /**
+             * Modules
+             * @default []
+             */
+            modules: components["schemas"]["WorldModuleWithItemsV2"][];
+            /**
+             * Links
+             * @default []
+             */
+            links: components["schemas"]["WorldLinkExportEntry"][];
+            /** Project Id */
+            project_id?: string | null;
+            /** Name */
+            name?: string | null;
         };
         /** WorldInstanceCreate */
         WorldInstanceCreate: {
@@ -3427,6 +4595,128 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * WorldLinkCounts
+         * @description 按模块分组的关联计数（契约 §5.1 关联计数徽章）
+         */
+        WorldLinkCounts: {
+            /** Module */
+            module: string;
+            /** Outgoing */
+            outgoing: number;
+            /** Incoming */
+            incoming: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * WorldLinkCreate
+         * @description 创建 WorldLink 请求；directed 由 link_type 决定，不接受客户端覆盖
+         */
+        WorldLinkCreate: {
+            source: components["schemas"]["EntityRef"];
+            target: components["schemas"]["EntityRef"];
+            /** Link Type */
+            link_type: string;
+            /** Label */
+            label?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+            time?: components["schemas"]["LinkTimeRange"] | null;
+        };
+        /**
+         * WorldLinkExportEntry
+         * @description 导出时的关联条目（契约 §2.5）
+         */
+        WorldLinkExportEntry: {
+            /** Source Module */
+            source_module: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** Target Module */
+            target_module: string;
+            /** Target Kind */
+            target_kind: string;
+            /** Target Id */
+            target_id: string;
+            /** Link Type */
+            link_type: string;
+            /**
+             * Directed
+             * @default true
+             */
+            directed: boolean;
+            /** Label */
+            label?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+            /** Time */
+            time?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * WorldLinkResponse
+         * @description WorldLink 响应
+         */
+        WorldLinkResponse: {
+            /** Id */
+            id: string;
+            /** World Id */
+            world_id: string;
+            source: components["schemas"]["EntityRef"];
+            target: components["schemas"]["EntityRef"];
+            /** Link Type */
+            link_type: string;
+            /** Label */
+            label?: string | null;
+            /** Reverse Label */
+            reverse_label?: string | null;
+            /** Directed */
+            directed: boolean;
+            /** Note */
+            note?: string | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+            time?: components["schemas"]["LinkTimeRange"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * WorldLinkUpdate
+         * @description 更新 WorldLink：只允许改语义字段，改端点请删除后重建
+         */
+        WorldLinkUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+            time?: components["schemas"]["LinkTimeRange"] | null;
+        };
         /** WorldModuleCreate */
         WorldModuleCreate: {
             /** @description 模块类型 */
@@ -3452,6 +4742,13 @@ export interface components {
              * @default 0
              */
             order_index: number;
+            /**
+             * Config
+             * @description 模块配置（契约 §2.7，取代 moduleConfig 条目）
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Is Collapsible
              * @description 是否可折叠
@@ -3596,6 +4893,13 @@ export interface components {
              */
             order_index: number;
             /**
+             * Config
+             * @description 模块配置（契约 §2.7，取代 moduleConfig 条目）
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Is Collapsible
              * @description 是否可折叠
              * @default true
@@ -3655,6 +4959,13 @@ export interface components {
              */
             order_index?: number | null;
             /**
+             * Config
+             * @description 模块配置（契约 §2.7）
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Is Collapsible
              * @description 是否可折叠
              */
@@ -3690,6 +5001,13 @@ export interface components {
              * @default 0
              */
             order_index: number;
+            /**
+             * Config
+             * @description 模块配置（契约 §2.7，取代 moduleConfig 条目）
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Is Collapsible
              * @description 是否可折叠
@@ -3737,6 +5055,156 @@ export interface components {
              */
             items: components["schemas"]["WorldModuleItemResponse"][];
         };
+        /**
+         * WorldModuleWithItemsV2
+         * @description 模块（含 config 与嵌套内容），/worlds 详情使用
+         */
+        WorldModuleWithItemsV2: {
+            /** @description 模块类型 */
+            module_type: components["schemas"]["app__schemas__worldbuilding__ModuleType"];
+            /**
+             * Name
+             * @description 模块名称
+             */
+            name: string;
+            /**
+             * Description
+             * @description 模块描述
+             */
+            description?: string | null;
+            /**
+             * Icon
+             * @description 模块图标
+             */
+            icon?: string | null;
+            /**
+             * Order Index
+             * @description 排序索引
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Config
+             * @description 模块配置（契约 §2.7，取代 moduleConfig 条目）
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Is Collapsible
+             * @description 是否可折叠
+             * @default true
+             */
+            is_collapsible: boolean;
+            /**
+             * Is Required
+             * @description 是否必需
+             * @default false
+             */
+            is_required: boolean;
+            /** Id */
+            id: string;
+            /** Template Id */
+            template_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Submodule Count
+             * @default 0
+             */
+            submodule_count: number;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            /** World Id */
+            world_id: string;
+            /**
+             * Submodules
+             * @default []
+             */
+            submodules: components["schemas"]["WorldSubmoduleResponse"][];
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["WorldModuleItemResponse"][];
+        };
+        /** WorldResponse */
+        WorldResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Tone */
+            tone?: {
+                [key: string]: unknown;
+            } | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Module Count
+             * @default 0
+             */
+            module_count: number;
+            /**
+             * Link Count
+             * @default 0
+             */
+            link_count: number;
+        };
+        /**
+         * WorldSettings
+         * @description 世界自定义配置（契约 §2.1）
+         */
+        WorldSettings: {
+            /** Terminology */
+            terminology?: {
+                [key: string]: string;
+            } | null;
+            /** Calendar */
+            calendar?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Complexity
+             * @description sketch/structure/sandbox
+             */
+            complexity?: string | null;
+            /** Moduleconfigs */
+            moduleConfigs?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** WorldSubmoduleCreate */
         WorldSubmoduleCreate: {
             /**
@@ -3755,6 +5223,18 @@ export interface components {
              * @default 0
              */
             order_index: number;
+            /**
+             * Kind
+             * @description 语义类型（契约 §2.3）；不传时按 color 旧编码推导
+             */
+            kind?: string | null;
+            /**
+             * Meta
+             * @description 基础字段（契约 §2.3）
+             */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Color
              * @description 颜色标识（支持十六进制或语义化颜色名称）
@@ -3789,6 +5269,18 @@ export interface components {
              * @default 0
              */
             order_index: number;
+            /**
+             * Kind
+             * @description 语义类型（契约 §2.3）；不传时按 color 旧编码推导
+             */
+            kind?: string | null;
+            /**
+             * Meta
+             * @description 基础字段（契约 §2.3）
+             */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Color
              * @description 颜色标识（支持十六进制或语义化颜色名称）
@@ -3841,6 +5333,18 @@ export interface components {
              * @description 排序索引
              */
             order_index?: number | null;
+            /**
+             * Kind
+             * @description 语义类型
+             */
+            kind?: string | null;
+            /**
+             * Meta
+             * @description 基础字段
+             */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Color
              * @description 颜色标识（支持十六进制或语义化颜色名称）
@@ -4052,6 +5556,88 @@ export interface components {
              */
             modules: components["schemas"]["WorldModuleWithItems"][];
         };
+        /**
+         * WorldTone
+         * @description 世界视觉基调（契约 §2.8）
+         */
+        WorldTone: {
+            /**
+             * Palette
+             * @description parchment/ink/slate/custom
+             */
+            palette?: string | null;
+            /** Accent */
+            accent?: string | null;
+            /**
+             * Texture
+             * @description none/paper/grid/starfield
+             */
+            texture?: string | null;
+            /**
+             * Radius
+             * @description sm/md/lg
+             */
+            radius?: string | null;
+        };
+        /** WorldUpdate */
+        WorldUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            tone?: components["schemas"]["WorldTone"] | null;
+            settings?: components["schemas"]["WorldSettings"] | null;
+        };
+        /** WorldWithModules */
+        WorldWithModules: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Tone */
+            tone?: {
+                [key: string]: unknown;
+            } | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Module Count
+             * @default 0
+             */
+            module_count: number;
+            /**
+             * Link Count
+             * @default 0
+             */
+            link_count: number;
+            /**
+             * Modules
+             * @default []
+             */
+            modules: components["schemas"]["WorldModuleWithItemsV2"][];
+        };
         /** WorldviewAdaptationRule */
         WorldviewAdaptationRule: {
             /** Sourcemodule */
@@ -4071,7 +5657,7 @@ export interface components {
         /** WorldviewAdaptationsResponse */
         WorldviewAdaptationsResponse: {
             worldview_type: components["schemas"]["WorldviewType"];
-            module_configs: components["schemas"]["ModuleConfigs-Output"];
+            module_configs: components["schemas"]["ModuleConfigs"];
             /** Adaptation Rules */
             adaptation_rules: components["schemas"]["WorldviewAdaptationRule"][];
         };
@@ -4127,7 +5713,7 @@ export interface components {
              *       }
              *     }
              */
-            moduleConfigs: components["schemas"]["ModuleConfigs-Input"];
+            moduleConfigs: components["schemas"]["ModuleConfigs"];
             /**
              * @default {
              *       "primaryColor": "#6366f1",
@@ -4201,7 +5787,7 @@ export interface components {
              *       }
              *     }
              */
-            moduleConfigs: components["schemas"]["ModuleConfigs-Output"];
+            moduleConfigs: components["schemas"]["ModuleConfigs"];
             /**
              * @default {
              *       "primaryColor": "#6366f1",
@@ -4245,7 +5831,7 @@ export interface components {
             magicLevel?: components["schemas"]["MagicLevel"] | null;
             politicalComplexity?: components["schemas"]["ComplexityLevel"] | null;
             economicSystem?: components["schemas"]["EconomicSystemType"] | null;
-            moduleConfigs?: components["schemas"]["ModuleConfigs-Input"] | null;
+            moduleConfigs?: components["schemas"]["ModuleConfigs"] | null;
             theme?: components["schemas"]["WorldviewTheme"] | null;
             /** Adaptationrules */
             adaptationRules?: components["schemas"]["WorldviewAdaptationRule"][] | null;
@@ -4372,11 +5958,35 @@ export interface components {
             ids: string[];
         };
         /**
+         * BatchDeleteRequest
+         * @description 批量删除请求
+         */
+        app__schemas__character__BatchDeleteRequest: {
+            /**
+             * Ids
+             * @description 要删除的人物ID列表
+             */
+            ids: string[];
+        };
+        /**
+         * BatchUpdateOrderRequest
+         * @description 批量更新排序请求
+         */
+        app__schemas__character__BatchUpdateOrderRequest: {
+            /**
+             * Orders
+             * @description 人物ID到排序索引的映射
+             */
+            orders: {
+                [key: string]: number;
+            };
+        };
+        /**
          * RelationType
          * @description 关系类型
          * @enum {string}
          */
-        app__schemas__character__RelationType: "family" | "love" | "friend" | "mentor" | "enemy" | "other";
+        app__schemas__character__RelationType: "family" | "love" | "friend" | "master" | "apprentice" | "enemy" | "other";
         /**
          * ModuleType
          * @description 世界观模块类型枚举
@@ -4396,6 +6006,16 @@ export interface components {
              * @description 要删除的 ID 列表
              */
             ids: string[];
+        };
+        /** BatchUpdateOrderRequest */
+        app__schemas__worldbuilding__BatchUpdateOrderRequest: {
+            /**
+             * Items
+             * @description 排序项列表
+             */
+            items: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * ModuleType
@@ -6259,7 +7879,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BatchUpdateOrderRequest"];
+                "application/json": components["schemas"]["app__schemas__worldbuilding__BatchUpdateOrderRequest"];
             };
         };
         responses: {
@@ -6463,6 +8083,456 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorldviewAdaptationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_worlds_api_v1_worldbuilding_worlds_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                name?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_api_v1_worldbuilding_worlds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_world_api_v1_worldbuilding_worlds_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldImport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_api_v1_worldbuilding_worlds__world_id__get: {
+        parameters: {
+            query?: {
+                include_modules?: boolean;
+                include_items?: boolean;
+            };
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldWithModules"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_api_v1_worldbuilding_worlds__world_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_api_v1_worldbuilding_worlds__world_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_world_api_v1_worldbuilding_worlds__world_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldExport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_link_registry_api_v1_worldbuilding_link_registry_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkTypeDefResponse"][];
+                };
+            };
+        };
+    };
+    list_world_links_api_v1_worldbuilding_worlds__world_id__links_get: {
+        parameters: {
+            query?: {
+                /** @description 按实体所属模块过滤 */
+                module?: string | null;
+                /** @description 按实体 ID 过滤（出链+入链） */
+                entity_id?: string | null;
+                link_type?: string | null;
+                target_module?: string | null;
+                skip?: number;
+                limit?: number | null;
+            };
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldLinkResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_link_api_v1_worldbuilding_worlds__world_id__links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_link_counts_api_v1_worldbuilding_worlds__world_id__links_counts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldLinkCounts"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_world_link_api_v1_worldbuilding_links__link_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_world_link_api_v1_worldbuilding_links__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_world_link_api_v1_worldbuilding_links__link_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldLinkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldLinkResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6881,14 +8951,54 @@ export interface operations {
             };
         };
     };
+    list_characters_details_api_v1_projects__project_id__characters_details_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDetailResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_characters_api_v1_projects__project_id__characters_get: {
         parameters: {
             query?: {
-                /** @description 角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色) */
+                /** @description 角色等级筛选：protagonist(主角), major_support(重要配角), support(配角), minor(小角色), past(过往) */
                 level?: components["schemas"]["CharacterLevel"] | null;
                 /** @description 搜索关键词，匹配姓名或别名 */
                 search?: string | null;
-                /** @description 排序字段：order_index(默认), name, created_at, updated_at */
+                /** @description 筛选卷 */
+                volume?: string | null;
+                /** @description 筛选幕 */
+                act?: string | null;
+                /** @description 筛选章 */
+                chapter?: string | null;
+                /** @description 来源筛选：history(历史背景), main(主线故事), all(全部) */
+                source?: string | null;
+                /** @description 排序字段：default(默认-按等级+出场时间), order_index(自定义排序), name, created_at, updated_at */
                 sort_by?: string;
                 /** @description 排序方向：asc(升序), desc(降序) */
                 sort_order?: string;
@@ -6924,48 +9034,18 @@ export interface operations {
     };
     create_character_api_v1_projects__project_id__characters_post: {
         parameters: {
-            query: {
-                /** @description 姓名 */
-                name: string;
-                /** @description 性别 */
-                gender?: components["schemas"]["CharacterGender"];
-                /** @description 生辰 */
-                birth_date?: string | null;
-                /** @description 出生地 */
-                birthplace?: string | null;
-                /** @description 角色等级 */
-                level?: components["schemas"]["CharacterLevel"];
-                /** @description 判词/引言 */
-                quote?: string | null;
-                /** @description 头像URL */
-                avatar?: string | null;
-                /** @description 全身形象图片URL */
-                full_image?: string | null;
-                /** @description 首次出场卷 */
-                first_appearance_volume?: string | null;
-                /** @description 首次出场幕 */
-                first_appearance_act?: string | null;
-                /** @description 首次出场章 */
-                first_appearance_chapter?: string | null;
-                /** @description 排序索引 */
-                order_index?: number;
-                /** @description 别名列表 */
-                aliases?: components["schemas"]["CharacterAliasCreate"][];
-                /** @description 卡片列表 */
-                cards?: components["schemas"]["CharacterCardCreate"][];
-                /** @description 关系列表 */
-                relationships?: components["schemas"]["CharacterRelationshipCreate"][];
-                /** @description 器物列表 */
-                artifacts?: components["schemas"]["CharacterArtifactCreate"][];
-            };
+            query?: never;
             header?: never;
             path: {
-                /** @description 项目ID */
                 project_id: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterCreate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             201: {
@@ -6974,6 +9054,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_characters_simple_api_v1_projects__project_id__characters_simple_get: {
+        parameters: {
+            query?: {
+                /** @description 排除的人物ID（用于关系选择） */
+                exclude_id?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSimpleResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_character_stats_api_v1_projects__project_id__characters_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterStats"];
                 };
             };
             /** @description Validation Error */
@@ -7023,20 +9168,7 @@ export interface operations {
     };
     update_character_api_v1_projects__project_id__characters__character_id__put: {
         parameters: {
-            query?: {
-                name?: string | null;
-                gender?: components["schemas"]["CharacterGender"] | null;
-                birth_date?: string | null;
-                birthplace?: string | null;
-                level?: components["schemas"]["CharacterLevel"] | null;
-                quote?: string | null;
-                avatar?: string | null;
-                full_image?: string | null;
-                first_appearance_volume?: string | null;
-                first_appearance_act?: string | null;
-                first_appearance_chapter?: string | null;
-                order_index?: number | null;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -7046,7 +9178,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -7102,10 +9238,7 @@ export interface operations {
     };
     batch_delete_characters_api_v1_projects__project_id__characters_batch_delete_post: {
         parameters: {
-            query: {
-                /** @description 要删除的人物ID列表 */
-                ids: string[];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -7113,7 +9246,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__schemas__character__BatchDeleteRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {
@@ -7135,12 +9272,7 @@ export interface operations {
     };
     batch_update_character_order_api_v1_projects__project_id__characters_batch_update_order_post: {
         parameters: {
-            query: {
-                /** @description 人物ID到排序索引的映射 */
-                orders: {
-                    [key: string]: number;
-                };
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -7148,7 +9280,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__schemas__character__BatchUpdateOrderRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {
@@ -7712,7 +9848,153 @@ export interface operations {
             };
         };
     };
-    get_character_stats_api_v1_projects__project_id__characters_stats_get: {
+    list_snapshots_api_v1_projects__project_id__characters__character_id__snapshots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSnapshotResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_snapshot_api_v1_projects__project_id__characters__character_id__snapshots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterSnapshotCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_snapshot_api_v1_projects__project_id__characters__character_id__snapshots__snapshot_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+                /** @description 快照ID */
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterSnapshotUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_snapshot_api_v1_projects__project_id__characters__character_id__snapshots__snapshot_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 人物ID */
+                character_id: string;
+                /** @description 快照ID */
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_outline_api_v1_outline_projects__project_id__outline_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7729,7 +10011,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CharacterStats"];
+                    "application/json": components["schemas"]["ProjectOutlineResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7743,12 +10025,9 @@ export interface operations {
             };
         };
     };
-    list_characters_simple_api_v1_projects__project_id__characters_simple_get: {
+    get_project_events_api_v1_outline_projects__project_id__events_get: {
         parameters: {
-            query?: {
-                /** @description 排除的人物ID（用于关系选择） */
-                exclude_id?: string | null;
-            };
+            query?: never;
             header?: never;
             path: {
                 project_id: string;
@@ -7763,7 +10042,341 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CharacterSimpleResponse"][];
+                    "application/json": components["schemas"]["ProjectEventsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_volume_outline_api_v1_outline_volumes__volume_id__outline_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                volume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VolumeOutlineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VolumeOutlineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_chapter_outline_api_v1_outline_notes__note_id__outline_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChapterOutlineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChapterOutlineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_act_events_api_v1_outline_acts__act_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                act_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActEventsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_event_api_v1_outline_acts__act_id__events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                act_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryEventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_event_api_v1_outline_events__event_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryEventUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryEventResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_event_api_v1_outline_events__event_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_connection_api_v1_outline_connections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventConnectionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_connection_api_v1_outline_connections__connection_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventConnectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_connection_api_v1_outline_connections__connection_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_pdf_api_v1_export_pdf_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PdfExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

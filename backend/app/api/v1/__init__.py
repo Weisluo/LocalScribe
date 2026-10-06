@@ -1,16 +1,19 @@
 # backend/app/api/v1/__init__.py
 from fastapi import APIRouter
-from .projects import router as projects_router
-from .folders import router as folders_router
-from .notes import router as notes_router
+
 from .ai import router as ai_router
 from .analysis import router as analysis_router
-from .worldbuilding import router as worldbuilding_router
-from .upload import router as upload_router
-from .relations import router as relations_router
 from .characters import router as characters_router
-from .outline import router as outline_router
 from .export import router as export_router
+from .folders import router as folders_router
+from .notes import router as notes_router
+from .outline import router as outline_router
+from .projects import router as projects_router
+from .relations import router as relations_router
+from .upload import router as upload_router
+from .world_links import router as world_links_router
+from .worldbuilding import router as worldbuilding_router
+from .worlds import router as worlds_router
 
 api_router = APIRouter()
 
@@ -19,9 +22,18 @@ api_router.include_router(folders_router, prefix="/folders", tags=["Folders"])
 api_router.include_router(notes_router, prefix="/notes", tags=["Notes"])
 api_router.include_router(ai_router, prefix="/ai", tags=["AI Assistant"])
 api_router.include_router(analysis_router, prefix="/analysis", tags=["Text Analysis"])
-api_router.include_router(worldbuilding_router, prefix="/worldbuilding", tags=["World Building"])
+api_router.include_router(
+    worldbuilding_router, prefix="/worldbuilding", tags=["World Building"]
+)
+# 新资源独立 router（契约 §3.2）：世界与关联，均挂在 /worldbuilding 前缀下
+api_router.include_router(worlds_router, prefix="/worldbuilding", tags=["Worlds"])
+api_router.include_router(
+    world_links_router, prefix="/worldbuilding", tags=["World Links"]
+)
 api_router.include_router(upload_router, prefix="/upload", tags=["File Upload"])
-api_router.include_router(relations_router, prefix="/relations", tags=["Cross-Module Relations"])
+api_router.include_router(
+    relations_router, prefix="/relations", tags=["Cross-Module Relations"]
+)
 api_router.include_router(characters_router, tags=["Characters"])
 api_router.include_router(outline_router, prefix="/outline", tags=["Outline"])
 api_router.include_router(export_router, prefix="/export", tags=["Export"])

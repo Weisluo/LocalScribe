@@ -12,7 +12,7 @@
 |------|------|----------|------|----------|----------|
 | Phase 0 | 拍板关键决策与迁移策略 | ADR、迁移编号规划、兼容窗口、测试矩阵 | S | 设计文档定稿 | phase0_decisions_and_migration.md |
 | Phase 1 | 数据地基 | worlds / world_modules / world_submodules / world_links、Link registry、links API | L | Phase 0 | phase1_data_foundation.md |
-| Phase 2 | 前端地基 + 历史纵切 | 类型/hooks、EntityPicker、LinkPanel、HistoryView 接入 WorldLink | M | Phase 1 | phase2_frontend_history.md |
+| Phase 2 | 前端地基 + 历史纵切 | 类型/hooks、EntityPicker、LinkPanel、HistoryView 接入 WorldLink、迁移容器归位入口 | M | Phase 1 | phase2_frontend_history.md |
 | Phase 3 | 种族 + 体系 | 两个轻量模块完整 UI、自定义 kind/字段验证 | M | Phase 2 | phase3_races_systems.md |
 | Phase 4 | 政治 | 权力版图、层级权重、条约边、沿革 | L | Phase 3 | phase4_politics.md |
 | Phase 5 | 经济 | 三档复杂度、线路图/账册/沙盘、流量与时间 | L | Phase 4 | phase5_economy.md |
@@ -174,13 +174,16 @@ Task ID 规则：Phase 0-6 分别用 P0-T1、P1-T3 这类编号；跨阶段依�
 
 | 编号 | 决策点 | 推荐方案 | 影响阶段 | 状态 |
 |------|--------|----------|----------|------|
-| D1 | WorldLink 存储 | 升级 bidirectional_relations 为 world_links，复用现有 service 查询与名称缓存 | P1/P6 | 待拍板 |
-| D2 | WorldTemplate -> World | 表重命名 + /worlds 新 API + 旧接口兼容一个版本 | P1/P6 | 待拍板 |
-| D3 | kind/meta 与旧编码 | 迁移回填 + 双读窗口，先数据后 UI | P1/P2 | 待拍板 |
-| D4 | 人物统一 | 全局 Character 为唯一数据源，政治/历史只存引用与身份 | P2/P4 | 待拍板 |
-| D5 | 实例/旧世界观处置 | 只保留只读迁移入口，不迁移系统预设，Phase 6 删表 | P1/P6 | 待拍板 |
-| D6 | 经济切换 | 新 EconomyView 走 feature flag，结构模式稳定后删旧组件 | P5 | 待拍板 |
-| D7 | worldbuilding API 拆分 | 新增 worlds/links router 文件，旧文件只加兼容转发 | P1/P6 | 待拍板 |
+| D1 | WorldLink 存储 | 升级 bidirectional_relations 为 world_links，复用现有 service 查询与名称缓存 | P1/P6 | 已采纳 |
+| D2 | WorldTemplate -> World | 表重命名 + /worlds 新 API + 旧接口兼容一个版本 | P1/P6 | 已采纳 |
+| D3 | kind/meta 与旧编码 | 迁移回填 + 双读窗口，先数据后 UI | P1/P2 | 已采纳 |
+| D4 | 人物统一 | 全局 Character 为唯一数据源，政治/历史只存引用与身份 | P2/P4 | 已采纳 |
+| D5 | 实例/旧世界观处置 | 只保留只读迁移入口，不迁移系统预设，Phase 6 删表 | P1/P6 | 已采纳 |
+| D6 | 经济切换 | 新 EconomyView 走 feature flag，结构模式稳定后删旧组件 | P5 | 已采纳 |
+| D7 | worldbuilding API 拆分 | 新增 worlds/links router 文件，旧文件只加兼容转发 | P1/P6 | 已采纳 |
+
+Phase 0 结论（2026-10-06）：D1-D7 全部采纳，无待拍板项；ADR、迁移冻结、兼容窗口与回滚见
+`phase0_decisions_and_migration.md` §5/§6/§8，旧数据盘点见 `phase0_inventory_report.md`。
 
 ---
 
@@ -193,3 +196,7 @@ Task ID 规则：Phase 0-6 分别用 P0-T1、P1-T3 这类编号；跨阶段依�
 - phase4_politics.md
 - phase5_economy.md
 - phase6_global_config_and_cleanup.md
+
+Phase 0 产出（非阶段 plan）：
+
+- phase0_inventory_report.md

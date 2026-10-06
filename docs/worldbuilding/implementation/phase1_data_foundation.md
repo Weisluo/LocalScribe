@@ -11,7 +11,8 @@
 
 ## 2. 前置依赖与进入条件
 
-- P0-T4 已通过，D1-D7 已采纳，P1-MIG-01..06 冻结；若 head 不是 `a8f3e9c2b1d4`，先对齐历史。
+- P0-T4 已通过，D1-D7 已采纳，P1-MIG-01..06 冻结；若 `alembic heads` 不是 `a8f3e9c2b1d4`，先对齐线性 head。
+- Phase 0 上游产出：P0-T1 ADR 见 Phase 0 §5.1；P0-T2 迁移编号/兼容窗口/回滚见 §6、§8；P0-T3 盘点口径与对账基线见 §4 与 `phase0_inventory_report.md`；P0-T4 退出条件见 §9。
 - 设计文档定稿；`AGENTS.md` 迁移规范可执行。
 
 ## 3. 指导文档
@@ -22,6 +23,7 @@
 | 模块语义与合法 kind/方向 | `cross_module_link_design` §3 |
 | link_type 全量清单 | `cross_module_link_design` §4（54 条） |
 | 旧到新映射 | `cross_module_link_design` §8 |
+| 旧数据盘点、旧编码清单与回填对账基线 | Phase 0 §4；`phase0_inventory_report.md` §3-§7 |
 | API 路由与迁移边界 | `worldbuilding_ui_design` §10.2、§10.3 |
 | JSON 配置与 schema_version | `worldview_configuration_system` §7 |
 | 数据库纪律 | `AGENTS.md` 迁移指南（batch_alter_table/幂等/线性 head） |
@@ -89,31 +91,71 @@ politics.treaty_between 已废弃不收录；kind 不匹配只放行 core.refere
 
 ## 7. 测试与验收清单
 
-- [ ] P1-T1：迁移 01 空库/旧库 upgrade、downgrade、再 upgrade 幂等；World 含 settings/tone，旧字段进 settings.legacyTemplate。
-- [ ] P1-T2：moduleConfig 与 color 前缀回填齐全，双读返回旧值与 kind/meta。
-- [ ] P1-T3：world_links 表、三索引、默认值符合契约，重复 upgrade 不报错。
-- [ ] P1-T4：registry 54 条与契约 §4 一致；history.era 可作为 occurs_at / involves / milestone_of 的源 kind 通过校验（history.event 亦可）；非法 kind 组合仅放行 core.references、core.related_to、custom.link。
-- [ ] P1-T5：链接 CRUD、批量、按实体查询、计数均走 world_links，旧表无新增写入。
-- [ ] P1-T6：links 三主路由与 counts 的语义、404/409 正确；对称边只落一条。
-- [ ] P1-T7：/worlds CRUD、export/import 可用；旧 /templates、/relations 兼容通过。
-- [ ] P1-T8：两类旧数据回填行数对账；重复执行不新增；孤儿与无法归类有报告，旧 item 不删。
-- [ ] P1-T9：SQLite/迁移/TestClient 夹具可复用；迁移、兼容、回填、registry、API 测试全绿。
-- [ ] P1-T10：gen:types 后 tsc/build 通过；worldbuildingApi 有 worlds/links 方法且旧方法保留。
-- [ ] 边界：无契约外 link_type、无世界观预设、无 UI/地图/特殊界面改动、无 emoji。
+- [x] P1-T1：迁移 01 空库/旧库 upgrade、downgrade、再 upgrade 幂等；World 含 settings/tone，旧字段进 settings.legacyTemplate。
+  证据：migrations/versions/570767e6d582；tests/test_worldbuilding_migrations.py 7 例（含 downgrade 回旧结构并把 legacyTemplate 写回旧列）。
+- [x] P1-T2：moduleConfig 与 color 前缀回填齐全，双读返回旧值与 kind/meta。
+  证据：cef4ae3ffe96（moduleConfig -> config、color/icon -> kind/meta、每世界补齐七个模块）；旧 item 与 color 原值保留；tests/test_worldbuilding_backfill.py。
+- [x] P1-T3：world_links 表、三索引、默认值符合契约，重复 upgrade 不报错。
+  证据：d5a573ce6f22；migrations 测试断言三个索引与列集合。
+- [x] P1-T4：registry 54 条与契约 §4 一致；history.era 可作为 occurs_at / involves / milestone_of 的源 kind 通过校验（history.event 亦可）；非法 kind 组合仅放行 core.references、core.related_to、custom.link。
+  证据：app/services/link_registry.py；tests/test_link_registry.py 15 例（逐条比对契约文档字段）。
+- [x] P1-T5：链接 CRUD、批量、按实体查询、计数均走 world_links，旧表无新增写入。
+  证据：app/services/link_service.py、services/relation_service.py（适配层）；tests/test_relations_adapter.py 19 例断言 bidirectional_relations 行数为 0。
+- [x] P1-T6：links 三主路由与 counts 的语义、404/409 正确；对称边只落一条。
+  证据：app/api/v1/world_links.py；tests/test_worldbuilding_compat.py::test_world_links_crud_and_validation。
+- [x] P1-T7：/worlds CRUD、export/import 可用；旧 /templates、/relations 兼容通过。
+  证据：app/api/v1/worlds.py（CRUD+export/import）；compat 测试覆盖 /templates 全流程、/instances 与 /worldviews 的 410 指引、/relations 适配。
+- [x] P1-T8：两类旧数据回填行数对账；重复执行不新增；孤儿与无法归类有报告，旧 item 不删。
+  证据：2160f6984e8a/8a5f26a774e3；回填报告以 logger 输出计数（R3 孤儿 1 例）；重跑幂等测试。
+- [x] P1-T9：SQLite/迁移/TestClient 夹具可复用；迁移、兼容、回填、registry、API 测试全绿。
+  证据：tests/conftest.py（会话级 app 库 + legacy 旧库夹具）；pytest -q = 77 passed。
+- [x] P1-T10：gen:types 后 tsc/build 通过；worldbuildingApi 有 worlds/links 方法且旧方法保留。
+  证据：frontend/src/types/api.ts 由当前 OpenAPI 重新生成；worldbuildingApi.ts 新增 worlds/links 方法（类型取自生成的 components）；tsc --noEmit 与 vite build 通过。
+- [x] 边界：无契约外 link_type、无世界观预设、无 UI/地图/特殊界面改动、无 emoji。
+  证据：回填与 API 均经 registry 校验；未新增 UI 文件；`docs/worldbuilding/**/*.md` emoji 扫描 0 命中；地图与特殊模块端点未改动。
 
 ## 8. 风险、兼容与回滚
 
 - 兼容窗口同 Phase 0 §8：/templates、/relations 适配层到 Phase 5-6；world_links 与 legacy 表 Phase 6 前不删；本阶段无 UI 切换。
 - 风险：旧关联归属歧义（迁移容器世界）、对称边重复（去重）、kind 不匹配（回退通用类型）、character 缺失、SQLite 外键重建（batch_alter_table）。
 - 回滚：逐迁移 downgrade + 上线前快照；只删新增 world_links；旧表与旧 item 只读保留。
+- 本阶段实测：旧接口写接口（/instances、/worldviews）改为 410 指引；旧库 `world_templates` 在 downgrade 后完整恢复（含 tags/is_public/created_by 与 7 个模块中的原有 3 个）。
 
 ## 9. 完成定义 DoD
 
-- [ ] 六个迁移 upgrade/downgrade 幂等，head 线性。
-- [ ] registry 54 条落库；worlds/links API、新模型、旧数据回填可用。
-- [ ] pytest 覆盖迁移、兼容、回填、registry、API；旧接口兼容通过。
-- [ ] 后端 black/isort/flake8/mypy 与前端 gen:types/tsc/build 通过。
-- [ ] 无契约外 link_type、无世界观预设、无 emoji；地图与特殊界面未动。
+- [x] 六个迁移 upgrade/downgrade 幂等，head 线性。
+  证据：570767e6d582 -> fa05a62b0da8 -> d5a573ce6f22 -> cef4ae3ffe96 -> 2160f6984e8a -> 8a5f26a774e3；`alembic heads` 单一 head；空库与旧库均 upgrade/downgrade/再 upgrade 通过。
+- [x] registry 54 条落库；worlds/links API、新模型、旧数据回填可用。
+  证据：/api/v1/worldbuilding/link-registry 返回 54 条；/worlds、/worlds/{id}/links、/links/{id} 实测可用（含 404/409/400 语义）；P1-MIG-04/05/06 回填经夹具旧库验证。
+- [x] pytest 覆盖迁移、兼容、回填、registry、API；旧接口兼容通过。
+  证据：`pytest -q` = 77 passed = 迁移 7 + 回填 9 + 兼容/API 9 + registry 15 + relations 适配 19 + 既有导出/PDF 18。
+- [x] 后端 black/isort/flake8/mypy 与前端 gen:types/tsc/build 通过。
+  证据：black/isort 对全部 Phase 1 触碰文件通过（含顺带修正的 models/project.py、models/__init__.py 格式）；flake8 对新增文件 0 违规，遗留文件只剩基线项（worldbuilding.py 9 处 E501、models/__init__.py 8 项、project.py 3 处既有 F821 Folder/Note/WorldInstance，基线分别为 9/10/14 项，无新增）；mypy 由基线 109 errors / 11 files 降至 102 errors / 11 files，Phase 1 新增与改动文件 0 error；前端 `tsc --noEmit`、eslint（0 error，11 项既有 warning）、`vite build` 通过。
+  说明：仓库既有导出回归套件（Playwright `npm test`，依赖本机 Edge 与独立 dev server）本阶段未执行，Phase 1 未改动导出/PDF 代码路径。
+- [x] 无契约外 link_type、无世界观预设、无 emoji；地图与特殊界面未动。
+  证据：所有写入路径经 `validate_link_type`；未新增预设或 UI；前端仅生成类型与 API 客户端。
+
+## 9.1 执行记录（P1-T11 审计）
+
+| 项 | 结果 |
+|---|---|
+| 迁移文件 | `570767e6d582`(01 worlds rename)、`fa05a62b0da8`(02 config/kind/meta)、`d5a573ce6f22`(03 world_links)、`cef4ae3ffe96`(04 backfill modules)、`2160f6984e8a`(05 backfill links)、`8a5f26a774e3`(06 backfill char refs) |
+| 后端新增/改动 | models/worldbuilding.py、models/relation.py、models/project.py、models/__init__.py、schemas/worldbuilding.py、schemas/relation.py、services/link_registry.py、services/link_service.py、services/relation_service.py、api/v1/worlds.py、api/v1/world_links.py、api/v1/worldbuilding.py、api/v1/__init__.py |
+| 测试 | tests/conftest.py、test_worldbuilding_migrations.py(7)、test_worldbuilding_backfill.py(9)、test_worldbuilding_compat.py(9)、test_link_registry.py(15)、test_relations_adapter.py(19)；`pytest -q` = 77 passed |
+| 前端 | frontend/src/types/api.ts（gen:types 重生成）、frontend/src/services/worldbuildingApi.ts（worlds/links 方法） |
+| 开发库落地 | `backend/data/local_scribe.db` 已升级到 head `8a5f26a774e3`；迁移前快照在仓库外（`%TEMP%\p1\local_scribe_pre_phase1.db`）；回填报告：kind 3、meta 3、其余 0 |
+| 线上实测 | 运行中的后端（:8000，--reload）读接口回执：`/worlds` 200、`/templates` 200、`/templates/{id}` 200、`/worlds/{id}` 200（7 模块）、`/worlds/{id}/links` 200、`/worlds/{id}/links/counts` 200、`/link-registry` 200、`/templates/{id}/export` 200 |
+| 未做/推迟 | 前端 UI 切换、政治/经济内容迁移、legacy 表删除、世界脉络图、自定义 link type 编辑（Phase 2-6） |
+
+已知偏离（需在 Phase 2 前知悉）：
+
+1. 旧 `/relations` 适配层返回 `RelationResponse`（不再返回旧 ORM 对象）；`batch_create_relations` 改为逐条提交，原子性为尽力而为。
+2. `bidirectional=True` 的旧关联统一落 `core.related_to`（与 P1-MIG-05 一致），具体旧类型保留在 `meta.legacyRelationType`。
+3. 迁移容器世界：一个项目下多于一个世界时，旧关联写入/回填到 `settings.migrationContainer=true` 的容器世界，Phase 2 需提供重新归类入口。
+4. `scripts`/`docs` 未记录回填脚本；回填口径以 `phase0_inventory_report.md` §5 与本文 §7 为准。
+5. 旧 `/templates` 写路径（`create_world_template`）不补齐七个模块：前端 `WorldbuildingView` 创建模板后自行
+   建齐七个模块，服务端补建会产生 7 个重复 `module_type`，故七模块不变式只在 `/worlds`、迁移与回填路径成立。
+   收口方案见 `phase2_frontend_history.md` §11.1 L1。
 
 ## 10. 明确不在本阶段做的事
 

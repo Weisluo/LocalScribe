@@ -1,4 +1,19 @@
 import { api } from '@/utils/request';
+import type { components } from '@/types/api';
+
+// 新契约类型来自 OpenAPI 生成（npm run gen:types），不手写重复定义
+export type World = components['schemas']['WorldResponse'];
+export type WorldWithModules = components['schemas']['WorldWithModules'];
+export type WorldCreatePayload = components['schemas']['WorldCreate'];
+export type WorldUpdatePayload = components['schemas']['WorldUpdate'];
+export type WorldExportPayload = components['schemas']['WorldExport'];
+export type WorldImportPayload = components['schemas']['WorldImport'];
+export type WorldModuleDetail = components['schemas']['WorldModuleWithItemsV2'];
+export type WorldLink = components['schemas']['WorldLinkResponse'];
+export type WorldLinkCreate = components['schemas']['WorldLinkCreate'];
+export type WorldLinkUpdate = components['schemas']['WorldLinkUpdate'];
+export type WorldLinkCounts = components['schemas']['WorldLinkCounts'];
+export type LinkTypeDef = components['schemas']['LinkTypeDefResponse'];
 
 export interface WorldTemplate {
   id: string;
@@ -251,5 +266,66 @@ export const worldbuildingApi = {
       template_data: templateData,
       project_id,
     });
+  },
+
+  // ---- 新契约接口：Worlds / WorldLinks（Phase 1，契约 §3.2） ----
+
+  getWorlds: (params?: { project_id?: string; name?: string; skip?: number; limit?: number }) => {
+    return api.get<World[]>('/worldbuilding/worlds', { params });
+  },
+
+  createWorld: (data: WorldCreatePayload) => {
+    return api.post<World>('/worldbuilding/worlds', data);
+  },
+
+  getWorld: (worldId: string, params?: { include_modules?: boolean; include_items?: boolean }) => {
+    return api.get<WorldWithModules>(`/worldbuilding/worlds/${worldId}`, { params });
+  },
+
+  updateWorld: (worldId: string, data: WorldUpdatePayload) => {
+    return api.put<World>(`/worldbuilding/worlds/${worldId}`, data);
+  },
+
+  deleteWorld: (worldId: string) => {
+    return api.delete(`/worldbuilding/worlds/${worldId}`);
+  },
+
+  exportWorld: (worldId: string) => {
+    return api.get<WorldExportPayload>(`/worldbuilding/worlds/${worldId}/export`);
+  },
+
+  importWorld: (data: WorldImportPayload) => {
+    return api.post<World>('/worldbuilding/worlds/import', data);
+  },
+
+  getLinkRegistry: () => {
+    return api.get<LinkTypeDef[]>('/worldbuilding/link-registry');
+  },
+
+  getWorldLinks: (
+    worldId: string,
+    params?: { module?: string; entity_id?: string; link_type?: string; target_module?: string; skip?: number; limit?: number }
+  ) => {
+    return api.get<WorldLink[]>(`/worldbuilding/worlds/${worldId}/links`, { params });
+  },
+
+  createWorldLink: (worldId: string, data: WorldLinkCreate) => {
+    return api.post<WorldLink>(`/worldbuilding/worlds/${worldId}/links`, data);
+  },
+
+  getWorldLinkCounts: (worldId: string) => {
+    return api.get<WorldLinkCounts[]>(`/worldbuilding/worlds/${worldId}/links/counts`);
+  },
+
+  getWorldLink: (linkId: string) => {
+    return api.get<WorldLink>(`/worldbuilding/links/${linkId}`);
+  },
+
+  updateWorldLink: (linkId: string, data: WorldLinkUpdate) => {
+    return api.patch<WorldLink>(`/worldbuilding/links/${linkId}`, data);
+  },
+
+  deleteWorldLink: (linkId: string) => {
+    return api.delete(`/worldbuilding/links/${linkId}`);
   },
 };

@@ -194,3 +194,145 @@ class RelationStatistics(BaseModel):
     by_strength: Dict[str, int]  # 各强度等级数量
     cross_module_relations: int  # 跨模块关联数
     top_connected_entities: List[Dict[str, Any]]  # 连接最多的实体
+
+
+# ============= WorldLink（契约 §2.5 / §4） =============
+
+
+class EntityRef(BaseModel):
+    """实体引用 {module, kind, id}（契约 §1）"""
+
+    module: str = Field(..., min_length=1, max_length=50)
+    kind: str = Field(..., min_length=1, max_length=100)
+    id: str = Field(..., min_length=1, max_length=36)
+
+
+class LinkTimeRange(BaseModel):
+    """关联生效时间范围（契约 §2.5 time）"""
+
+    start: Optional[str] = Field(None, max_length=100)
+    end: Optional[str] = Field(None, max_length=100)
+
+
+class WorldLinkCreate(BaseModel):
+    """创建 WorldLink 请求；directed 由 link_type 决定，不接受客户端覆盖"""
+
+    source: EntityRef
+    target: EntityRef
+    link_type: str = Field(..., min_length=1, max_length=50)
+    label: Optional[str] = Field(None, max_length=255)
+    note: Optional[str] = None
+    meta: Optional[Dict[str, Any]] = None
+    time: Optional[LinkTimeRange] = None
+
+
+class WorldLinkUpdate(BaseModel):
+    """更新 WorldLink：只允许改语义字段，改端点请删除后重建"""
+
+    label: Optional[str] = Field(None, max_length=255)
+    note: Optional[str] = None
+    meta: Optional[Dict[str, Any]] = None
+    time: Optional[LinkTimeRange] = None
+
+
+class WorldLinkResponse(BaseModel):
+    """WorldLink 响应"""
+
+    id: str
+    world_id: str
+    source: EntityRef
+    target: EntityRef
+    link_type: str
+    label: Optional[str] = None
+    reverse_label: Optional[str] = None
+    directed: bool
+    note: Optional[str] = None
+    meta: Optional[Dict[str, Any]] = None
+    time: Optional[LinkTimeRange] = None
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def from_model(cls, link) -> "WorldLinkResponse":
+        """由 WorldLink ORM 行构造响应（含契约 reverseLabel）。"""
+
+        from app.services.link_registry import get_link_type
+
+        definition = get_link_type(link.link_type)
+        return cls(
+            id=link.id,
+            world_id=link.world_id,
+            source=EntityRef(
+                module=link.source_module,
+                kind=link.source_kind,
+                id=link.source_id,
+            ),
+            target=EntityRef(
+                module=link.target_module,
+                kind=link.target_kind,
+                id=link.target_id,
+            ),
+            link_type=link.link_type,
+            label=link.label,
+            reverse_label=definition.reverse_label if definition else None,
+            directed=bool(link.directed),
+            note=link.note,
+            meta=link.meta,
+            time=link.time_range,
+            created_at=link.created_at,
+            updated_at=link.updated_at,
+        )
+
+
+class LinkTypeDefResponse(BaseModel):
+    """link registry 单条定义（契约 §4）"""
+
+    id: str
+    label: str
+    reverse_label: str
+    directed: bool
+    icon: str
+    color: str
+    line_style: str
+    group: str
+    source: Optional[List[EntityRef]] = None
+    target: Optional[List[EntityRef]] = None
+
+    @classmethod
+    def from_definition(cls, definition) -> "LinkTypeDefResponse":
+        def _refs(spec):
+            if spec is None:
+                return None
+            return [
+                EntityRef(module=module, kind=kind, id="*")
+                for module, kind in sorted(spec)
+            ]
+
+        return cls(
+            id=definition.id,
+            label=definition.label,
+            reverse_label=definition.reverse_label,
+            directed=definition.directed,
+            icon=definition.icon,
+            color=definition.color,
+            line_style=definition.line_style,
+            group=definition.group,
+            source=_refs(definition.source),
+            target=_refs(definition.target),
+        )
+
+
+class WorldLinkCounts(BaseModel):
+    """按模块分组的关联计数（契约 §5.1 关联计数徽章）"""
+
+    module: str
+    outgoing: int
+    incoming: int
+    total: int
+
+
+class WorldLinkListResponse(BaseModel):
+    """关联列表响应"""
+
+    links: List[WorldLinkResponse]
+    total: int

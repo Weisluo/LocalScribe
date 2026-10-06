@@ -1,17 +1,27 @@
 """
-跨模块引用系统 - 业务服务层
+跨模块引用系统 - 业务服务层（world_links 适配层）
 
-提供关联关系的CRUD操作和智能发现功能。
+Phase 1 决策 D1：world_links 承接旧 bidirectional_relations，回填后旧表只读、不双写。
+本模块保留旧 /relations 接口的全部服务签名与返回形状，内部实现改为：
+- 写入：LinkService.create_link / update_link / delete_link，只写契约 §4 白名单类型
+- 读取：WorldLink -> 旧 RelationResponse（旧名称与旧枚举从 meta 回读，缺失时尽力反查）
+- 旧表 bidirectional_relations 只读，本模块不再插入/更新/删除
 """
 
-import uuid
-from typing import List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
-from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, object_session
 
 from app.core.logging import get_logger
-from app.models import BidirectionalRelation, WorldModuleItem
+from app.models import (
+    Project,
+    World,
+    WorldLink,
+    WorldModule,
+    WorldModuleItem,
+    WorldSubmodule,
+)
 from app.schemas.relation import (
     DiscoveredRelation,
     EntityReference,
@@ -25,6 +35,8 @@ from app.schemas.relation import (
     RelationUpdate,
     StrengthType,
 )
+from app.services.link_registry import get_link_type, validate_link_type
+from app.services.link_service import LinkService, resolve_project_world
 
 logger = get_logger(__name__)
 
@@ -39,6 +51,37 @@ class DiscoveryRule(TypedDict):
     relation_type: RelationType
     description: str
     confidence: float
+
+
+# 旧 relation_type -> 契约 §4 具体类型（仅当源/目标 kind 也通过校验时才使用）
+LEGACY_RELATION_TYPE_MAP: Dict[str, str] = {
+    "causal": "history.causes",
+    "dependency": "economy.requires",
+    "hierarchical": "politics.subordinate_to",
+}
+
+# 反查映射：没有专门映射的 link_type 一律读作 functional
+LINK_TYPE_TO_LEGACY_RELATION_TYPE: Dict[str, str] = {
+    "history.causes": RelationType.CAUSAL.value,
+    "economy.requires": RelationType.DEPENDENCY.value,
+    "politics.subordinate_to": RelationType.HIERARCHICAL.value,
+}
+
+# 降级用的通用类型（契约 §4.1）
+GENERAL_SYMMETRIC_LINK_TYPE = "core.related_to"
+GENERAL_DIRECTED_LINK_TYPE = "core.references"
+
+LEGACY_RELATION_TYPES = {item.value for item in RelationType}
+LEGACY_STRENGTHS = {item.value for item in StrengthType}
+
+# 适配层记账键：写入 meta 时最后覆盖，客户端 metadata 不得覆盖或删除
+RESERVED_META_KEYS = (
+    "legacyRelationType",
+    "strength",
+    "legacySourceName",
+    "legacyTargetName",
+    "projectId",
+)
 
 
 # 预置关联发现规则
@@ -102,105 +145,257 @@ DISCOVERY_RULES: List[DiscoveryRule] = [
 
 
 class RelationService:
-    """关联关系业务服务类"""
+    """关联关系业务服务类（旧接口签名 + world_links 实现）"""
+
+    # ------------------------------------------------------------------
+    # 内部工具
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _project_world_ids(db: Session, project_id: str) -> List[str]:
+        """项目下所有世界的 id（一个项目可能有多个世界）。"""
+
+        worlds = db.query(World).filter(World.project_id == project_id).all()
+        return [world.id for world in worlds]
+
+    @staticmethod
+    def _link_in_project(db: Session, link: WorldLink, project_id: str) -> bool:
+        """关联所属世界是否属于该项目（用于旧接口的 project_id 校验）。"""
+
+        world = db.query(World).filter(World.id == link.world_id).first()
+        return world is not None and world.project_id == project_id
+
+    @staticmethod
+    def _resolve_link_type(
+        relation_type: str,
+        source_module: str,
+        source_kind: str,
+        target_module: str,
+        target_kind: str,
+        bidirectional: bool,
+    ) -> str:
+        """选择契约 §4 类型：对称优先，其次语义映射，最后降级通用类型。
+
+        - bidirectional=True：一律 core.related_to（与 P1-MIG-05 回填口径一致，
+          对称标志必须能读回，对称边也只落一条）
+        - bidirectional=False：先试 causal/dependency/hierarchical 的映射类型，
+          校验不过或没有映射时用 core.references
+        """
+
+        if bidirectional:
+            return GENERAL_SYMMETRIC_LINK_TYPE
+        candidate = LEGACY_RELATION_TYPE_MAP.get(relation_type)
+        if candidate is not None:
+            ok, _ = validate_link_type(
+                candidate, source_module, source_kind, target_module, target_kind
+            )
+            if ok:
+                return candidate
+        return GENERAL_DIRECTED_LINK_TYPE
+
+    @staticmethod
+    def _build_meta(relation_data: RelationCreate) -> Dict[str, Any]:
+        """客户端 metadata + 适配层记账键（记账键最后写入，不可被覆盖）。"""
+
+        meta: Dict[str, Any] = {}
+        if isinstance(relation_data.metadata, dict):
+            meta.update(relation_data.metadata)
+        meta.update(
+            {
+                "legacyRelationType": relation_data.relation_type.value,
+                "strength": relation_data.strength.value,
+                "legacySourceName": relation_data.source_entity_name,
+                "legacyTargetName": relation_data.target_entity_name,
+                "projectId": relation_data.project_id,
+            }
+        )
+        return meta
+
+    @staticmethod
+    def _lookup_entity_name(
+        db: Optional[Session], module: str, entity_id: str
+    ) -> Optional[str]:
+        """尽力从子模块/模块项反查名称（经 /links 写入的关联没有 legacy 名称）。"""
+
+        if db is None or not entity_id:
+            return None
+        name = (
+            db.query(WorldSubmodule.name)
+            .join(WorldModule, WorldSubmodule.module_id == WorldModule.id)
+            .filter(
+                WorldSubmodule.id == entity_id,
+                WorldModule.module_type == module,
+            )
+            .scalar()
+        )
+        if name:
+            return str(name)
+        item_name = (
+            db.query(WorldModuleItem.name)
+            .join(WorldModule, WorldModuleItem.module_id == WorldModule.id)
+            .filter(
+                WorldModuleItem.id == entity_id,
+                WorldModule.module_type == module,
+            )
+            .scalar()
+        )
+        if item_name:
+            return str(item_name)
+        return None
+
+    @staticmethod
+    def _link_endpoint_name(
+        db: Optional[Session], link: WorldLink, is_source: bool
+    ) -> str:
+        """端点显示名：meta 记账名 -> 数据库反查 -> 实体 id。"""
+
+        meta = link.meta if isinstance(link.meta, dict) else {}
+        key = "legacySourceName" if is_source else "legacyTargetName"
+        name = meta.get(key)
+        if name:
+            return str(name)
+        module = link.source_module if is_source else link.target_module
+        entity_id = link.source_id if is_source else link.target_id
+        looked_up = RelationService._lookup_entity_name(db, module, entity_id)
+        if looked_up:
+            return looked_up
+        return str(entity_id)
+
+    @staticmethod
+    def _legacy_relation_type(link: WorldLink) -> str:
+        """world_links 行 -> 旧 relation_type 枚举值。"""
+
+        meta = link.meta if isinstance(link.meta, dict) else {}
+        legacy = meta.get("legacyRelationType")
+        if legacy in LEGACY_RELATION_TYPES:
+            return str(legacy)
+        return LINK_TYPE_TO_LEGACY_RELATION_TYPE.get(
+            link.link_type, RelationType.FUNCTIONAL.value
+        )
+
+    @staticmethod
+    def _legacy_strength(link: WorldLink) -> str:
+        """旧 strength 枚举值，缺失或非法时回退 medium。"""
+
+        meta = link.meta if isinstance(link.meta, dict) else {}
+        strength = meta.get("strength")
+        if strength in LEGACY_STRENGTHS:
+            return str(strength)
+        return StrengthType.MEDIUM.value
+
+    @staticmethod
+    def _safe_module(module: str) -> ModuleType:
+        """旧 EntityReference 只认识 7 个世界观模块；其他模块归入 special。"""
+
+        try:
+            return ModuleType(module)
+        except ValueError:
+            return ModuleType.SPECIAL
+
+    @staticmethod
+    def _create_link(db: Session, relation_data: RelationCreate) -> WorldLink:
+        """核心写入：旧 RelationCreate -> world_links 行（重复时返回已存在的行）。"""
+
+        project = (
+            db.query(Project).filter(Project.id == relation_data.project_id).first()
+        )
+        if project is None:
+            # API 层 verify_project_exists 已先返回 404，这里保护直接调用方
+            raise ValueError(f"Project {relation_data.project_id} not found")
+
+        world = resolve_project_world(db, relation_data.project_id)
+        link_type = RelationService._resolve_link_type(
+            relation_data.relation_type.value,
+            relation_data.source_module.value,
+            relation_data.source_entity_type,
+            relation_data.target_module.value,
+            relation_data.target_entity_type,
+            relation_data.bidirectional,
+        )
+        source = {
+            "module": relation_data.source_module.value,
+            "kind": relation_data.source_entity_type,
+            "id": relation_data.source_entity_id,
+        }
+        target = {
+            "module": relation_data.target_module.value,
+            "kind": relation_data.target_entity_type,
+            "id": relation_data.target_entity_id,
+        }
+
+        # 已存在等价关联时返回既有行而不是抛错：旧接口「重复即返回已有」的语义，
+        # 对称关联（directed=False）正反向都算同一条，避免产生第二条对称边。
+        existing = LinkService.find_duplicate(db, world.id, source, target, link_type)
+        if existing is not None:
+            logger.warning(f"Relation already exists as world link: {existing.id}")
+            return existing
+
+        # directed 由注册表按 link_type 决定（LinkService.create_link 内部完成），
+        # 不采信客户端的 bidirectional 作为 directed。
+        return LinkService.create_link(
+            db,
+            world.id,
+            {
+                "source": source,
+                "target": target,
+                "link_type": link_type,
+                "label": None,
+                "note": None,
+                "meta": RelationService._build_meta(relation_data),
+                "time": None,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # 写操作
+    # ------------------------------------------------------------------
 
     @staticmethod
     def create_relation(
         db: Session, relation_data: RelationCreate, auto_commit: bool = True
-    ) -> BidirectionalRelation:
+    ) -> RelationResponse:
         """
-        创建单个关联关系
+        创建单个关联关系（写入 world_links）
 
         Args:
             db: 数据库会话
             relation_data: 关联创建数据
-            auto_commit: 是否自动提交事务
+            auto_commit: 是否自动提交事务。底层 LinkService.create_link 每条自行提交，
+                因此 False 只表示「调用方随后会提交」，不再保证仅 flush 的旧语义。
 
         Returns:
-            创建的关联对象（如果已存在则返回已存在的）
+            创建的关联响应（如果已存在等价关联则返回已存在的那条）
         """
         logger.info(
-            f"Creating bidirectional relation: "
+            f"Creating world link: "
             f"{relation_data.source_entity_name} -> {relation_data.target_entity_name}"
         )
 
-        # 检查是否已存在相同关联（包括反向）
-        existing = (
-            db.query(BidirectionalRelation)
-            .filter(
-                or_(
-                    and_(
-                        BidirectionalRelation.source_entity_id
-                        == relation_data.source_entity_id,
-                        BidirectionalRelation.target_entity_id
-                        == relation_data.target_entity_id,
-                        BidirectionalRelation.relation_type
-                        == relation_data.relation_type.value,
-                    ),
-                    and_(
-                        BidirectionalRelation.source_entity_id
-                        == relation_data.target_entity_id,
-                        BidirectionalRelation.target_entity_id
-                        == relation_data.source_entity_id,
-                        BidirectionalRelation.relation_type
-                        == relation_data.relation_type.value,
-                    ),
-                )
-            )
-            .first()
-        )
-
-        if existing:
-            logger.warning(f"Relation already exists: {existing.id}")
-            return existing
-
-        # 创建新关联
-        relation = BidirectionalRelation(
-            id=str(uuid.uuid4()),
-            source_module=relation_data.source_module.value,
-            source_entity_type=relation_data.source_entity_type,
-            source_entity_id=relation_data.source_entity_id,
-            source_entity_name=relation_data.source_entity_name,
-            target_module=relation_data.target_module.value,
-            target_entity_type=relation_data.target_entity_type,
-            target_entity_id=relation_data.target_entity_id,
-            target_entity_name=relation_data.target_entity_name,
-            relation_type=relation_data.relation_type.value,
-            bidirectional=relation_data.bidirectional,
-            strength=relation_data.strength.value,
-            metadata_json=relation_data.metadata,
-            project_id=relation_data.project_id,
-        )
-
-        db.add(relation)
+        link = RelationService._create_link(db, relation_data)
         if auto_commit:
-            db.commit()
-            db.refresh(relation)
-            logger.info(f"Created relation: {relation.id}")
-        else:
-            db.flush()
-
-        return relation
+            logger.info(f"Created relation: {link.id}")
+        return RelationService._to_relation_response(link)
 
     @staticmethod
     def batch_create_relations(
         db: Session, relations_data: List[RelationCreate]
-    ) -> List[BidirectionalRelation]:
+    ) -> List[RelationResponse]:
         """
         批量创建关联关系
-
-        使用事务确保原子性，失败时回滚所有操作。
 
         Args:
             db: 数据库会话
             relations_data: 关联创建数据列表
 
         Returns:
-            创建的关联对象列表
+            创建的关联响应列表（含重复时返回的既有行）
+
+        说明：LinkService.create_link 每条自行提交，无法做到严格「全有全无」；
+        失败时仍会回滚当前会话并抛出，由 API 层转成错误响应。
         """
         logger.info(f"Batch creating {len(relations_data)} relations")
 
-        created = []
+        created: List[RelationResponse] = []
         try:
             for relation_data in relations_data:
                 relation = RelationService.create_relation(
@@ -208,8 +403,6 @@ class RelationService:
                 )
                 created.append(relation)
             db.commit()
-            for relation in created:
-                db.refresh(relation)
             logger.info(f"Batch created {len(created)} relations")
         except Exception as e:
             db.rollback()
@@ -219,15 +412,80 @@ class RelationService:
         return created
 
     @staticmethod
-    def get_relation_by_id(
-        db: Session, relation_id: str
-    ) -> Optional[BidirectionalRelation]:
-        """根据ID获取关联关系"""
-        return (
-            db.query(BidirectionalRelation)
-            .filter(BidirectionalRelation.id == relation_id)
-            .first()
+    def update_relation(
+        db: Session,
+        relation_id: str,
+        update_data: RelationUpdate,
+        project_id: Optional[str] = None,
+    ) -> Optional[RelationResponse]:
+        """
+        更新关联关系（只改 world_links 上的语义字段）
+
+        Args:
+            db: 数据库会话
+            relation_id: 关联ID
+            update_data: 更新数据
+            project_id: 可选的项目ID验证
+
+        Returns:
+            更新后的关联响应，不存在则返回None
+        """
+        link = LinkService.get_link(db, relation_id)
+        if link is None:
+            return None
+        if project_id and not RelationService._link_in_project(db, link, project_id):
+            return None
+
+        meta = dict(link.meta) if isinstance(link.meta, dict) else {}
+        link_type = link.link_type
+        directed = bool(link.directed)
+
+        if update_data.relation_type is not None:
+            meta["legacyRelationType"] = update_data.relation_type.value
+        new_relation_type = meta.get("legacyRelationType")
+        if new_relation_type not in LEGACY_RELATION_TYPES:
+            new_relation_type = RelationService._legacy_relation_type(link)
+
+        bidirectional = (
+            update_data.bidirectional
+            if update_data.bidirectional is not None
+            else not directed
         )
+
+        if (
+            update_data.relation_type is not None
+            or update_data.bidirectional is not None
+        ):
+            # 与写入同一套规则：显式 bidirectional=True 落对称通用类型，
+            # False 时按新旧 relation_type 重新映射（客户端显式翻转必须生效）
+            link_type = RelationService._resolve_link_type(
+                str(new_relation_type),
+                link.source_module,
+                link.source_kind,
+                link.target_module,
+                link.target_kind,
+                bool(bidirectional),
+            )
+            definition = get_link_type(link_type)
+            directed = bool(definition.directed) if definition is not None else True
+
+        if update_data.strength is not None:
+            meta["strength"] = update_data.strength.value
+
+        if update_data.metadata is not None:
+            # 合并元数据而非完全替换（旧行为）；记账键不允许被客户端覆盖或删除
+            merged = {k: v for k, v in meta.items() if k not in RESERVED_META_KEYS}
+            merged.update(update_data.metadata)
+            for key in RESERVED_META_KEYS:
+                if key in meta:
+                    merged[key] = meta[key]
+            meta = merged
+
+        link.link_type = link_type
+        link.directed = directed
+        LinkService.update_link(db, link, {"meta": meta})
+        logger.info(f"Updated relation: {relation_id}")
+        return RelationService._to_relation_response(link)
 
     @staticmethod
     def delete_relation(
@@ -244,39 +502,64 @@ class RelationService:
         Returns:
             是否成功删除
         """
-        query = db.query(BidirectionalRelation).filter(
-            BidirectionalRelation.id == relation_id
-        )
-        if project_id:
-            query = query.filter(BidirectionalRelation.project_id == project_id)
-
-        relation = query.first()
-        if not relation:
+        link = LinkService.get_link(db, relation_id)
+        if link is None:
+            return False
+        if project_id and not RelationService._link_in_project(db, link, project_id):
             return False
 
-        db.delete(relation)
-        db.commit()
+        LinkService.delete_link(db, link)
         logger.info(f"Deleted relation: {relation_id}")
         return True
 
+    # ------------------------------------------------------------------
+    # 读操作
+    # ------------------------------------------------------------------
+
     @staticmethod
-    def _to_relation_response(rel: BidirectionalRelation) -> RelationResponse:
-        """将模型对象转换为响应Schema"""
+    def get_relation_by_id(db: Session, relation_id: str) -> Optional[RelationResponse]:
+        """根据ID获取关联关系（world_links 行 -> 旧响应形状）"""
+
+        link = LinkService.get_link(db, relation_id)
+        if link is None:
+            return None
+        return RelationService._to_relation_response(link)
+
+    @staticmethod
+    def _to_relation_response(rel: WorldLink) -> RelationResponse:
+        """将 world_links 行转换为旧响应Schema（保持原有单参数签名）"""
+
+        session = object_session(rel)
+        world = None
+        if session is not None and rel.world_id:
+            world = session.query(World).filter(World.id == rel.world_id).first()
+        meta = rel.meta if isinstance(rel.meta, dict) else {}
+
+        project_id = None
+        if world is not None and world.project_id:
+            project_id = world.project_id
+        if not project_id:
+            project_id = meta.get("projectId") or ""
+
+        extra_meta = {
+            key: value for key, value in meta.items() if key not in RESERVED_META_KEYS
+        }
+
         return RelationResponse(
             id=rel.id,
             source_module=rel.source_module,
-            source_entity_type=rel.source_entity_type,
-            source_entity_id=rel.source_entity_id,
-            source_entity_name=rel.source_entity_name,
+            source_entity_type=rel.source_kind,
+            source_entity_id=rel.source_id,
+            source_entity_name=RelationService._link_endpoint_name(session, rel, True),
             target_module=rel.target_module,
-            target_entity_type=rel.target_entity_type,
-            target_entity_id=rel.target_entity_id,
-            target_entity_name=rel.target_entity_name,
-            relation_type=rel.relation_type,
-            bidirectional=rel.bidirectional,
-            strength=rel.strength,
-            metadata_json=rel.metadata_json,
-            project_id=rel.project_id,
+            target_entity_type=rel.target_kind,
+            target_entity_id=rel.target_id,
+            target_entity_name=RelationService._link_endpoint_name(session, rel, False),
+            relation_type=RelationService._legacy_relation_type(rel),
+            bidirectional=not bool(rel.directed),
+            strength=RelationService._legacy_strength(rel),
+            metadata_json=extra_meta or None,
+            project_id=str(project_id),
             created_at=rel.created_at,
             updated_at=rel.updated_at,
         )
@@ -301,24 +584,29 @@ class RelationService:
 
         Returns:
             实体关联网络响应
+
+        分类规则：对称关联（directed=False）只进 bidirectional；
+        有向关联按「实体是源/目标是源」分别进 outgoing / incoming。
         """
-        query = db.query(BidirectionalRelation).filter(
-            BidirectionalRelation.project_id == project_id,
-            or_(
-                BidirectionalRelation.source_entity_id == entity_id,
-                BidirectionalRelation.target_entity_id == entity_id,
-            ),
-        )
 
-        if module_filter:
-            query = query.filter(
+        world_ids = RelationService._project_world_ids(db, project_id)
+        relations: List[WorldLink] = []
+        if world_ids:
+            query = db.query(WorldLink).filter(
+                WorldLink.world_id.in_(world_ids),
                 or_(
-                    BidirectionalRelation.source_module == module_filter,
-                    BidirectionalRelation.target_module == module_filter,
-                )
+                    WorldLink.source_id == entity_id,
+                    WorldLink.target_id == entity_id,
+                ),
             )
-
-        relations = query.all()
+            if module_filter:
+                query = query.filter(
+                    or_(
+                        WorldLink.source_module == module_filter,
+                        WorldLink.target_module == module_filter,
+                    )
+                )
+            relations = query.order_by(WorldLink.created_at, WorldLink.id).all()
 
         incoming: List[RelationResponse] = []
         outgoing: List[RelationResponse] = []
@@ -327,28 +615,31 @@ class RelationService:
 
         for rel in relations:
             rel_response = RelationService._to_relation_response(rel)
+            is_source = rel.source_id == entity_id
+            is_target = rel.target_id == entity_id
 
-            if rel.source_entity_id == entity_id:
-                outgoing.append(rel_response)
-                if entity_ref is None:
-                    entity_ref = EntityReference(
-                        module=ModuleType(rel.source_module),
-                        entity_type=rel.source_entity_type,
-                        entity_id=rel.source_entity_id,
-                        entity_name=rel.source_entity_name,
-                    )
-            elif rel.target_entity_id == entity_id:
-                incoming.append(rel_response)
-                if entity_ref is None:
-                    entity_ref = EntityReference(
-                        module=ModuleType(rel.target_module),
-                        entity_type=rel.target_entity_type,
-                        entity_id=rel.target_entity_id,
-                        entity_name=rel.target_entity_name,
-                    )
-
-            if rel.bidirectional:
+            if not rel.directed:
                 bidirectional.append(rel_response)
+            elif is_source:
+                outgoing.append(rel_response)
+            elif is_target:
+                incoming.append(rel_response)
+
+            if entity_ref is None:
+                if is_source:
+                    entity_ref = EntityReference(
+                        module=RelationService._safe_module(rel.source_module),
+                        entity_type=rel.source_kind,
+                        entity_id=rel.source_id,
+                        entity_name=rel_response.source_entity_name,
+                    )
+                elif is_target:
+                    entity_ref = EntityReference(
+                        module=RelationService._safe_module(rel.target_module),
+                        entity_type=rel.target_kind,
+                        entity_id=rel.target_id,
+                        entity_name=rel_response.target_entity_name,
+                    )
 
         # 如果实体没有关联，创建默认引用
         if entity_ref is None:
@@ -395,29 +686,30 @@ class RelationService:
         """
         logger.info(f"Discovering relations for entity: {entity_id} ({module.value})")
 
+        world_ids = RelationService._project_world_ids(db, project_id)
+
         # 获取已存在的关联
-        existing_relations = (
-            db.query(BidirectionalRelation)
-            .filter(
-                BidirectionalRelation.project_id == project_id,
-                or_(
-                    BidirectionalRelation.source_entity_id == entity_id,
-                    BidirectionalRelation.target_entity_id == entity_id,
-                ),
+        existing_relations: List[WorldLink] = []
+        if world_ids:
+            existing_relations = (
+                db.query(WorldLink)
+                .filter(
+                    WorldLink.world_id.in_(world_ids),
+                    or_(
+                        WorldLink.source_id == entity_id,
+                        WorldLink.target_id == entity_id,
+                    ),
+                )
+                .all()
             )
-            .all()
-        )
 
         # 构建已存在关联的集合，用于去重
         existing_set = set()
         for rel in existing_relations:
-            existing_set.add(
-                (rel.source_entity_id, rel.target_entity_id, rel.relation_type)
-            )
-            if rel.bidirectional:
-                existing_set.add(
-                    (rel.target_entity_id, rel.source_entity_id, rel.relation_type)
-                )
+            legacy_type = RelationService._legacy_relation_type(rel)
+            existing_set.add((rel.source_id, rel.target_id, legacy_type))
+            if not rel.directed:
+                existing_set.add((rel.target_id, rel.source_id, legacy_type))
 
         discoveries: List[DiscoveredRelation] = []
         discovery_keys: set = set()  # 用于去重
@@ -435,54 +727,71 @@ class RelationService:
             else:
                 continue  # 当前规则不适用
 
-            # 从目标模块中查找相关实体
-            related_relations = (
-                db.query(BidirectionalRelation)
-                .filter(
-                    BidirectionalRelation.project_id == project_id,
-                    BidirectionalRelation.source_module == effective_target.value,
+            # 从目标模块中查找相关实体（world_links 中从该模块出发的关联）
+            related_relations: List[WorldLink] = []
+            if world_ids:
+                related_relations = (
+                    db.query(WorldLink)
+                    .filter(
+                        WorldLink.world_id.in_(world_ids),
+                        WorldLink.source_module == effective_target.value,
+                    )
+                    .limit(10)
+                    .all()
                 )
-                .limit(10)
-                .all()
-            )
 
             for rel in related_relations:
-                # 检查是否已存在该关联
-                pair_key = (
-                    entity_id,
-                    rel.source_entity_id,
-                    rule["relation_type"].value,
-                )
-                reverse_key = (
-                    rel.source_entity_id,
-                    entity_id,
-                    rule["relation_type"].value,
-                )
+                legacy_type = rule["relation_type"].value
+                pair_key = (entity_id, rel.source_id, legacy_type)
+                reverse_key = (rel.source_id, entity_id, legacy_type)
 
                 # 去重检查：同一目标实体只推荐一次
-                discovery_key = (rel.source_entity_id, rule["relation_type"].value)
+                discovery_key = (rel.source_id, legacy_type)
 
                 if (
-                    pair_key not in existing_set
-                    and reverse_key not in existing_set
-                    and discovery_key not in discovery_keys
+                    pair_key in existing_set
+                    or reverse_key in existing_set
+                    or discovery_key in discovery_keys
                 ):
-                    discovery_keys.add(discovery_key)
-                    discovery = DiscoveredRelation(
-                        source_module=module,
-                        source_entity_type=entity_type,
-                        source_entity_id=entity_id,
-                        source_entity_name=entity_name,
-                        target_module=effective_target,
-                        target_entity_type=rel.source_entity_type,
-                        target_entity_id=rel.source_entity_id,
-                        target_entity_name=rel.source_entity_name,
-                        relation_type=rule["relation_type"],
-                        strength=StrengthType.MEDIUM,
-                        confidence=rule["confidence"],
-                        reason=rule["description"],
-                    )
-                    discoveries.append(discovery)
+                    continue
+
+                # 只推荐能用契约 §4 类型表达的关联（不新造 link_type）
+                candidate_link_type = RelationService._resolve_link_type(
+                    legacy_type,
+                    module.value,
+                    entity_type,
+                    effective_target.value,
+                    rel.source_kind,
+                    False,
+                )
+                ok, _ = validate_link_type(
+                    candidate_link_type,
+                    module.value,
+                    entity_type,
+                    effective_target.value,
+                    rel.source_kind,
+                )
+                if not ok:
+                    continue
+
+                discovery_keys.add(discovery_key)
+                discovery = DiscoveredRelation(
+                    source_module=module,
+                    source_entity_type=entity_type,
+                    source_entity_id=entity_id,
+                    source_entity_name=entity_name,
+                    target_module=effective_target,
+                    target_entity_type=rel.source_kind,
+                    target_entity_id=rel.source_id,
+                    target_entity_name=RelationService._link_endpoint_name(
+                        db, rel, True
+                    ),
+                    relation_type=rule["relation_type"],
+                    strength=StrengthType.MEDIUM,
+                    confidence=rule["confidence"],
+                    reason=rule["description"],
+                )
+                discoveries.append(discovery)
 
         return RelationDiscoveryResponse(
             entity=EntityReference(
@@ -513,72 +822,34 @@ class RelationService:
             project_id: 项目ID
             source_module: 源模块过滤
             target_module: 目标模块过滤
-            relation_type: 关系类型过滤
+            relation_type: 关系类型过滤（旧枚举值）
 
         Returns:
             关联响应列表
         """
-        query = db.query(BidirectionalRelation).filter(
-            BidirectionalRelation.project_id == project_id
-        )
+        world_ids = RelationService._project_world_ids(db, project_id)
+        if not world_ids:
+            return []
+
+        query = db.query(WorldLink).filter(WorldLink.world_id.in_(world_ids))
 
         if source_module:
-            query = query.filter(BidirectionalRelation.source_module == source_module)
+            query = query.filter(WorldLink.source_module == source_module)
         if target_module:
-            query = query.filter(BidirectionalRelation.target_module == target_module)
+            query = query.filter(WorldLink.target_module == target_module)
+
+        links = query.order_by(WorldLink.created_at.desc(), WorldLink.id).all()
+        relations = [RelationService._to_relation_response(link) for link in links]
+
         if relation_type:
-            query = query.filter(BidirectionalRelation.relation_type == relation_type)
+            # 旧枚举 -> link_type 的反查规则集中在一处，这里在内存里对齐旧过滤语义
+            relations = [
+                relation
+                for relation in relations
+                if relation.relation_type == relation_type
+            ]
 
-        relations = query.order_by(BidirectionalRelation.created_at.desc()).all()
-
-        return [RelationService._to_relation_response(rel) for rel in relations]
-
-    @staticmethod
-    def update_relation(
-        db: Session,
-        relation_id: str,
-        update_data: RelationUpdate,
-        project_id: Optional[str] = None,
-    ) -> Optional[BidirectionalRelation]:
-        """
-        更新关联关系
-
-        Args:
-            db: 数据库会话
-            relation_id: 关联ID
-            update_data: 更新数据
-            project_id: 可选的项目ID验证
-
-        Returns:
-            更新后的关联对象，不存在则返回None
-        """
-        query = db.query(BidirectionalRelation).filter(
-            BidirectionalRelation.id == relation_id
-        )
-        if project_id:
-            query = query.filter(BidirectionalRelation.project_id == project_id)
-
-        relation = query.first()
-        if not relation:
-            return None
-
-        # 只更新提供的字段
-        if update_data.relation_type is not None:
-            relation.relation_type = update_data.relation_type.value
-        if update_data.bidirectional is not None:
-            relation.bidirectional = update_data.bidirectional
-        if update_data.strength is not None:
-            relation.strength = update_data.strength.value
-        if update_data.metadata is not None:
-            # 合并元数据而非完全替换
-            if relation.metadata_json is None:
-                relation.metadata_json = {}
-            relation.metadata_json.update(update_data.metadata)
-
-        db.commit()
-        db.refresh(relation)
-        logger.info(f"Updated relation: {relation_id}")
-        return relation
+        return relations
 
     @staticmethod
     def get_relation_statistics(db: Session, project_id: str) -> RelationStatistics:
@@ -592,102 +863,54 @@ class RelationService:
         Returns:
             关联统计信息
         """
-        from sqlalchemy import func
 
-        # 基础统计
-        total = (
-            db.query(BidirectionalRelation)
-            .filter(BidirectionalRelation.project_id == project_id)
-            .count()
-        )
+        world_ids = RelationService._project_world_ids(db, project_id)
+        links: List[WorldLink] = []
+        if world_ids:
+            links = db.query(WorldLink).filter(WorldLink.world_id.in_(world_ids)).all()
 
-        bidirectional_count = (
-            db.query(BidirectionalRelation)
-            .filter(
-                BidirectionalRelation.project_id == project_id,
-                BidirectionalRelation.bidirectional.is_(True),
-            )
-            .count()
-        )
+        by_module: Dict[str, int] = {}
+        by_relation_type: Dict[str, int] = {}
+        by_strength: Dict[str, int] = {}
+        bidirectional_count = 0
+        cross_module = 0
+        connections: Dict[tuple, int] = {}
+        names: Dict[tuple, str] = {}
 
-        # 按模块统计
-        module_stats = (
-            db.query(
-                BidirectionalRelation.source_module,
-                func.count(BidirectionalRelation.id).label("count"),
-            )
-            .filter(BidirectionalRelation.project_id == project_id)
-            .group_by(BidirectionalRelation.source_module)
-            .all()
-        )
-        by_module = {m: c for m, c in module_stats}
+        for link in links:
+            if not link.directed:
+                bidirectional_count += 1
+            if link.source_module != link.target_module:
+                cross_module += 1
 
-        # 按关系类型统计
-        type_stats = (
-            db.query(
-                BidirectionalRelation.relation_type,
-                func.count(BidirectionalRelation.id).label("count"),
-            )
-            .filter(BidirectionalRelation.project_id == project_id)
-            .group_by(BidirectionalRelation.relation_type)
-            .all()
-        )
-        by_relation_type = {t: c for t, c in type_stats}
+            by_module[link.source_module] = by_module.get(link.source_module, 0) + 1
 
-        # 按强度统计
-        strength_stats = (
-            db.query(
-                BidirectionalRelation.strength,
-                func.count(BidirectionalRelation.id).label("count"),
-            )
-            .filter(BidirectionalRelation.project_id == project_id)
-            .group_by(BidirectionalRelation.strength)
-            .all()
-        )
-        by_strength = {s: c for s, c in strength_stats}
+            legacy_type = RelationService._legacy_relation_type(link)
+            by_relation_type[legacy_type] = by_relation_type.get(legacy_type, 0) + 1
 
-        # 跨模块关联数（源模块不等于目标模块）
-        cross_module = (
-            db.query(BidirectionalRelation)
-            .filter(
-                BidirectionalRelation.project_id == project_id,
-                BidirectionalRelation.source_module
-                != BidirectionalRelation.target_module,
-            )
-            .count()
-        )
+            strength = RelationService._legacy_strength(link)
+            by_strength[strength] = by_strength.get(strength, 0) + 1
+
+            key = (link.source_module, link.source_id)
+            connections[key] = connections.get(key, 0) + 1
+            if key not in names:
+                names[key] = RelationService._link_endpoint_name(db, link, True)
 
         # 连接最多的实体（Top 10）
-        entity_connections = (
-            db.query(
-                BidirectionalRelation.source_entity_id,
-                BidirectionalRelation.source_entity_name,
-                BidirectionalRelation.source_module,
-                func.count(BidirectionalRelation.id).label("connection_count"),
-            )
-            .filter(BidirectionalRelation.project_id == project_id)
-            .group_by(
-                BidirectionalRelation.source_entity_id,
-                BidirectionalRelation.source_entity_name,
-                BidirectionalRelation.source_module,
-            )
-            .order_by(func.count(BidirectionalRelation.id).desc())
-            .limit(10)
-            .all()
-        )
-
         top_connected = [
             {
-                "entity_id": eid,
-                "entity_name": name,
+                "entity_id": entity_id,
+                "entity_name": names[key],
                 "module": module,
                 "connection_count": count,
             }
-            for eid, name, module, count in entity_connections
-        ]
+            for (module, entity_id), count in sorted(
+                connections.items(), key=lambda item: (-item[1], item[0])
+            )
+        ][:10]
 
         return RelationStatistics(
-            total_relations=total,
+            total_relations=len(links),
             bidirectional_count=bidirectional_count,
             by_module=by_module,
             by_relation_type=by_relation_type,
@@ -695,6 +918,10 @@ class RelationService:
             cross_module_relations=cross_module,
             top_connected_entities=top_connected,
         )
+
+    # ------------------------------------------------------------------
+    # 实体校验
+    # ------------------------------------------------------------------
 
     @staticmethod
     def verify_entity_exists(
@@ -729,7 +956,14 @@ class RelationService:
                 ModuleType.SYSTEMS,
                 ModuleType.SPECIAL,
             ):
-                # 世界观模块实体存储在 WorldModuleItem
+                # 世界观实体既可能是子模块（event/polity/...）也可能是模块项
+                submodule = (
+                    db.query(WorldSubmodule)
+                    .filter(WorldSubmodule.id == entity_id)
+                    .first()
+                )
+                if submodule is not None:
+                    return True
                 exists = (
                     db.query(WorldModuleItem)
                     .filter(

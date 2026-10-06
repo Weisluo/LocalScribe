@@ -14,7 +14,6 @@ from app.core.dependencies import get_db
 from app.core.logging import get_logger
 from app.models import (
     CustomWorldviewConfig,
-    Project,
     WorldInstance,
     WorldModule,
     WorldModuleItem,
@@ -51,8 +50,8 @@ from app.schemas.worldbuilding import (
     WorldTemplateResponse,
     WorldTemplateUpdate,
     WorldTemplateWithModules,
-    WorldviewAdaptationsResponse,
     WorldviewAdaptationRule,
+    WorldviewAdaptationsResponse,
     WorldviewConfigCreate,
     WorldviewConfigResponse,
     WorldviewConfigUpdate,
@@ -63,6 +62,16 @@ from app.schemas.worldbuilding import (
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+# D5：旧概念写接口只给迁移指引，旧表在 Phase 6 前只读保留
+LEGACY_INSTANCE_GONE_DETAIL = (
+    "世界实例概念已取消：请改用 /api/v1/worldbuilding/worlds 创建与管理世界；"
+    "旧实例数据保持只读，Phase 6 前不删除"
+)
+LEGACY_WORLDVIEW_GONE_DETAIL = (
+    "世界观预设配置已取消：世界配置改为 World.settings 与 WorldModule.config，"
+    "请通过 /api/v1/worldbuilding/worlds 读写；旧配置保持只读，Phase 6 前不删除"
+)
 
 SYSTEM_WORLDVIEW_CONFIGS = {
     "xianxia": {
@@ -1078,6 +1087,45 @@ def load_template_modules_with_selectinload(template_id: str, db: Session):
 # --- 世界模板 API ---
 
 
+def _filter_legacy_template_fields(
+    templates: List[WorldTemplate],
+    *,
+    tags: Optional[List[str]] = None,
+    created_by: Optional[str] = None,
+    is_public: Optional[bool] = None,
+    is_system_template: Optional[bool] = None,
+) -> List[WorldTemplate]:
+    """按旧模板语义过滤（P1-MIG-01 后 tags/is_public/is_system_template/created_by
+    只在 settings.legacyTemplate 里，没有列可查，统一在 Python 侧读回旧值）。
+
+    注意 is_public / is_system_template 的 hybrid expression 恒为 False（语义已取消），
+    因此不能用列过滤，否则过滤结果会与响应字段自相矛盾（响应返回的是 legacy 旧值）。
+    """
+
+    if tags:
+        wanted = list(tags)
+        templates = [
+            template
+            for template in templates
+            if all(tag in (template.tags or []) for tag in wanted)
+        ]
+    if created_by:
+        templates = [
+            template for template in templates if template.created_by == created_by
+        ]
+    if is_public is not None:
+        templates = [
+            template for template in templates if template.is_public == is_public
+        ]
+    if is_system_template is not None:
+        templates = [
+            template
+            for template in templates
+            if template.is_system_template == is_system_template
+        ]
+    return templates
+
+
 @router.post("/templates", response_model=WorldTemplateResponse)
 def create_world_template(
     template_data: WorldTemplateCreate, db: Session = Depends(get_db)
@@ -1125,14 +1173,18 @@ def get_world_templates(
 
     if name:
         query = query.filter(WorldTemplate.name.ilike(f"%{name}%"))
-    if is_public is not None:
-        query = query.filter(WorldTemplate.is_public == is_public)
-    if is_system_template is not None:
-        query = query.filter(WorldTemplate.is_system_template == is_system_template)
     if project_id is not None:
         query = query.filter(WorldTemplate.project_id == project_id)
 
-    templates = query.offset(skip).limit(limit).all()
+    # 旧字段（tags/is_public/is_system_template/created_by）已降级进
+    # settings.legacyTemplate，没有列可查，统一在 Python 侧过滤
+    templates = query.order_by(WorldTemplate.created_at, WorldTemplate.id).all()
+    templates = _filter_legacy_template_fields(
+        templates,
+        is_public=is_public,
+        is_system_template=is_system_template,
+    )
+    templates = templates[skip : skip + limit]
 
     # 计算模块和实例数量
     for template in templates:
@@ -1165,25 +1217,20 @@ def search_world_templates(
     if filter_data.name:
         query = query.filter(WorldTemplate.name.ilike(f"%{filter_data.name}%"))
 
-    if filter_data.tags:
-        # 支持多标签筛选，使用JSON数组包含查询
-        for tag in filter_data.tags:
-            query = query.filter(WorldTemplate.tags.contains([tag]))
-
-    if filter_data.is_public is not None:
-        query = query.filter(WorldTemplate.is_public == filter_data.is_public)
-
-    if filter_data.is_system_template is not None:
-        query = query.filter(
-            WorldTemplate.is_system_template == filter_data.is_system_template
-        )
-
-    if filter_data.created_by:
-        query = query.filter(WorldTemplate.created_by == filter_data.created_by)
     if filter_data.project_id:
         query = query.filter(WorldTemplate.project_id == filter_data.project_id)
 
-    templates = query.offset(skip).limit(limit).all()
+    # 旧字段（tags/is_public/is_system_template/created_by）已降级进
+    # settings.legacyTemplate（P1-MIG-01），无法用列过滤，统一在 Python 侧按旧值过滤
+    templates = query.order_by(WorldTemplate.created_at, WorldTemplate.id).all()
+    templates = _filter_legacy_template_fields(
+        templates,
+        tags=filter_data.tags,
+        created_by=filter_data.created_by,
+        is_public=filter_data.is_public,
+        is_system_template=filter_data.is_system_template,
+    )
+    templates = templates[skip : skip + limit]
 
     # 计算模块和实例数量
     for template in templates:
@@ -1699,48 +1746,13 @@ def delete_world_module(module_id: str, db: Session = Depends(get_db)):
 # --- 世界实例 API ---
 
 
-@router.post("/instances", response_model=WorldInstanceResponse)
+@router.post("/instances", response_model=WorldInstanceResponse, deprecated=True)
 def create_world_instance(
     instance_data: WorldInstanceCreate, db: Session = Depends(get_db)
 ):
-    """基于模板创建世界实例"""
-    logger.info(f"Creating world instance from template: {instance_data.template_id}")
-
-    try:
-        # 检查模板是否存在
-        template = (
-            db.query(WorldTemplate)
-            .filter(WorldTemplate.id == instance_data.template_id)
-            .first()
-        )
-        if not template:
-            raise HTTPException(status_code=404, detail="世界模板不存在")
-
-        # 检查项目是否存在
-        project = (
-            db.query(Project).filter(Project.id == instance_data.project_id).first()
-        )
-        if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
-
-        instance = WorldInstance(id=str(uuid.uuid4()), **instance_data.model_dump())
-
-        db.add(instance)
-        db.commit()
-        db.refresh(instance)
-
-        logger.info(f"World instance created: {instance.id}")
-        return instance
-
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Database error creating world instance: {str(e)}")
-        raise HTTPException(status_code=500, detail="创建世界实例时发生数据库错误")
-
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Unexpected error creating world instance: {str(e)}")
-        raise HTTPException(status_code=500, detail="创建世界实例时发生未知错误")
+    """[已弃用] 世界实例概念已取消（D5）：写接口返回 410 并给出迁移指引"""
+    logger.info(f"Rejected legacy world instance creation: {instance_data.template_id}")
+    raise HTTPException(status_code=410, detail=LEGACY_INSTANCE_GONE_DETAIL)
 
 
 @router.get(
@@ -1761,42 +1773,24 @@ def get_project_world_instances(project_id: str, db: Session = Depends(get_db)):
     return instances
 
 
-@router.put("/instances/{instance_id}", response_model=WorldInstanceResponse)
+@router.put(
+    "/instances/{instance_id}",
+    response_model=WorldInstanceResponse,
+    deprecated=True,
+)
 def update_world_instance(
     instance_id: str, instance_data: WorldInstanceUpdate, db: Session = Depends(get_db)
 ):
-    """更新世界实例"""
-    logger.info(f"Updating world instance: {instance_id}")
-
-    instance = db.query(WorldInstance).filter(WorldInstance.id == instance_id).first()
-    if not instance:
-        raise HTTPException(status_code=404, detail="世界实例不存在")
-
-    update_data = instance_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(instance, field, value)
-
-    db.commit()
-    db.refresh(instance)
-
-    logger.info(f"World instance updated: {instance_id}")
-    return instance
+    """[已弃用] 世界实例写接口返回 410（D5）"""
+    logger.info(f"Rejected legacy world instance update: {instance_id}")
+    raise HTTPException(status_code=410, detail=LEGACY_INSTANCE_GONE_DETAIL)
 
 
-@router.delete("/instances/{instance_id}")
+@router.delete("/instances/{instance_id}", deprecated=True)
 def delete_world_instance(instance_id: str, db: Session = Depends(get_db)):
-    """删除世界实例"""
-    logger.info(f"Deleting world instance: {instance_id}")
-
-    instance = db.query(WorldInstance).filter(WorldInstance.id == instance_id).first()
-    if not instance:
-        raise HTTPException(status_code=404, detail="世界实例不存在")
-
-    db.delete(instance)
-    db.commit()
-
-    logger.info(f"World instance deleted: {instance_id}")
-    return {"message": "世界实例删除成功"}
+    """[已弃用] 世界实例写接口返回 410（D5）"""
+    logger.info(f"Rejected legacy world instance delete: {instance_id}")
+    raise HTTPException(status_code=410, detail=LEGACY_INSTANCE_GONE_DETAIL)
 
 
 # --- 导入/导出 API ---
@@ -2566,166 +2560,40 @@ def get_worldview_by_type(worldview_type: WorldviewType, db: Session = Depends(g
     raise HTTPException(status_code=404, detail=f"世界观类型 '{worldview_type}' 不存在")
 
 
-@router.post("/worldviews", response_model=WorldviewConfigResponse, status_code=201)
+@router.post(
+    "/worldviews",
+    response_model=WorldviewConfigResponse,
+    status_code=201,
+    deprecated=True,
+)
 def create_worldview(
     worldview_data: WorldviewConfigCreate, db: Session = Depends(get_db)
 ):
-    """创建自定义世界观配置"""
-    logger.info(f"Creating custom worldview: {worldview_data.name}")
-
-    try:
-        _check_worldview_name_exists(db, worldview_data.name)
-
-        custom_wv = CustomWorldviewConfig(
-            id=str(uuid.uuid4()),
-            name=worldview_data.name,
-            description=worldview_data.description,
-            type=worldview_data.type.value,
-            time_scale=worldview_data.timeScale.value,
-            tech_level=worldview_data.techLevel.value,
-            magic_level=worldview_data.magicLevel.value,
-            political_complexity=worldview_data.politicalComplexity.value,
-            economic_system=worldview_data.economicSystem.value,
-            module_configs=(
-                worldview_data.moduleConfigs.model_dump()
-                if worldview_data.moduleConfigs
-                else {}
-            ),
-            theme=worldview_data.theme.model_dump() if worldview_data.theme else {},
-            relation_rules=(
-                [rule.model_dump() for rule in worldview_data.adaptationRules]
-                if worldview_data.adaptationRules
-                else []
-            ),
-            presets=(
-                [preset.model_dump() for preset in worldview_data.presets]
-                if worldview_data.presets
-                else []
-            ),
-            is_system=False,
-            is_active=True,
-        )
-
-        db.add(custom_wv)
-        db.commit()
-        db.refresh(custom_wv)
-
-        logger.info(f"Custom worldview created: {custom_wv.id}")
-        return _convert_custom_worldview_to_response(custom_wv)
-
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Database error creating worldview: {str(e)}")
-        raise HTTPException(status_code=500, detail="创建世界观配置时发生数据库错误")
-
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Unexpected error creating worldview: {str(e)}")
-        raise HTTPException(status_code=500, detail="创建世界观配置时发生未知错误")
+    """[已弃用] 世界观预设写接口返回 410（D5）"""
+    logger.info(f"Rejected legacy worldview creation: {worldview_data.name}")
+    raise HTTPException(status_code=410, detail=LEGACY_WORLDVIEW_GONE_DETAIL)
 
 
-@router.put("/worldviews/{worldview_id}", response_model=WorldviewConfigResponse)
+@router.put(
+    "/worldviews/{worldview_id}",
+    response_model=WorldviewConfigResponse,
+    deprecated=True,
+)
 def update_worldview(
     worldview_id: str,
     worldview_data: WorldviewConfigUpdate,
     db: Session = Depends(get_db),
 ):
-    """更新自定义世界观配置"""
-    logger.info(f"Updating worldview: {worldview_id}")
-
-    custom_wv = (
-        db.query(CustomWorldviewConfig)
-        .filter(CustomWorldviewConfig.id == worldview_id)
-        .first()
-    )
-    if not custom_wv:
-        raise HTTPException(
-            status_code=404, detail=f"世界观配置 '{worldview_id}' 不存在"
-        )
-
-    if custom_wv.is_system:
-        raise HTTPException(status_code=403, detail="无法修改系统世界观配置")
-
-    update_data = worldview_data.model_dump(exclude_unset=True)
-
-    if "name" in update_data and update_data["name"] != custom_wv.name:
-        _check_worldview_name_exists(db, update_data["name"], exclude_id=worldview_id)
-        custom_wv.name = update_data["name"]
-
-    if "description" in update_data:
-        custom_wv.description = update_data["description"]
-
-    if "timeScale" in update_data:
-        custom_wv.time_scale = update_data["timeScale"].value
-
-    if "techLevel" in update_data:
-        custom_wv.tech_level = update_data["techLevel"].value
-
-    if "magicLevel" in update_data:
-        custom_wv.magic_level = update_data["magicLevel"].value
-
-    if "politicalComplexity" in update_data:
-        custom_wv.political_complexity = update_data["politicalComplexity"].value
-
-    if "economicSystem" in update_data:
-        custom_wv.economic_system = update_data["economicSystem"].value
-
-    if "moduleConfigs" in update_data:
-        custom_wv.module_configs = (
-            update_data["moduleConfigs"].model_dump()
-            if update_data["moduleConfigs"]
-            else {}
-        )
-
-    if "theme" in update_data:
-        custom_wv.theme = (
-            update_data["theme"].model_dump() if update_data["theme"] else {}
-        )
-
-    if "adaptationRules" in update_data:
-        custom_wv.relation_rules = (
-            [rule.model_dump() for rule in update_data["adaptationRules"]]
-            if update_data["adaptationRules"]
-            else []
-        )
-
-    if "presets" in update_data:
-        custom_wv.presets = (
-            [preset.model_dump() for preset in update_data["presets"]]
-            if update_data["presets"]
-            else []
-        )
-
-    db.commit()
-    db.refresh(custom_wv)
-
-    logger.info(f"Worldview updated: {worldview_id}")
-    return _convert_custom_worldview_to_response(custom_wv)
+    """[已弃用] 世界观预设写接口返回 410（D5）"""
+    logger.info(f"Rejected legacy worldview update: {worldview_id}")
+    raise HTTPException(status_code=410, detail=LEGACY_WORLDVIEW_GONE_DETAIL)
 
 
-@router.delete("/worldviews/{worldview_id}")
+@router.delete("/worldviews/{worldview_id}", deprecated=True)
 def delete_worldview(worldview_id: str, db: Session = Depends(get_db)):
-    """删除自定义世界观配置（软删除）"""
-    logger.info(f"Deleting worldview: {worldview_id}")
-
-    custom_wv = (
-        db.query(CustomWorldviewConfig)
-        .filter(CustomWorldviewConfig.id == worldview_id)
-        .first()
-    )
-    if not custom_wv:
-        raise HTTPException(
-            status_code=404, detail=f"世界观配置 '{worldview_id}' 不存在"
-        )
-
-    if custom_wv.is_system:
-        raise HTTPException(status_code=403, detail="无法删除系统世界观配置")
-
-    custom_wv.is_active = False
-    db.commit()
-
-    logger.info(f"Worldview deleted (soft): {worldview_id}")
-    return {"message": "世界观配置删除成功"}
+    """[已弃用] 世界观预设写接口返回 410（D5）"""
+    logger.info(f"Rejected legacy worldview delete: {worldview_id}")
+    raise HTTPException(status_code=410, detail=LEGACY_WORLDVIEW_GONE_DETAIL)
 
 
 @router.get(

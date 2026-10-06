@@ -1,7 +1,8 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # 世界观类型枚举
@@ -127,6 +128,9 @@ class WorldModuleBase(BaseModel):
     description: Optional[str] = Field(None, description="模块描述")
     icon: Optional[str] = Field(None, max_length=100, description="模块图标")
     order_index: int = Field(0, ge=0, description="排序索引")
+    config: Optional[Dict[str, Any]] = Field(
+        None, description="模块配置（契约 §2.7，取代 moduleConfig 条目）"
+    )
     is_collapsible: bool = Field(True, description="是否可折叠")
     is_required: bool = Field(False, description="是否必需")
 
@@ -142,6 +146,7 @@ class WorldModuleUpdate(BaseModel):
     description: Optional[str] = Field(None, description="模块描述")
     icon: Optional[str] = Field(None, max_length=100, description="模块图标")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
+    config: Optional[Dict[str, Any]] = Field(None, description="模块配置（契约 §2.7）")
     is_collapsible: Optional[bool] = Field(None, description="是否可折叠")
     is_required: Optional[bool] = Field(None, description="是否必需")
 
@@ -162,6 +167,12 @@ class WorldSubmoduleBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="子模块名称")
     description: Optional[str] = Field(None, description="子模块描述")
     order_index: int = Field(0, ge=0, description="排序索引")
+    kind: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="语义类型（契约 §2.3）；不传时按 color 旧编码推导",
+    )
+    meta: Optional[Dict[str, Any]] = Field(None, description="基础字段（契约 §2.3）")
     color: Optional[str] = Field(
         None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）"
     )
@@ -181,6 +192,8 @@ class WorldSubmoduleUpdate(BaseModel):
     )
     description: Optional[str] = Field(None, description="子模块描述")
     order_index: Optional[int] = Field(None, ge=0, description="排序索引")
+    kind: Optional[str] = Field(None, max_length=50, description="语义类型")
+    meta: Optional[Dict[str, Any]] = Field(None, description="基础字段")
     color: Optional[str] = Field(
         None, max_length=50, description="颜色标识（支持十六进制或语义化颜色名称）"
     )
@@ -242,6 +255,110 @@ class WorldModuleItemResponse(WorldModuleItemBase):
     submodule_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+# ============= World Schema（契约 §2.1 / §2.8，Phase 1 P1-T1） =============
+
+
+class WorldTone(BaseModel):
+    """世界视觉基调（契约 §2.8）"""
+
+    palette: Optional[str] = Field(None, description="parchment/ink/slate/custom")
+    accent: Optional[str] = Field(None, max_length=50)
+    texture: Optional[str] = Field(None, description="none/paper/grid/starfield")
+    radius: Optional[str] = Field(None, description="sm/md/lg")
+
+
+class WorldSettings(BaseModel):
+    """世界自定义配置（契约 §2.1）"""
+
+    model_config = ConfigDict(extra="allow")
+
+    terminology: Optional[Dict[str, str]] = None
+    calendar: Optional[Dict[str, Any]] = None
+    complexity: Optional[str] = Field(None, description="sketch/structure/sandbox")
+    moduleConfigs: Optional[Dict[str, Any]] = None
+
+
+class WorldCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="世界名称")
+    description: Optional[str] = Field(None, description="世界描述")
+    cover_image: Optional[str] = Field(None, max_length=500, description="封面图片 URL")
+    project_id: Optional[str] = Field(None, description="所属项目")
+    tone: Optional[WorldTone] = None
+    settings: Optional[WorldSettings] = None
+
+
+class WorldUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    cover_image: Optional[str] = Field(None, max_length=500)
+    project_id: Optional[str] = None
+    tone: Optional[WorldTone] = None
+    settings: Optional[WorldSettings] = None
+
+
+class WorldResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    description: Optional[str] = None
+    cover_image: Optional[str] = None
+    project_id: Optional[str] = None
+    tone: Optional[Dict[str, Any]] = None
+    settings: Optional[Dict[str, Any]] = None
+    created_at: datetime
+    updated_at: datetime
+    module_count: int = 0
+    link_count: int = 0
+
+
+class WorldModuleWithItemsV2(WorldModuleResponse):
+    """模块（含 config 与嵌套内容），/worlds 详情使用"""
+
+    world_id: str
+    submodules: List[WorldSubmoduleResponse] = []
+    items: List[WorldModuleItemResponse] = []
+
+
+class WorldWithModules(WorldResponse):
+    modules: List[WorldModuleWithItemsV2] = []
+
+
+class WorldLinkExportEntry(BaseModel):
+    """导出时的关联条目（契约 §2.5）"""
+
+    source_module: str
+    source_kind: str
+    source_id: str
+    target_module: str
+    target_kind: str
+    target_id: str
+    link_type: str
+    directed: bool = True
+    label: Optional[str] = None
+    note: Optional[str] = None
+    meta: Optional[Dict[str, Any]] = None
+    time: Optional[Dict[str, Any]] = None
+
+
+class WorldExport(BaseModel):
+    """世界备份（契约 §2.1：世界 JSON 备份 / 恢复，不是模板分发）"""
+
+    world: WorldResponse
+    modules: List[WorldModuleWithItemsV2]
+    links: List[WorldLinkExportEntry] = []
+
+
+class WorldImport(BaseModel):
+    """世界恢复请求"""
+
+    world: WorldResponse
+    modules: List[WorldModuleWithItemsV2] = []
+    links: List[WorldLinkExportEntry] = []
+    project_id: Optional[str] = None
+    name: Optional[str] = None
 
 
 # 世界实例 Schema
