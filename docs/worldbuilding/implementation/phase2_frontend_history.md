@@ -121,35 +121,41 @@ API（以 P1 OpenAPI 为准，前端不自造路由）：
 
 ## 7. 测试与验收清单
 
-- [ ] gen:types、tsc、eslint 通过；hooks queryKey 与参数快照通过。
-- [ ] EntityPicker 键盘流程与多选批量、EntityBadge 预览与失效态通过。
-- [ ] LinkPanel 出/入链分组、reverseLabel、入链只读、失效清理通过。
-- [ ] 行内引用 @ 插入、渲染、预览、跳转、清理通过。
-- [ ] 返回栈面包屑、Esc 回退、滚动/展开/选中恢复；角色兼容 EditorPage。
-- [ ] 人物关联增删/快速创建/多选全落 WorldLink，角色侧出现被涉及入链，旧前缀不再新写。
-- [ ] 事件/时代计数与 /worlds/{id}/links/counts 一致且无逐卡请求。
-- [ ] light/dark、键盘、aria、reduced-motion 通过；link_type 白名单通过。
+> 勾选口径见 §12「实施完成记录」：`[x]` = 有可复现命令或零改动证据；未完成项保持 `[ ]` 并注明原因。
+
+- [x] gen:types、tsc、eslint 通过；hooks queryKey 与参数快照通过。→ §12.E1/E2/E3
+- [x] EntityPicker 键盘流程与多选批量、EntityBadge 预览与失效态通过。→ §12.E4
+- [x] LinkPanel 出/入链分组、reverseLabel、入链只读、失效清理通过。→ §12.E4
+- [x] 行内引用 @ 插入、渲染、预览、跳转、清理通过。→ §12.E4（hover 预览仅 title，无独立预览卡）
+- [x] 返回栈面包屑、Esc 回退、滚动/展开/选中恢复；角色兼容 EditorPage。→ §12.E4/E6
+  （`[~]` 部分：通用模块分支有 scrollTop 快照恢复；历史 tab 有自己的滚动容器，只做「切到所属时代 + 高亮 + 滚动定位」）
+- [x] 人物关联增删/快速创建/多选全落 WorldLink，角色侧出现被涉及入链，旧前缀不再新写。→ §12.E5
+- [x] 事件/时代计数与关联数据一致且无逐卡请求。→ §12.D1/E11：计数与 LinkPanel/CharacterReference 都读
+  世界级共享 `useWorldLinks(worldId)`（每世界 1 次请求 + 本地归并），浏览器侧用例断言 6 张卡片只发 1 次请求
+- [~] light/dark、键盘、aria、reduced-motion 通过；link_type 白名单通过。→ §12.E4/E7
+  （link_type 白名单、键盘（含真实焦点路径）、aria 有自动化证据；light/dark 与 reduced-motion 仅静态确认，未做截图比对）
 
 迁移容器归位清单：
 
-- [ ] 识别：只有项目存在 `settings.migrationContainer` 且容器 link_count > 0 时出现入口；普通世界不出现入口。
-- [ ] 归位：单个与批量移动后 `world_id` 指向目标世界，`meta` 原键保留并追加 `reclassifiedFrom/reclassifiedAt`，容器与目标世界的 links/counts 同步刷新。
-- [ ] 默认推导：省略 world_id 时按端点所属世界落位；端点分属不同世界且未显式指定返回 409 且不落库。
-- [ ] 冲突与边界：目标世界已有等价边 409（可改用已有边）、跨项目 400、未知 link/world 404、契约外 link_type 400；失败项不影响批量中的其余项。
-- [ ] 空容器：归位后容器 link_count = 0 时可删除容器世界，世界列表与项目切换器不再显示。
-- [ ] 失效端点：端点已删除的容器关联按失效 chip 展示，不阻塞归位，并提供清理动作。
-- [ ] 后端测试：backend/tests/test_worldbuilding_migration_links.py 覆盖以上分支；旧 /relations 与 /templates 行为不变。
+- [x] 识别：只有项目存在 `settings.migrationContainer` 且 linkCount > 0 时出现入口；普通世界不出现入口。→ §12.E8
+- [x] 归位：单个与批量移动后 `world_id` 指向目标世界，`meta` 原键保留并追加 `reclassifiedFrom/reclassifiedAt`，容器与目标世界的 links/counts 同步刷新。→ §12.E9
+- [x] 默认推导：省略 world_id 时按端点所属世界落位；端点分属不同世界且未显式指定返回 409 且不落库。→ §12.E9
+- [x] 冲突与边界：目标世界已有等价边 409（可改用已有边）、跨项目 400、未知 link/world 404、契约外 link_type 400；失败项不影响批量中的其余项；同批次等价边去重。→ §12.E9
+- [~] 空容器：归位后容器 link_count = 0 时可删除容器世界，世界列表与项目切换器不再显示。→ §12.E8：面板内提供「删除空容器」（`DELETE /worlds/{id}`）并在成功后收起；端到端「列表/切换器不再显示」未做自动化用例
+- [x] 失效端点：端点已删除的容器关联按失效 chip 展示，不阻塞归位，并提供清理动作。→ §12.E8
+- [x] 后端测试：backend/tests/test_worldbuilding_migration_links.py 覆盖以上分支；旧 /relations 与 /templates 行为不变。→ §12.E9
 
-历史回归清单：
+历史回归清单（红线文件零改动，见 §12.E6）：
 
-- [ ] 书卷展开、时代切换与 AnimatedCard 动画不回归。
-- [ ] EraTimeline 刻度、悬浮提示、主题色与纹理不变。
-- [ ] timeParser 中文纪年（元/年、数字、区间）行为与快照不变。
-- [ ] 事件级别、类型、卡片微交互、forwardRef 与 popLayout 不变。
-- [ ] 时代与事件描述的内联编辑行为不变。
-- [ ] 独立时代展示与无 eraId 事件归属不变。
-- [ ] 搜索、筛选、折叠展开、ConfigModal 读取路径不变。
-- [ ] 双读窗口内旧 _char_ref/_char_link 只读展示且顺序不丢。
+- [x] 书卷展开、时代切换与 AnimatedCard 动画不回归。（未改动，静态确认）
+- [x] EraTimeline 刻度、悬浮提示、主题色与纹理不变。（文件零改动）
+- [x] timeParser 中文纪年（元/年、数字、区间）行为与快照不变。（文件零改动）
+- [x] 事件级别、类型、卡片微交互、forwardRef 与 popLayout 不变。（仅新增面板与徽章，未动动画分支）
+- [x] 时代与事件描述的内联编辑行为不变。（未改动）
+- [x] 独立时代展示与无 eraId 事件归属不变。（未改动独立时代判定）
+- [x] 搜索、筛选、折叠展开、ConfigModal 读取路径不变。（ConfigModal 与 config.ts 零改动）
+- [x] 双读窗口内旧 _char_ref/_char_link 只读展示且顺序不丢。→ §12.E5/E11（浏览器侧用例：回填链按
+  `meta.legacyItemId` 排回原条目顺序，旧键人物只读无移除入口）
 
 ## 8. 风险、兼容与回滚
 
@@ -219,3 +225,75 @@ cd backend && ./venv/Scripts/python.exe -m alembic heads        # 单一 head 8a
 ```
 
 已存在迁移容器世界的环境，如需应用本次 MIG-05 修正（幂等）：`alembic stamp cef4ae3ffe96 && alembic upgrade head`。
+
+---
+
+## 12. 实施完成记录（Phase 2 收口）
+
+### 12.1 交付物清单
+
+| Task | 状态 | 产出 |
+|------|------|------|
+| P2-T1 | 完成 | `services/worldbuildingApi.ts`（worlds/modules/links/registry/counts/move 客户端 + OpenAPI 类型再导出）、`Worldbuilding/types.ts`、`Worldbuilding/hooks/{worldQueryKeys,useWorldData,useLinks,useEntityRefs,index}.ts` |
+| P2-T2 | 完成 | `common/EntityBadge/`、`hooks/useEntityRefs.ts`（失效态判定 + 名称解析） |
+| P2-T3 | 完成 | `common/EntityPicker/`（模块→实体→类型→meta、多选、simpleMode、键盘） |
+| P2-T4 | 完成 | `common/LinkPanel/`（出/入链分组、reverse_label、入链只读、失效清理） |
+| P2-T5 | 完成 | `common/ComplexitySwitcher/`（三档、能力矩阵、Provider + 上下文档位） |
+| P2-T6 | 完成 | `WorldbuildingView.tsx` 切 `/worlds`、删除手工建模块（L1）、tab/头部徽章、容器提示位 |
+| P2-T7 | 完成 | `Worldbuilding/navigation/backStack.ts` + 面包屑/Esc/滚动与展开态恢复/统一 `onNavigateToEntity` |
+| P2-T8 | 完成 | `common/InlineReference/`（token 渲染、`@` 插入、失效 chip、跳转） |
+| P2-T9 | 完成 | `CharacterReference.tsx` 切 `history.involves`；`EventCard.tsx` 停写 `_char_link`；L5 修复 |
+| P2-T10 | 完成 | EventCard / EraContentPanel 接入 `<LinkPanel>` 与关联计数徽章（含 `useEntityLinkCounts.ts`） |
+| P2-T11 | 完成 | `frontend/tests/worldbuilding/{bundle.mjs,harness.tsx,phase2.spec.ts}` |
+| P2-T12 | 完成 | `B/api/v1/world_links.py`、`B/services/link_service.py`、`backend/tests/test_worldbuilding_migration_links.py` |
+| P2-T13 | 完成 | `Worldbuilding/MigrationContainerPanel/`、`hooks/useMigrationLinks.ts`、视图入口 |
+
+附加产出：`docs/worldbuilding/implementation/phase2_interface_freeze.md`（共用件接口冻结 v1，P3-P5 可依赖）。
+
+### 12.2 验证证据（E）
+
+| 编号 | 命令 | 结果 |
+|------|------|------|
+| E1 | `cd frontend && node node_modules/openapi-typescript/bin/cli.js http://127.0.0.1:8000/openapi.json -o src/types/api.ts` | 成功；产物 320,462 B / 10,587 行、纯 LF；新增 `LinkMoveRequest` / `LinksMoveRequest` / `LinksMoveResponse`，前端改用它而非手写 |
+| E2 | `cd frontend && node node_modules/typescript/bin/tsc --noEmit` | exit 0；作用域是 `tsconfig.json` 的 `include: ["src"]`，**`frontend/tests/**` 不参与类型检查**（与既有 tests/export 同惯例），测试侧由 Vite 打包时校验语法 |
+| E3 | `cd frontend && node node_modules/eslint/bin/eslint.js src --ext ts,tsx` | 0 errors / 12 warnings（11 条为既有模式，1 条为 `ComplexityContext.tsx` 的 react-refresh 提示） |
+| E4 | `cd frontend && node node_modules/@playwright/test/cli.js test` | 7 passed（1 条导出回归 + 6 条 Phase 2）；浏览器侧报告 **143 checks / 0 failed / 0 pageerror**；`tests/worldbuilding` 另跑 `eslint` 为 0 error |
+| E5 | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **106 passed**（P1 基线 87 + 新增 19，无失败） |
+| E6 | `git status --short -- <红线文件>` | EraTimeline / EraSwitchContainer / config.ts / timeParser / ConfigModal / EconomyView / EditorPage **零改动** |
+| E7 | phase2.spec `link_type 白名单` | 契约 §4 表格解析出 54 个 id；前端全部字面量仅 `core.related_to` 与 `history.involves`，均在白名单内 |
+| E8 | phase2.spec `迁移容器归位` + `MigrationContainerPanel` | 入口按 `settings.migrationContainer && linkCount > 0`（`linkCount = max(link_count, 容器内条数)`，与头部按钮同口径）；失效端点 chip + 清理；空容器「删除空容器」；409 按 `code` 分流 |
+| E9 | `backend/tests/test_worldbuilding_migration_links.py` | 见 §12.2 增补行 E12（审查修复后重跑） |
+| E10 | `cd frontend && node node_modules/vite/bin/vite.js build` | built in 752ms（Worldbuilding chunk 311.63 kB） |
+| E11 | 审查修复后前端门禁：`tsc --noEmit` / `eslint src --ext ts,tsx` / `eslint tests/worldbuilding` / `playwright test` | tsc exit 0；eslint src 0 error / 12 warning（与 E3 同口径）；eslint tests/worldbuilding 0 error；playwright **7 passed**，浏览器侧 **143 checks / 0 failed**（新增：6 张卡片只发 1 次世界级 links 请求、CharacterReference 回填链按 `meta.legacyItemId` 顺序 + 旧键只读、迁移面板批量与单条请求体形状、端点冲突 409 不出现破坏性动作、`world` key 含 includeItems、失效域含 worlds/worldRoot） |
+| E12 | `cd backend && ./venv/Scripts/python.exe -m pytest -q` | **117 passed**（审查修复后 106→117；新增：同批次等价边去重、`link_ids` 重复项、invalid/conflict 的 `code`、结构化 409、`meta.legacyMeta`、角色端点推导与歧义、单条同世界 400、批量 meta 记账键、counts 同步）。另：`black --check`/`isort --check-only`/`flake8` 三个改动文件全部通过 |
+
+### 12.3 过程中的口径调整（需与契约/冻结记录一起看）
+
+| 编号 | 调整 | 理由与影响 |
+|------|------|-----------|
+| D1 | 事件/时代关联计数由整批 `GET /worlds/{id}/links`（`useEntityLinkCounts`，全列表 1 次请求 + 本地归并）派生，未直接用 `GET /worlds/{id}/links/counts` | 该端点只有模块级聚合，给不出实体级出/入链；逐卡 `useEntityLinks` 会违反「禁止逐卡请求」。计数与 links 数据源一致 |
+| D2 | `useMigrationLinks` 内部再请求一次 `GET /worlds?project_id=`（冻结 key 为 `migration-container`，无法与 `worlds` key 共享缓存） | 保留冻结 queryKey 的取舍；每次世界视图挂载多 1 次列表请求（非逐卡）。若 P6 在意可改为复用 `worlds` key 并同步改冻结记录 |
+| D3 | 复杂度用 `<ComplexityProvider value/onChange>` 受控形式，默认档 = `normalizeComplexity(settings.complexity)` | 与冻结的 `defaultLevel` 语义等价；切换只在会话内（P6 持久化），项目/世界切换时重置 |
+| D4 | `<LinkPanel>` 在 sketch 档默认收起 | 契约 §5.5「sketch 只显示关联计数与行内引用」；收起时仍保留「添加关联」入口 |
+| D5 | `InlineReference` 复用 `EntityPicker` 时传哨兵 source `{special, custom, __inline_reference__}` + `simpleMode` | 冻结签名无 `source`；行内引用不落 WorldLink，哨兵不写入任何数据 |
+| D6 | 删除了 item 级「关联人物」的写入口（原写 `_char_link`），旧 chip 只读且无移除动作 | 契约 §0.4 要求不再自建关联结构；item 级人物提及按 `history_ui_design` §14.4 应由 `InlineReference` token 承接（P2 未接，见 §12.4） |
+| D7 | move 接口的 409 改为结构化 detail（`code` + `message` + `existing_id`），批量 `conflicts`/`invalid` 元素加 `code` | 只按状态码无法区分「已有等价边」与「端点分属不同世界」，前端会把两者都当成冲突并给出删除动作，端点冲突时没有替代边 → 丢数据。前端改为按 `code` 分流 |
+| D8 | LinkPanel / CharacterReference 从 `useEntityLinks(实体)` 改为读世界级共享 `useWorldLinks(worldId)` 后本地 `splitLinks` | 原实现每张事件卡各发 1–2 条实体级 links 请求（一个 20 事件的时代 ≈ 40 条），违反 phase2 §6「禁止逐卡请求」；改为每世界 1 条共享请求，计数与明细同源 |
+| D9 | `worldbuildingKeys.world(worldId, includeItems = true)`，新增 `worldRoot` 作为世界详情失效前缀 | 原 key 不区分是否含 items，`useWorld` 两种形状会互相命中缓存；失效统一走 `worldRoot` 前缀，避免与具体形状耦合 |
+| D10 | 旧 `_char_ref` 展示顺序按 `meta.legacyItemId` 在 `eventItems` 中的下标排 | P1-MIG-06 回填链没有 `meta.order`，只按 `meta.order` 排序会退化成按 uuid5 排序，「顺序不丢」不成立 |
+
+### 12.4 遗留与 P6 交接
+
+1. **item 级人物提及未接 InlineReference**：`EventCard` 条目内的 `_char_link` chip 现为只读、无法移除；旧 `_char_ref` 独有的人选同样只读（已在 `history.involves` 里有链的人物可用关联面板移除）。`InlineReference` 组件已交付，P3/P6 需在条目编辑器中接入 token 以恢复该能力。
+2. **`EntityPickerSelection.meta` 无 UI**：强度/流量等 sandbox 级 meta 字段未在写入侧暴露（冻结签名未传 complexity）；P5/P6 补。
+3. **空容器删除只覆盖到面板内动作**：`DELETE /worlds/{id}` + 成功收起面板有静态用例，但「世界列表与项目切换器不再显示」未做端到端自动化。
+4. **light/dark 与 reduced-motion 未做截图/视觉比对**：仅确认新增组件无动画依赖、颜色使用 light/dark 双套 token。
+5. **1 条新增 lint warning**：`common/ComplexitySwitcher/ComplexityContext.tsx` 同时导出组件与 hook，触发 `react-refresh/only-export-components`（仓库既有同类 warning 10 条）；0 error，未为此重构。
+6. **T12 的请求/响应模型就地定义在 `api/v1/world_links.py`**（未进 `schemas/relation.py`，因其不在 P2-T12 写入范围）。OpenAPI 与前端类型生成不受影响；P6 整理时可迁移。
+7. **P6 仍需补的容器收尾项**：删除/回收 Phase 2 之后仍非空的容器世界（见 §10 与 §8「容器残留」）。
+8. **审查后仍刻意保留的项**（非缺陷，需产品/性能决策，均已在冻结文档登记口径）：
+   - `WorldbuildingView.tsx` 仍 1700+ 行 / 多个内联组件，未拆分（拆分属独立重构，风险大于收益）。
+   - `LinkPanel` 删除关联无二次确认；`InlineReference` hover 预览只有 `title`（§12.3 备案）。
+   - `useMigrationLinks` 与 `useWorlds` 各发一次 `GET /worlds?project_id=`（D2，非逐卡）。
+   - `worldbuildingKeys.entities` 只保留 key 形状定义，当前无 query 使用（避免破坏冻结面）。
+   - 批量里任何一条契约外 `link_type` 仍整体 400（已冻结语义），但 detail 现在带 `link_ids`，前端可指出具体行。

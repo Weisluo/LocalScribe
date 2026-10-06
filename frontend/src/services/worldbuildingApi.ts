@@ -14,6 +14,24 @@ export type WorldLinkCreate = components['schemas']['WorldLinkCreate'];
 export type WorldLinkUpdate = components['schemas']['WorldLinkUpdate'];
 export type WorldLinkCounts = components['schemas']['WorldLinkCounts'];
 export type LinkTypeDef = components['schemas']['LinkTypeDefResponse'];
+export type EntityRef = components['schemas']['EntityRef'];
+
+// 契约 §2.6 的复杂度三档。后端以 WorldSettings.complexity 自由字符串存储，
+// OpenAPI 里同名 schema 是旧模板时代的三档枚举（simple/complex/highly_complex），
+// 与契约无关，故此处按契约定义而不复用生成类型。
+export type ComplexityLevel = 'sketch' | 'structure' | 'sandbox';
+
+// 契约 v2 实体类型：由后端 /worlds、/modules/{id}/submodules、/modules/{id}/items 返回，
+// 含 kind / meta / parent_id（history 的前缀编码废弃后必须读这些字段）。
+export type WorldModuleV2 = components['schemas']['WorldModuleWithItemsV2'];
+export type SubmoduleV2 = components['schemas']['WorldSubmoduleResponse'];
+export type ModuleItemV2 = components['schemas']['WorldModuleItemResponse'];
+
+/** POST /worlds/{id}/links/move 批量归位结果（P2-T12，取自 OpenAPI 生成类型） */
+export type WorldLinkMoveResult = components['schemas']['LinksMoveResponse'];
+
+/** POST /links/{id}/move 单条归位 body（P2-T12，取自 OpenAPI 生成类型） */
+export type WorldLinkMovePayload = components['schemas']['LinkMoveRequest'];
 
 export interface WorldTemplate {
   id: string;
@@ -327,5 +345,21 @@ export const worldbuildingApi = {
 
   deleteWorldLink: (linkId: string) => {
     return api.delete(`/worldbuilding/links/${linkId}`);
+  },
+
+  // ---- 迁移容器归位（Phase 2 P2-T12/T13） ----
+
+  moveWorldLink: (linkId: string, data?: WorldLinkMovePayload) => {
+    return api.post<WorldLink>(`/worldbuilding/links/${linkId}/move`, data ?? {});
+  },
+
+  moveWorldLinks: (
+    worldId: string,
+    data: { link_ids: string[]; target_world_id?: string }
+  ) => {
+    return api.post<WorldLinkMoveResult>(
+      `/worldbuilding/worlds/${worldId}/links/move`,
+      data
+    );
   },
 };

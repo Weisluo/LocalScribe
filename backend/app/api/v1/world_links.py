@@ -3,16 +3,19 @@
 路由（挂载在 /api/v1/worldbuilding 下）：
 - GET    /worlds/{world_id}/links
 - POST   /worlds/{world_id}/links
+- POST   /worlds/{world_id}/links/move        单事务批量归位（P2-T12）
 - GET    /worlds/{world_id}/links/counts
 - GET    /links/{link_id}
+- POST   /links/{link_id}/move                单条归位（P2-T12）
 - PATCH  /links/{link_id}
 - DELETE /links/{link_id}
 - GET    /link-registry           只读，返回契约 §4 全量 link_type
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
@@ -27,11 +30,39 @@ from app.schemas.relation import (
 from app.services.link_registry import LINK_TYPES
 from app.services.link_service import (
     DuplicateLinkError,
+    EndpointWorldConflictError,
+    ForeignLinkTypeError,
+    LinkMoveError,
     LinkService,
     LinkValidationError,
 )
 
 router = APIRouter()
+
+
+class LinkMoveRequest(BaseModel):
+    """单条归位请求体（契约 §6）：省略 world_id 时按端点所属世界推导。"""
+
+    world_id: Optional[str] = Field(None, min_length=1, max_length=36)
+
+
+class LinksMoveRequest(BaseModel):
+    """批量归位请求体（契约 §6）"""
+
+    link_ids: List[str] = Field(..., min_length=1, max_length=500)
+    target_world_id: Optional[str] = Field(None, min_length=1, max_length=36)
+
+
+class LinksMoveResponse(BaseModel):
+    """批量归位结果：冲突与非法项只报告，不阻塞其余项
+
+    conflicts 元素：{"link_id", "code": "duplicate_link", "existing_id"}
+    invalid 元素：{"link_id", "code", "reason"}
+    """
+
+    moved: int
+    conflicts: List[Dict[str, str]]
+    invalid: List[Dict[str, str]]
 
 
 def _get_world_or_404(db: Session, world_id: str) -> World:
@@ -97,10 +128,85 @@ def create_world_link(
     return WorldLinkResponse.from_model(link)
 
 
+@router.post("/worlds/{world_id}/links/move", response_model=LinksMoveResponse)
+def move_world_links(
+    world_id: str, payload: LinksMoveRequest, db: Session = Depends(get_db)
+):
+    """单事务批量归位（契约 §6）：冲突与非法项不阻塞其余项。
+
+    请求级校验失败整体返回：未知世界/关联 404、跨项目 400、契约外 link_type 400
+    （后者 detail 为 {"code": "foreign_link_type", "message", "link_ids"}，便于定位具体行）。
+    """
+
+    try:
+        result = LinkService.move_links(
+            db, world_id, payload.link_ids, payload.target_world_id
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ForeignLinkTypeError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "foreign_link_type",
+                "message": str(exc),
+                "link_ids": exc.link_ids,
+            },
+        ) from exc
+    except (LinkValidationError, LinkMoveError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return LinksMoveResponse(**result)
+
+
 @router.get("/worlds/{world_id}/links/counts", response_model=List[WorldLinkCounts])
 def get_world_link_counts(world_id: str, db: Session = Depends(get_db)):
     _get_world_or_404(db, world_id)
     return LinkService.counts_by_module(db, world_id)
+
+
+@router.post("/links/{link_id}/move", response_model=WorldLinkResponse)
+def move_world_link(
+    link_id: str,
+    payload: Optional[LinkMoveRequest] = None,
+    db: Session = Depends(get_db),
+):
+    """把一条关联归位到目标世界（契约 §6）。
+
+    省略 world_id 时按端点推导；端点分属不同世界且未显式指定返回 409；
+    目标世界已有等价边返回 409。两种 409 的 detail 都是结构化判别码：
+    {"code": "endpoint_world_conflict", "message"} /
+    {"code": "duplicate_link", "message", "existing_id"}。
+    """
+
+    link = LinkService.get_link(db, link_id)
+    if link is None:
+        raise HTTPException(status_code=404, detail=f"关联不存在: {link_id}")
+
+    world_id = payload.world_id if payload is not None else None
+    try:
+        moved = LinkService.move_link(db, link, world_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except EndpointWorldConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "endpoint_world_conflict",
+                "message": "关联两端分属不同世界，请显式指定 world_id",
+            },
+        ) from exc
+    except DuplicateLinkError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "duplicate_link",
+                "message": "目标世界已有等价关联",
+                "existing_id": exc.existing_id,
+            },
+        ) from exc
+    except (LinkValidationError, LinkMoveError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return WorldLinkResponse.from_model(moved)
 
 
 @router.get("/links/{link_id}", response_model=WorldLinkResponse)

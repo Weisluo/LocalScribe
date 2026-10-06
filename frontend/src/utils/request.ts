@@ -100,9 +100,13 @@ service.interceptors.response.use(
           });
           errorMessage = errors.join('; ');
         }
-        // 处理对象类型的 detail
+        // 处理对象类型的 detail（P2-T12 起 move 接口用 {code,message} 结构化报错）
         else if (typeof data.detail === 'object') {
-          errorMessage = JSON.stringify(data.detail);
+          const detail = data.detail as { message?: unknown };
+          errorMessage =
+            typeof detail.message === 'string'
+              ? detail.message
+              : JSON.stringify(data.detail);
         }
       } else if (data?.error?.message) {
         errorMessage = data.error.message;

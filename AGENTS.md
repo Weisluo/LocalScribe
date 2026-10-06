@@ -50,9 +50,10 @@ cd frontend
 npm run dev          # Dev server
 npm run build        # Production build
 npm run preview      # Preview build
-npm test             # Playwright export regression suite (uses system Edge; PW_CHANNEL to override)
+npm test             # Playwright suites: export regression + worldbuilding phase2
+                     # (uses system Edge; PW_CHANNEL to override)
 npm run gen:types    # Generate TS types from OpenAPI (backend must be running)
-npx eslint src --ext ts,tsx  # Lint
+npx eslint src --ext ts,tsx  # Lint (src only; tests/ is not type-checked by tsc)
 ```
 
 ## Architecture

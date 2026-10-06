@@ -989,6 +989,11 @@ export interface paths {
         /**
          * Import World
          * @description 世界备份恢复：新建世界，实体 id 重新分配并重映射关联端点。
+         *
+         *     - 关联先整体过一遍契约 §4 校验，非法则整包拒绝（400），不做部分写入
+         *     - 实体分两遍建立：先全部 submodule 再回填 parent_id，避免备份里子级排在
+         *       父级之前时静默丢掉父子关系
+         *     - 关联落库统一走 LinkService，沿用 registry 的 directed 与对称边去重
          */
         post: operations["import_world_api_v1_worldbuilding_worlds_import_post"];
         delete?: never;
@@ -1071,6 +1076,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/worldbuilding/worlds/{world_id}/links/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move World Links
+         * @description 单事务批量归位（契约 §6）：冲突与非法项不阻塞其余项。
+         *
+         *     请求级校验失败整体返回：未知世界/关联 404、跨项目 400、契约外 link_type 400
+         *     （后者 detail 为 {"code": "foreign_link_type", "message", "link_ids"}，便于定位具体行）。
+         */
+        post: operations["move_world_links_api_v1_worldbuilding_worlds__world_id__links_move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/worldbuilding/worlds/{world_id}/links/counts": {
         parameters: {
             query?: never;
@@ -1082,6 +1110,31 @@ export interface paths {
         get: operations["get_world_link_counts_api_v1_worldbuilding_worlds__world_id__links_counts_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/links/{link_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move World Link
+         * @description 把一条关联归位到目标世界（契约 §6）。
+         *
+         *     省略 world_id 时按端点推导；端点分属不同世界且未显式指定返回 409；
+         *     目标世界已有等价边返回 409。两种 409 的 detail 都是结构化判别码：
+         *     {"code": "endpoint_world_conflict", "message"} /
+         *     {"code": "duplicate_link", "message", "existing_id"}。
+         */
+        post: operations["move_world_link_api_v1_worldbuilding_links__link_id__move_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3486,6 +3539,14 @@ export interface components {
             weight?: number | null;
         };
         /**
+         * LinkMoveRequest
+         * @description 单条归位请求体（契约 §6）：省略 world_id 时按端点所属世界推导。
+         */
+        LinkMoveRequest: {
+            /** World Id */
+            world_id?: string | null;
+        };
+        /**
          * LinkTimeRange
          * @description 关联生效时间范围（契约 §2.5 time）
          */
@@ -3520,6 +3581,35 @@ export interface components {
             source?: components["schemas"]["EntityRef"][] | null;
             /** Target */
             target?: components["schemas"]["EntityRef"][] | null;
+        };
+        /**
+         * LinksMoveRequest
+         * @description 批量归位请求体（契约 §6）
+         */
+        LinksMoveRequest: {
+            /** Link Ids */
+            link_ids: string[];
+            /** Target World Id */
+            target_world_id?: string | null;
+        };
+        /**
+         * LinksMoveResponse
+         * @description 批量归位结果：冲突与非法项只报告，不阻塞其余项
+         *
+         *     conflicts 元素：{"link_id", "code": "duplicate_link", "existing_id"}
+         *     invalid 元素：{"link_id", "code", "reason"}
+         */
+        LinksMoveResponse: {
+            /** Moved */
+            moved: number;
+            /** Conflicts */
+            conflicts: {
+                [key: string]: string;
+            }[];
+            /** Invalid */
+            invalid: {
+                [key: string]: string;
+            }[];
         };
         /**
          * MagicLevel
@@ -8420,6 +8510,41 @@ export interface operations {
             };
         };
     };
+    move_world_links_api_v1_worldbuilding_worlds__world_id__links_move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinksMoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinksMoveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_world_link_counts_api_v1_worldbuilding_worlds__world_id__links_counts_get: {
         parameters: {
             query?: never;
@@ -8438,6 +8563,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorldLinkCounts"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_world_link_api_v1_worldbuilding_links__link_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LinkMoveRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldLinkResponse"];
                 };
             };
             /** @description Validation Error */

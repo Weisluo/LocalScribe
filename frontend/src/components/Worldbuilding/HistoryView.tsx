@@ -40,7 +40,7 @@ import { HistoryModuleConfig } from './HistoryView/types';
 import { ConfigModal } from './HistoryView/modals/ConfigModal';
 import { DeleteConfirmModal } from './HistoryView/modals/DeleteConfirmModal';
 
-export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: HistoryViewProps) => {
+export const HistoryView = ({ moduleId, projectId, worldId, highlightRef, onNavigateToCharacter, onNavigateToEntity }: HistoryViewProps) => {
   const queryClient = useQueryClient();
   const [showAddEraModal, setShowAddEraModal] = useState(false);
   const [showAddEventModal, setShowAddEventModal] = useState(false);
@@ -239,6 +239,38 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
     }
   }, [normalizedSearchQuery, finalFilteredEras, activeEraId]);
 
+  // 统一导航落点（P2-T7）：把 highlightRef 解析成「所属时代 + 事件」，切过去并高亮，
+  // 否则跳到别的时代的事件时用户看不到任何变化
+  const highlightTarget = useMemo<{ eraId: string; eventId?: string } | null>(() => {
+    if (!highlightRef || highlightRef.module !== 'history') return null;
+    if (highlightRef.kind === 'era') {
+      return { eraId: highlightRef.id };
+    }
+    const event = events.find((item) => item.id === highlightRef.id);
+    if (!event) return null;
+    const eraId = event.eraId ?? standaloneEra?.id;
+    return eraId ? { eraId, eventId: event.id } : null;
+  }, [highlightRef, events, standaloneEra]);
+
+  useEffect(() => {
+    if (highlightTarget?.eraId) {
+      setActiveEraId(highlightTarget.eraId);
+    }
+  }, [highlightTarget]);
+
+  useEffect(() => {
+    const eventId = highlightTarget?.eventId;
+    if (!eventId) return;
+    // 等时代切换与卡片提交后再滚动定位
+    const timer = window.setTimeout(() => {
+      const element = containerRef.current?.querySelector(
+        `[data-event-id="${eventId}"]`
+      );
+      element?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [highlightTarget]);
+
   const createEraMutation = useMutation({
     mutationFn: (data: { name: string; description: string; startDate: string; endDate: string; theme: EraTheme }) => {
       const iconValue = data.startDate || data.endDate ? `era:${data.startDate}:${data.endDate}` : undefined;
@@ -394,18 +426,6 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
     },
   });
 
-  const createItemForEventMutation = useMutation({
-    mutationFn: (data: { eventId: string; name: string; content: Record<string, string> }) => {
-      return worldbuildingApi.createItem(moduleId, { name: data.name, content: data.content, submodule_id: data.eventId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items', moduleId] });
-    },
-    onError: (error: Error) => {
-      console.error('创建人物关联条目失败:', error);
-    },
-  });
-
   const deleteItemMutation = useMutation({
     mutationFn: (itemId: string) => worldbuildingApi.deleteItem(itemId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items', moduleId] }),
@@ -492,10 +512,6 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
   };
 
   const handleDeleteItem = (itemId: string) => deleteItemMutation.mutate(itemId);
-
-  const handleAddCharRefItem = (event: Event, name: string, content: Record<string, string>) => {
-    createItemForEventMutation.mutate({ eventId: event.id, name, content });
-  };
 
   if (isLoading && isFirstLoad) {
     return (
@@ -681,11 +697,13 @@ export const HistoryView = ({ moduleId, projectId, onNavigateToCharacter }: Hist
                   onDeleteItem={handleDeleteItem}
                   onUpdateEventDescription={handleUpdateDescription}
                   onUpdateEraDescription={(desc) => handleUpdateEraDescription(era.id, desc)}
-                  onAddCharRefItem={handleAddCharRefItem}
                   projectId={projectId}
                   moduleId={moduleId}
+                  worldId={worldId}
                   isStandalone={isStandaloneEra}
+                  highlightedEventId={highlightTarget?.eventId}
                   onNavigateToCharacter={onNavigateToCharacter}
+                  onNavigateToEntity={onNavigateToEntity}
                   eraThemeConfigs={moduleConfig.eraThemes}
                   eventTypeConfigs={moduleConfig.eventTypes}
                   levelConfigs={moduleConfig.levels}

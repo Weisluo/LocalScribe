@@ -539,7 +539,7 @@ export const CharacterCloudView = ({
         <div className="mt-3 pt-3 border-t border-border/40">
           <p className="text-xs font-medium text-muted-foreground mb-2">关系类型</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            {(['family', 'love', 'friend', 'mentor', 'enemy', 'other'] as RelationType[]).map(
+            {(['family', 'love', 'friend', 'master', 'apprentice', 'enemy', 'other'] satisfies RelationType[]).map(
               (type) => (
                 <div key={type} className="flex items-center gap-2">
                   <div

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit2, Trash2, Plus } from 'lucide-react';
+import { Edit2, Trash2, Plus, GitBranch } from 'lucide-react';
 import { ERA_THEME_CONFIG, cardVariants, getEraThemeConfig, DEFAULT_ERA_THEME_CONFIGS } from './config';
 import { EraContentPanelProps } from './types';
 import { EraTimeline } from './EraTimeline';
 import { EventCard } from './EventCard';
+import { useEntityLinkCounts } from './useEntityLinkCounts';
+import { LinkPanel } from '@/components/common/LinkPanel';
 
 export const EraContentPanel = ({
   era,
@@ -19,11 +21,14 @@ export const EraContentPanel = ({
   onDeleteItem,
   onUpdateEventDescription,
   onUpdateEraDescription,
-  onAddCharRefItem,
   projectId,
   moduleId,
+  worldId,
   isStandalone = false,
+  /** 统一导航落点：命中的事件卡高亮 */
+  highlightedEventId,
   onNavigateToCharacter,
+  onNavigateToEntity,
   eraThemeConfigs,
   eventTypeConfigs,
   levelConfigs,
@@ -32,6 +37,17 @@ export const EraContentPanel = ({
   const [editDesc, setEditDesc] = useState(era.description || '');
 
   const themeConfig = getEraThemeConfig(era.theme || 'ochre', eraThemeConfigs || DEFAULT_ERA_THEME_CONFIGS) || ERA_THEME_CONFIG[era.theme || 'ochre'];
+
+  // 关联计数：与世界内 links 复用同一批量查询（React Query 去重）；
+  // 独立时代是前端合成实体（无 submodule），不参与关联
+  const eraRef = useMemo(
+    () => ({ module: 'history', kind: 'era', id: era.id }),
+    [era.id]
+  );
+  const { outgoing: outgoingLinkCount, incoming: incomingLinkCount } = useEntityLinkCounts(
+    isStandalone ? undefined : worldId,
+    eraRef
+  );
 
   const handleStartEditDesc = () => {
     setEditDesc(era.description || '');
@@ -84,6 +100,18 @@ export const EraContentPanel = ({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0 group/header">
+          {!isStandalone && worldId && (
+            <span
+              className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-background/60 text-muted-foreground border border-border/40 mr-1"
+              title={`关联计数：出链 ${outgoingLinkCount} · 入链 ${incomingLinkCount}`}
+              aria-label={`关联计数：出链 ${outgoingLinkCount}，入链 ${incomingLinkCount}`}
+            >
+              <GitBranch className="h-3 w-3" />
+              <span>{outgoingLinkCount}</span>
+              <span className="text-muted-foreground/50">/</span>
+              <span>{incomingLinkCount}</span>
+            </span>
+          )}
           {!isStandalone && (
             <>
               <motion.button
@@ -256,8 +284,10 @@ export const EraContentPanel = ({
                     onEditItem={(item) => onEditItem(event, item)}
                     onDeleteItem={(itemId) => onDeleteItem(itemId)}
                     onUpdateDescription={(desc) => onUpdateEventDescription(event, desc)}
-                    onAddCharRefItem={(name, content) => onAddCharRefItem?.(event, name, content)}
+                    worldId={worldId}
+                    isHighlighted={highlightedEventId === event.id}
                     onNavigateToCharacter={onNavigateToCharacter}
+                    onNavigateToEntity={onNavigateToEntity}
                     eventTypeConfigs={eventTypeConfigs}
                     levelConfigs={levelConfigs}
                   />
@@ -267,6 +297,17 @@ export const EraContentPanel = ({
           )}
         </div>
       </motion.div>
+
+      {/* 关联面板：时间轴 + 事件行之后、staggerChildren 容器之外，独立时代不渲染 */}
+      {!isStandalone && worldId && (
+        <div className="px-6 pb-6">
+          <LinkPanel
+            worldId={worldId}
+            entity={{ module: 'history', kind: 'era', id: era.id }}
+            onNavigate={onNavigateToEntity}
+          />
+        </div>
+      )}
     </motion.div>
   );
 };

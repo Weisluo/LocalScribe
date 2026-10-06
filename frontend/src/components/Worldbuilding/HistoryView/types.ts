@@ -1,3 +1,5 @@
+import type { EntityRef } from '@/services/worldbuildingApi';
+
 export type EventLevel = 'critical' | 'major' | 'normal' | 'minor';
 
 export type EraTheme = 'ochre' | 'gilded' | 'verdant' | 'cerulean' | 'patina' | 'parchment' | 'cinnabar' | 'ink' | 'standalone';
@@ -138,14 +140,19 @@ export interface EventCardProps {
   event: Event;
   projectId?: string;
   moduleId?: string;
+  /** WorldLink 作用域；缺失时关联读取与计数徽章整体降级 */
+  worldId?: string;
+  /** 统一导航落点：命中的卡片加高亮环 */
+  isHighlighted?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onAddItem: () => void;
   onEditItem: (item: EventItem) => void;
   onDeleteItem: (itemId: string) => void;
   onUpdateDescription: (description: string) => void;
-  onAddCharRefItem?: (name: string, content: Record<string, string>) => void;
   onNavigateToCharacter?: (characterId: string) => void;
+  /** 统一跨模块导航（契约 §12/§14.6） */
+  onNavigateToEntity?: (ref: EntityRef) => void;
   eventTypeConfigs?: (EventTypeConfig & { id: string })[];
   levelConfigs?: (EventLevelConfig & { id: string })[];
 }
@@ -153,7 +160,13 @@ export interface EventCardProps {
 export interface HistoryViewProps {
   moduleId: string;
   projectId: string;
+  /** WorldLink 作用域；WorldbuildingView 未传入时降级（不请求 links、不渲染计数） */
+  worldId?: string;
+  /** 统一导航落点：指向 era/event 时自动切到所属时代并高亮（P2-T7） */
+  highlightRef?: EntityRef | null;
   onNavigateToCharacter?: (characterId: string) => void;
+  /** 统一跨模块导航（契约 §12/§14.6） */
+  onNavigateToEntity?: (ref: EntityRef) => void;
 }
 
 export interface EraCardProps {
@@ -200,11 +213,16 @@ export interface EraContentPanelProps {
   onDeleteItem: (itemId: string) => void;
   onUpdateEventDescription: (event: Event, desc: string) => void;
   onUpdateEraDescription: (desc: string) => void;
-  onAddCharRefItem?: (event: Event, name: string, content: Record<string, string>) => void;
   projectId: string;
   moduleId: string;
+  /** WorldLink 作用域；缺失时关联读取与计数徽章整体降级 */
+  worldId?: string;
   isStandalone?: boolean;
+  /** 统一导航落点：命中的事件卡高亮（P2-T7） */
+  highlightedEventId?: string;
   onNavigateToCharacter?: (characterId: string) => void;
+  /** 统一跨模块导航（契约 §12/§14.6） */
+  onNavigateToEntity?: (ref: EntityRef) => void;
   eraThemeConfigs?: (EraThemeConfig & { id: string })[];
   eventTypeConfigs?: (EventTypeConfig & { id: string })[];
   levelConfigs?: (EventLevelConfig & { id: string })[];
@@ -218,14 +236,15 @@ export interface EraTimelineProps {
 
 export interface CharacterReferenceProps {
   eventId: string;
-  eventItems: EventItem[];
+  /** 决定 WorldLink source.kind（event / era） */
+  eventKind: 'event' | 'era';
+  /** WorldLink 作用域；为空串时降级为旧 _char_ref 只读展示，不请求 links */
+  worldId: string;
   projectId: string;
-  moduleId: string;
-  onAddItem: (name: string, content: Record<string, string>) => void;
-  onEditItem: (item: EventItem) => void;
-  onDeleteItem: (itemId: string) => void;
-  onNavigateToCharacter?: (characterId: string) => void;
   isHovered?: boolean;
+  onNavigateToCharacter?: (characterId: string) => void;
+  /** 旧 _char_ref 只读展示所需（双读窗口），不写回 */
+  eventItems?: EventItem[];
 }
 
 export interface CharacterPickerModalProps {

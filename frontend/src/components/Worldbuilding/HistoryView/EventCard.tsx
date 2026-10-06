@@ -1,23 +1,23 @@
 import { useState, useMemo, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Edit2, Trash2, X, Plus, ChevronDown, User } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Calendar, Edit2, Trash2, X, Plus, ChevronDown, User, GitBranch } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { EventCardProps } from './types';
 import { LEVEL_CONFIG, EVENT_TYPE_CONFIG, animationConfig, cardVariants, getEventTypeConfig, getEventLevelConfig, DEFAULT_EVENT_TYPE_CONFIGS, DEFAULT_LEVEL_CONFIGS } from './config';
 import { CharacterReference } from './CharacterReference';
-import { CharacterPickerModal } from './modals/CharacterPickerModal';
+import { LinkPanel } from '@/components/common/LinkPanel';
+import { useEntityLinkCounts } from './useEntityLinkCounts';
+import { characterToRef } from '../types';
 import { characterApi } from '@/services/characterApi';
-import { worldbuildingApi } from '@/services/worldbuildingApi';
 
+/** 旧前缀键（只读兼容展示，不再写入新键，phase2 §7/§8） */
 const CHAR_LINK_PREFIX = '_char_link:';
 
-export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, projectId, moduleId, onEdit, onDelete, onAddItem, onEditItem, onDeleteItem, onUpdateDescription, onAddCharRefItem, onNavigateToCharacter, eventTypeConfigs, levelConfigs }, ref) => {
-  const queryClient = useQueryClient();
+export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, projectId, moduleId, worldId, isHighlighted, onEdit, onDelete, onAddItem, onEditItem, onDeleteItem, onUpdateDescription, onNavigateToCharacter, onNavigateToEntity, eventTypeConfigs, levelConfigs }, ref) => {
   const [showAllItems, setShowAllItems] = useState(false);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [editDesc, setEditDesc] = useState(event.description || '');
   const [isHovered, setIsHovered] = useState(false);
-  const [linkingItemId, setLinkingItemId] = useState<string | null>(null);
   
   const typeConfig = event.eventType
     ? getEventTypeConfig(event.eventType, eventTypeConfigs || DEFAULT_EVENT_TYPE_CONFIGS)
@@ -32,6 +32,17 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
   const glowColor = typeConfig ? typeConfig.color : levelConfig.glowColor;
 
   const maxVisibleItems = event.level === 'critical' ? 6 : event.level === 'major' ? 3 : event.level === 'normal' ? 2 : 0;
+
+  // 关联计数：整个世界的 links 在列表加载时批量取一次（同 queryKey 由 React Query 去重），
+  // 卡片本地归并自己的出链/入链，避免逐卡请求（history_ui_design §14.3）
+  const entityRef = useMemo(
+    () => ({ module: 'history', kind: 'event', id: event.id }),
+    [event.id]
+  );
+  const { outgoing: outgoingLinkCount, incoming: incomingLinkCount } = useEntityLinkCounts(
+    worldId,
+    entityRef
+  );
 
   const regularItems = useMemo(() => {
     return event.items.filter((item) => {
@@ -75,69 +86,6 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
     return links;
   }, [event.items, allCharacters]);
 
-  const participantCharacterIds = useMemo(() => {
-    const ids: string[] = [];
-    for (const item of event.items) {
-      for (const key of Object.keys(item.content)) {
-        if (key.startsWith('_char_ref:')) {
-          const charId = key.slice('_char_ref:'.length);
-          if (charId && !ids.includes(charId)) {
-            ids.push(charId);
-          }
-        }
-      }
-    }
-    return ids;
-  }, [event.items]);
-
-  const updateItemMutation = useMutation({
-    mutationFn: (data: { itemId: string; name: string; content: Record<string, string> }) => {
-      return worldbuildingApi.updateItem(data.itemId, {
-        name: data.name,
-        content: data.content,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items'] });
-    },
-  });
-
-  const handleLinkCharacter = (itemId: string, charId: string, charName: string) => {
-    const item = event.items.find((i) => i.id === itemId);
-    if (!item) return;
-
-    const linkKey = `${CHAR_LINK_PREFIX}${itemId}:${charId}`;
-    if (linkKey in item.content) return;
-
-    const newContent = {
-      ...item.content,
-      [linkKey]: charName,
-    };
-
-    updateItemMutation.mutate({
-      itemId: item.id,
-      name: item.name,
-      content: newContent,
-    });
-    setLinkingItemId(null);
-  };
-
-  const handleUnlinkCharacter = (itemId: string, charId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const item = event.items.find((i) => i.id === itemId);
-    if (!item) return;
-
-    const linkKey = `${CHAR_LINK_PREFIX}${itemId}:${charId}`;
-    const newContent = { ...item.content };
-    delete newContent[linkKey];
-
-    updateItemMutation.mutate({
-      itemId: item.id,
-      name: item.name,
-      content: newContent,
-    });
-  };
-
   const handleStartEditDesc = () => {
     setEditDesc(event.description || '');
     setIsEditingDesc(true);
@@ -157,6 +105,15 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
     return allCharacters.find((c) => c.id === charId);
   };
 
+  // 角色仍走 onNavigateToCharacter（EditorPage 回调）；未提供时退化为统一入口 onNavigateToEntity
+  const handleNavigateToCharacter = (characterId: string) => {
+    if (onNavigateToCharacter) {
+      onNavigateToCharacter(characterId);
+      return;
+    }
+    onNavigateToEntity?.(characterToRef(characterId));
+  };
+
   if (event.level === 'minor') {
     return (
       <motion.div
@@ -166,7 +123,10 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
         animate="visible"
         exit="exit"
         layout
-        className={`${levelConfig.flexBasis} ${levelConfig.minHeight} ${levelConfig.padding} ${bgClass} ${borderClass} rounded-lg transition-all duration-300 hover:shadow-lg hover:border-muted-foreground/40 group relative cursor-default`}
+        data-event-id={event.id}
+        className={`${levelConfig.flexBasis} ${levelConfig.minHeight} ${levelConfig.padding} ${bgClass} ${borderClass} rounded-lg transition-all duration-300 hover:shadow-lg hover:border-muted-foreground/40 group relative cursor-default${
+          isHighlighted ? ' ring-2 ring-primary/60 ring-offset-1 ring-offset-background' : ''
+        }`}
         whileHover={{ y: -2, scale: 1.01 }}
         transition={animationConfig.spring}
       >
@@ -227,9 +187,12 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
       animate="visible"
       exit="exit"
       layout
+      data-event-id={event.id}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className={`${levelConfig.flexBasis} ${levelConfig.minHeight} ${levelConfig.padding} ${bgClass} ${borderClass} rounded-xl transition-all duration-300 group relative overflow-hidden cursor-default`}
+      className={`${levelConfig.flexBasis} ${levelConfig.minHeight} ${levelConfig.padding} ${bgClass} ${borderClass} rounded-xl transition-all duration-300 group relative overflow-hidden cursor-default${
+        isHighlighted ? ' ring-2 ring-primary/60 ring-offset-1 ring-offset-background' : ''
+      }`}
       whileHover={{ y: -4, scale: 1.005 }}
       transition={animationConfig.spring}
       style={event.level === 'critical' ? {
@@ -346,23 +309,37 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
               </motion.span>
             )}
           </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 flex gap-1 shrink-0">
-            <motion.button 
-              onClick={(e) => { e.stopPropagation(); onEdit(); }} 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-1.5 hover:bg-background/60 rounded-lg transition-colors"
-            >
-              <Edit2 className="h-4 w-4" />
-            </motion.button>
-            <motion.button 
-              onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="p-1.5 hover:bg-destructive/15 rounded-lg text-destructive transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-            </motion.button>
+          <div className="flex items-center gap-2 shrink-0">
+            {worldId && (
+              <span
+                className="flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-muted-foreground/15 text-muted-foreground border border-border/40"
+                title={`关联计数：出链 ${outgoingLinkCount} · 入链 ${incomingLinkCount}`}
+                aria-label={`关联计数：出链 ${outgoingLinkCount}，入链 ${incomingLinkCount}`}
+              >
+                <GitBranch className="h-3 w-3" />
+                <span>{outgoingLinkCount}</span>
+                <span className="text-muted-foreground/50">/</span>
+                <span>{incomingLinkCount}</span>
+              </span>
+            )}
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 flex gap-1 shrink-0">
+              <motion.button 
+                onClick={(e) => { e.stopPropagation(); onEdit(); }} 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-1.5 hover:bg-background/60 rounded-lg transition-colors"
+              >
+                <Edit2 className="h-4 w-4" />
+              </motion.button>
+              <motion.button 
+                onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-1.5 hover:bg-destructive/15 rounded-lg text-destructive transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </motion.button>
+            </div>
           </div>
         </div>
         
@@ -534,32 +511,11 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
                                     <User className="h-2.5 w-2.5" />
                                   )}
                                   <span className="max-w-[50px] truncate">{link.charName}</span>
-                                  <button
-                                    onClick={(e) => handleUnlinkCharacter(item.id, link.charId, e)}
-                                    className="p-0.5 rounded-full hover:bg-black/10 transition-colors"
-                                    title="取消关联"
-                                  >
-                                    <X className="h-2 w-2" />
-                                  </button>
                                 </span>
                               );
                             })}
                           </div>
                         )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setLinkingItemId(item.id);
-                          }}
-                          className={`p-1 rounded transition-colors ${
-                            hasLinks 
-                              ? 'opacity-0 group-hover/item:opacity-100 text-primary hover:bg-primary/10' 
-                              : 'opacity-0 group-hover/item:opacity-100 text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                          }`}
-                          title="关联人物"
-                        >
-                          <User className="h-3 w-3" />
-                        </button>
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
@@ -615,36 +571,30 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
           </motion.div>
         )}
 
-        {projectId && moduleId && onAddCharRefItem && (
+        {projectId && moduleId && (
           <div className="mt-3 pt-3 border-t border-border/30">
             <CharacterReference
               eventId={event.id}
-              eventItems={event.items}
+              eventKind="event"
+              worldId={worldId ?? ''}
               projectId={projectId}
-              moduleId={moduleId}
-              onAddItem={onAddCharRefItem}
-              onEditItem={onEditItem}
-              onDeleteItem={onDeleteItem}
-              onNavigateToCharacter={onNavigateToCharacter}
+              onNavigateToCharacter={handleNavigateToCharacter}
               isHovered={isHovered}
+              eventItems={event.items}
+            />
+          </div>
+        )}
+
+        {worldId && (
+          <div className="mt-3">
+            <LinkPanel
+              worldId={worldId}
+              entity={{ module: 'history', kind: 'event', id: event.id }}
+              onNavigate={onNavigateToEntity}
             />
           </div>
         )}
       </div>
-
-      {projectId && (
-        <CharacterPickerModal
-          isOpen={linkingItemId !== null}
-          onClose={() => setLinkingItemId(null)}
-          onSelect={(charId, charName) => {
-            if (linkingItemId) {
-              handleLinkCharacter(linkingItemId, charId, charName);
-            }
-          }}
-          projectId={projectId}
-          allowedCharacterIds={participantCharacterIds}
-        />
-      )}
     </motion.div>
   );
 });

@@ -1,10 +1,30 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { worldbuildingApi, WorldModule, WorldSubmodule, WorldModuleItem } from '@/services/worldbuildingApi';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { worldbuildingApi, WorldSubmodule, WorldModuleItem, type EntityRef } from '@/services/worldbuildingApi';
 import { useProjectStore } from '@/stores/projectStore';
-import { Loader2, Plus, ChevronDown, ChevronRight, Edit2, Trash2, X, Save, Globe2, Map, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, ChevronRight, ChevronLeft, Edit2, Trash2, X, Save, Globe2, Map as MapIcon, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload, GitBranch, AlertTriangle, Package } from 'lucide-react';
 import { HistoryView } from './HistoryView';
 import { EconomyView } from './EconomyView';
+import { ComplexityProvider, ComplexitySwitcher, normalizeComplexity, type ComplexityLevel } from '@/components/common/ComplexitySwitcher';
+import { useWorlds, useWorld, useCreateWorld, useUpdateWorld, useDeleteWorld, useWorldBackup } from './hooks/useWorldData';
+import { useLinkCounts } from './hooks/useLinks';
+import { worldbuildingKeys } from './hooks/worldQueryKeys';
+import { useMigrationLinks } from './hooks/useMigrationLinks';
+import { MigrationContainerPanel } from './MigrationContainerPanel';
+import { isMigrationContainer, kindLabel, refKey, sameRef } from './types';
+import {
+  createBackStack,
+  pushFrame,
+  popFrame,
+  popToDepth,
+  peekFrame,
+  clearStack,
+  isAtRoot,
+  toBreadcrumbs,
+  type BackStackState,
+  type ListSnapshot,
+} from './navigation/backStack';
 
 // 弹窗组件
 interface ModalProps {
@@ -358,8 +378,10 @@ const ImportTemplateModal = ({ isOpen, onClose, onSubmit, isLoading }: ImportTem
         // 尝试从JSON中读取名称
         try {
           const data = JSON.parse(content);
-          if (data.name && !name) {
-            setName(data.name);
+          // 完整备份（WorldExport）的世界名在 world 段，旧模板文件在顶层
+          const worldName = data?.world?.name ?? data?.name;
+          if (typeof worldName === 'string' && worldName && !name) {
+            setName(worldName);
           }
         } catch {
           // JSON 解析失败，忽略
@@ -555,7 +577,7 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, templateName, isLoadin
 type TabType = 'map' | 'history' | 'politics' | 'economy' | 'races' | 'systems' | 'special';
 
 const TAB_CONFIG: Record<TabType, { label: string; icon: LucideIcon }> = {
-  map: { label: '地图', icon: Map },
+  map: { label: '地图', icon: MapIcon },
   history: { label: '历史', icon: History },
   politics: { label: '政治', icon: Landmark },
   economy: { label: '经济', icon: Coins },
@@ -692,10 +714,14 @@ interface SubmoduleSectionProps {
   submodule: WorldSubmodule;
   moduleId: string;
   onItemUpdate: () => void;
+  /** 展开态由视图持有，便于返回栈快照恢复（P2-T7） */
+  isExpanded: boolean;
+  onToggle: () => void;
+  /** 返回栈恢复时的定位高亮 */
+  highlightId?: string;
 }
 
-const SubmoduleSection = ({ submodule, moduleId, onItemUpdate }: SubmoduleSectionProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onToggle, highlightId }: SubmoduleSectionProps) => {
   const [editingItem, setEditingItem] = useState<WorldModuleItem | null>(null);
   const queryClient = useQueryClient();
 
@@ -725,8 +751,10 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate }: SubmoduleSectio
   return (
     <div className="ml-4 border-l-2 border-border/30 pl-4 space-y-2">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors w-full group"
+        onClick={onToggle}
+        className={`flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors w-full group rounded ${
+          highlightId === submodule.id ? 'ring-1 ring-primary/50' : ''
+        }`}
         style={{ color: submodule.color || undefined }}
       >
         {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -752,7 +780,9 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate }: SubmoduleSectio
               ) : (
                 <button
                   onClick={() => setEditingItem(item)}
-                  className="w-full text-left p-3 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors"
+                  className={`w-full text-left p-3 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors ${
+                    highlightId === item.id ? 'ring-1 ring-primary/60' : ''
+                  }`}
                 >
                   <div className="font-medium text-sm">{item.name}</div>
                   <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -768,12 +798,25 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate }: SubmoduleSectio
   );
 };
 
-interface ModuleSectionProps {
-  module: WorldModule;
-  onModuleUpdate: () => void;
+/** 模块视图只依赖展示字段，便于直接消费 /worlds 详情返回的 v2 模块 */
+interface ModuleSectionModel {
+  id: string;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  submodule_count: number;
+  item_count: number;
 }
 
-const ModuleSection = ({ module, onModuleUpdate }: ModuleSectionProps) => {
+interface ModuleSectionProps {
+  module: ModuleSectionModel;
+  onModuleUpdate: () => void;
+  expandedIds: string[];
+  onToggleExpanded: (submoduleId: string) => void;
+  highlightId?: string;
+}
+
+const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, highlightId }: ModuleSectionProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showSubmoduleForm, setShowSubmoduleForm] = useState(false);
   const [showItemForm, setShowItemForm] = useState(false);
@@ -836,7 +879,11 @@ const ModuleSection = ({ module, onModuleUpdate }: ModuleSectionProps) => {
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-3 p-4 hover:bg-accent/20 transition-colors text-left"
       >
-        <span className="text-2xl">{module.icon || '📦'}</span>
+        {module.icon ? (
+          <span className="text-2xl">{module.icon}</span>
+        ) : (
+          <Package className="h-6 w-6 text-muted-foreground" />
+        )}
         <div className="flex-1">
           <h3 className="font-semibold">{module.name}</h3>
           {module.description && (
@@ -904,6 +951,9 @@ const ModuleSection = ({ module, onModuleUpdate }: ModuleSectionProps) => {
               submodule={submodule}
               moduleId={module.id}
               onItemUpdate={onModuleUpdate}
+              isExpanded={expandedIds.includes(submodule.id)}
+              onToggle={() => onToggleExpanded(submodule.id)}
+              highlightId={highlightId}
             />
           ))}
 
@@ -912,7 +962,9 @@ const ModuleSection = ({ module, onModuleUpdate }: ModuleSectionProps) => {
               <button
                 key={item.id}
                 onClick={() => setEditingItem(item)}
-                className="w-full text-left p-3 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors"
+                className={`w-full text-left p-3 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors ${
+                  highlightId === item.id ? 'ring-1 ring-primary/60' : ''
+                }`}
               >
                 <div className="font-medium text-sm">{item.name}</div>
                 <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -1112,21 +1164,19 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const { currentProjectId } = useProjectStore();
   const queryClient = useQueryClient();
 
-  // 获取 templates 数据，用于恢复 selectedTemplateId
-  const { data: templates = [], isLoading: templatesLoading, isFetching: templatesFetching } = useQuery({
-    queryKey: ['worldbuilding', 'templates', currentProjectId],
-    queryFn: () => worldbuildingApi.getTemplates({ project_id: currentProjectId ?? undefined }),
-    enabled: !!currentProjectId,
-    staleTime: 300,
-  });
+  // 世界列表与当前世界：POST /worlds 由服务端按契约 §2.2 补齐七个模块，
+  // 前端不再手工建模块（phase2 §11.1 L1）
+  const { data: worlds = [], isLoading: worldsLoading, isFetching: worldsFetching } = useWorlds(currentProjectId ?? undefined);
+  const currentWorld = worlds[0] ?? null;
 
-  // 从 templates 缓存中恢复 selectedTemplateId
-  const selectedTemplateId = useMemo(() => {
-    if (templates.length > 0) {
-      return templates[0].id;
-    }
-    return null;
-  }, [templates]);
+  // 模块与条目一次性从 /worlds/{id}?include_modules=true&include_items=true 取回
+  const { data: worldDetail, isLoading: worldLoading } = useWorld(currentWorld?.id);
+  const { data: linkCounts = [] } = useLinkCounts(currentWorld?.id);
+  const activeWorld = worldDetail ?? currentWorld;
+
+  // 迁移容器入口（P2-T13）：仅当项目存在容器且容器 link_count > 0 时出现
+  const { container, hasEntryPoint, linkCount: containerLinkCount } = useMigrationLinks(currentProjectId ?? undefined);
+  const [migrationPanelWorldId, setMigrationPanelWorldId] = useState<string | null>(null);
 
   const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
   const [editingTemplateName, setEditingTemplateName] = useState('');
@@ -1137,71 +1187,27 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const { data: currentTemplate, isLoading: templateLoading } = useQuery({
-    queryKey: ['worldbuilding', 'template', selectedTemplateId],
-    queryFn: () => worldbuildingApi.getTemplate(selectedTemplateId!, { include_modules: true }),
-    enabled: !!selectedTemplateId,
-  });
+  // 复杂度披露档：P2 只在会话内切换，不写回 World.settings（P6 负责持久化）
+  const [complexityOverride, setComplexityOverride] = useState<ComplexityLevel | null>(null);
+
+  // 返回栈与列表状态快照（P2-T7）
+  const [navStack, setNavStack] = useState<BackStackState>(() => createBackStack());
+  const [expandedSubmoduleIds, setExpandedSubmoduleIds] = useState<string[]>([]);
+  const [highlightedRef, setHighlightedRef] = useState<EntityRef | null>(null);
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+  const pendingScrollTopRef = useRef<number | null>(null);
+
+  const createWorldMutation = useCreateWorld();
+  const updateWorldMutation = useUpdateWorld(currentWorld?.id);
+  const deleteWorldMutation = useDeleteWorld();
+  const { restoreBackup, isImporting } = useWorldBackup();
 
   // 检查是否需要显示初始选择弹窗（仅在首次加载且非获取中时检查）
   useEffect(() => {
-    if (!templatesLoading && !templatesFetching && templates.length === 0 && currentProjectId) {
+    if (!worldsLoading && !worldsFetching && worlds.length === 0 && currentProjectId) {
       setShowInitialChoice(true);
     }
-  }, [templatesLoading, templatesFetching, templates.length, currentProjectId]);
-
-  const createTemplateMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) =>
-      worldbuildingApi.createTemplate({ ...data, project_id: currentProjectId ?? undefined }),
-    onSuccess: async (newTemplate) => {
-      // 自动创建所有默认模块
-      const modulePromises = TAB_ORDER.map((tabType, index) =>
-        worldbuildingApi.createModule(newTemplate.id, {
-          module_type: tabType,
-          name: TAB_CONFIG[tabType].label,
-          order_index: index,
-        })
-      );
-      await Promise.all(modulePromises);
-      setShowCreateModal(false);
-      setShowInitialChoice(false); // 关闭初始选择弹窗
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
-    },
-  });
-
-  const importTemplateMutation = useMutation({
-    mutationFn: async ({ name, file }: { name: string; file: File }) => {
-      const content = await file.text();
-      const templateData = JSON.parse(content);
-      return worldbuildingApi.importTemplate({
-        name,
-        template_data: templateData,
-        project_id: currentProjectId ?? undefined,
-      });
-    },
-    onSuccess: () => {
-      setShowImportModal(false);
-      setShowInitialChoice(false);
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
-    },
-  });
-
-  const deleteTemplateMutation = useMutation({
-    mutationFn: (templateId: string) => worldbuildingApi.deleteTemplate(templateId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
-    },
-  });
-
-  const updateTemplateMutation = useMutation({
-    mutationFn: ({ templateId, data }: { templateId: string; data: { name: string } }) =>
-      worldbuildingApi.updateTemplate(templateId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'templates'] });
-      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'template', selectedTemplateId] });
-      setIsEditingTemplateName(false);
-    },
-  });
+  }, [worldsLoading, worldsFetching, worlds.length, currentProjectId]);
 
   useEffect(() => {
     setActiveTab('map');
@@ -1209,9 +1215,146 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     setShowCreateModal(false);
     setShowImportModal(false);
     setShowDeleteModal(false);
-  }, [currentProjectId]);
+    setMigrationPanelWorldId(null);
+    setNavStack(createBackStack());
+    setExpandedSubmoduleIds([]);
+    setHighlightedRef(null);
+    setComplexityOverride(null);
+  }, [currentProjectId, currentWorld?.id]);
 
-  const currentModule = currentTemplate?.modules?.find(m => m.module_type === activeTab);
+  const currentModule = worldDetail?.modules?.find(m => m.module_type === activeTab);
+
+  // 当前世界的实体名索引：数据来自 useWorld 详情，不额外请求
+  const entityNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const module of worldDetail?.modules ?? []) {
+      for (const submodule of module.submodules ?? []) map.set(submodule.id, submodule.name);
+      for (const item of module.items ?? []) map.set(item.id, item.name);
+    }
+    return map;
+  }, [worldDetail]);
+
+  const entityLabel = useCallback(
+    (ref: EntityRef): string =>
+      entityNames.get(ref.id) ?? `${kindLabel(ref.kind)}·${ref.id.slice(0, 8)}`,
+    [entityNames]
+  );
+
+  // tab 徽章：按模块的关联总数（useLinkCounts 整批返回，不逐卡请求）
+  const linkCountByModule = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const counts of linkCounts) map.set(counts.module, counts.total);
+    return map;
+  }, [linkCounts]);
+
+  const activeComplexity = complexityOverride ?? normalizeComplexity(
+    typeof activeWorld?.settings?.complexity === 'string' ? activeWorld.settings.complexity : undefined
+  );
+  const isContainerWorld = !!activeWorld && isMigrationContainer(activeWorld);
+
+  const breadcrumbs = useMemo(() => toBreadcrumbs(navStack, '世界观'), [navStack]);
+
+  // 进入实体前的列表状态快照（P2-T7）
+  const captureSnapshot = useCallback(
+    (stack: BackStackState): ListSnapshot => ({
+      tab: activeTab,
+      scrollTop: contentScrollRef.current?.scrollTop ?? 0,
+      expandedIds: expandedSubmoduleIds,
+      selectedRef: peekFrame(stack)?.ref,
+    }),
+    [activeTab, expandedSubmoduleIds]
+  );
+
+  // 恢复快照；容器未挂载等恢复失败场景退化为默认列表态（phase2 §8）
+  const applySnapshot = useCallback((snapshot: ListSnapshot) => {
+    if ((TAB_ORDER as string[]).includes(snapshot.tab)) {
+      setActiveTab(snapshot.tab as TabType);
+    }
+    setExpandedSubmoduleIds(snapshot.expandedIds);
+    setHighlightedRef(snapshot.selectedRef ?? null);
+    pendingScrollTopRef.current = snapshot.scrollTop;
+  }, []);
+
+  useEffect(() => {
+    const top = pendingScrollTopRef.current;
+    if (top === null) return;
+    pendingScrollTopRef.current = null;
+    const element = contentScrollRef.current;
+    if (!element) return;
+    element.scrollTop = top;
+  }, [activeTab, navStack]);
+
+  // 统一导航入口：角色仍走 EditorPage 回调，其它实体走内部返回栈（冻结 §5）
+  const handleNavigateToEntity = useCallback(
+    (ref: EntityRef) => {
+      if (ref.module === 'character') {
+        onNavigateToCharacter?.(ref.id);
+        return;
+      }
+      // 端点不在当前世界（如迁移容器边的对端）：本视图无法跨世界定位
+      if (!entityNames.has(ref.id)) {
+        toast.info('该实体不在当前世界，请切换到对应世界查看');
+        return;
+      }
+      setNavStack((stack) => {
+        if (sameRef(peekFrame(stack)?.ref, ref)) return stack;
+        return pushFrame(stack, {
+          ref,
+          label: entityLabel(ref),
+          snapshot: captureSnapshot(stack),
+        });
+      });
+      if ((TAB_ORDER as string[]).includes(ref.module)) {
+        setActiveTab(ref.module as TabType);
+      }
+      setHighlightedRef(ref);
+    },
+    [captureSnapshot, entityLabel, entityNames, onNavigateToCharacter]
+  );
+
+  const handleNavigateBack = useCallback(() => {
+    const { stack: next, popped } = popFrame(navStack);
+    if (!popped) return;
+    applySnapshot(popped.snapshot);
+    setNavStack(next);
+  }, [navStack, applySnapshot]);
+
+  // 面包屑跳转：index 即保留的帧数（0 为回到根列表）
+  const handleBreadcrumbClick = useCallback(
+    (keepFrames: number) => {
+      const { stack: next, exited } = popToDepth(navStack, keepFrames);
+      if (!exited) return;
+      applySnapshot(exited.snapshot);
+      setNavStack(next);
+    },
+    [navStack, applySnapshot]
+  );
+
+  // 手动切换模块即离开实体定位，清空返回栈
+  const handleTabClick = useCallback((tab: TabType) => {
+    setActiveTab(tab);
+    setNavStack((stack) => clearStack(stack));
+    setHighlightedRef(null);
+  }, []);
+
+  const handleToggleSubmodule = useCallback((submoduleId: string) => {
+    setExpandedSubmoduleIds((ids) =>
+      ids.includes(submoduleId) ? ids.filter((id) => id !== submoduleId) : [...ids, submoduleId]
+    );
+  }, []);
+
+  // Esc 回退：弹窗、世界改名与归位面板各自处理 Esc 时让位
+  useEffect(() => {
+    if (isAtRoot(navStack)) return;
+    if (showInitialChoice || showCreateModal || showImportModal || showDeleteModal || isEditingTemplateName || migrationPanelWorldId) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      handleNavigateBack();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navStack, isEditingTemplateName, showInitialChoice, showCreateModal, showImportModal, showDeleteModal, migrationPanelWorldId, handleNavigateBack]);
 
   // 处理初始选择弹窗关闭
   const handleInitialChoiceClose = () => {
@@ -1223,49 +1366,74 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     setShowCreateModal(true);
   };
 
-  // 处理导入模板
+  // 处理导入世界备份
   const handleImportWorld = () => {
     setShowImportModal(true);
   };
 
-  // 提交创建
+  // 提交创建：服务端一次建好世界与七个模块
   const handleCreateTemplateSubmit = (name: string) => {
-    createTemplateMutation.mutate({ name });
+    createWorldMutation.mutate(
+      { name, project_id: currentProjectId ?? undefined },
+      {
+        onSuccess: () => {
+          setShowCreateModal(false);
+          setShowInitialChoice(false);
+        },
+      }
+    );
   };
 
-  // 提交导入
+  // 提交导入：只回传本应用导出的完整备份（phase2 §11.1 L4）
   const handleImportTemplateSubmit = (name: string, file: File) => {
-    importTemplateMutation.mutate({ name, file });
+    restoreBackup(file, currentProjectId ?? undefined)
+      .then(async (created) => {
+        if (created && name && created.name !== name) {
+          await worldbuildingApi.updateWorld(created.id, { name });
+          queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'worlds'] });
+          queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+        }
+        setShowImportModal(false);
+        setShowInitialChoice(false);
+        // 备份可能自带 migrationContainer 世界，入口条件需重新求值
+        queryClient.invalidateQueries({
+          queryKey: worldbuildingKeys.migrationContainer(currentProjectId ?? undefined),
+        });
+      })
+      .catch(() => undefined);
   };
 
   const handleDeleteTemplate = () => {
-    if (!currentTemplate) return;
+    if (!currentWorld) return;
     setShowDeleteModal(true);
   };
 
   const handleConfirmDelete = () => {
-    if (currentTemplate) {
-      deleteTemplateMutation.mutate(currentTemplate.id, {
-        onSuccess: () => {
-          setShowDeleteModal(false);
-        },
-      });
-    }
+    if (!currentWorld) return;
+    deleteWorldMutation.mutate(currentWorld.id, {
+      onSuccess: () => {
+        setShowDeleteModal(false);
+      },
+    });
   };
 
   const handleStartEditTemplateName = () => {
-    if (currentTemplate) {
-      setEditingTemplateName(currentTemplate.name);
+    if (currentWorld) {
+      setEditingTemplateName(currentWorld.name);
       setIsEditingTemplateName(true);
     }
   };
 
   const handleSaveTemplateName = () => {
-    if (currentTemplate && editingTemplateName.trim()) {
-      updateTemplateMutation.mutate({
-        templateId: currentTemplate.id,
-        data: { name: editingTemplateName.trim() },
-      });
+    if (currentWorld && editingTemplateName.trim()) {
+      updateWorldMutation.mutate(
+        { name: editingTemplateName.trim() },
+        {
+          onSuccess: () => {
+            setIsEditingTemplateName(false);
+          },
+        }
+      );
     }
   };
 
@@ -1275,199 +1443,286 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <header className="h-16 border-b border-border/60 flex items-center justify-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0 relative group">
-        <h1 className="text-xl font-semibold text-foreground flex items-center gap-2 absolute left-6">
-          <Globe2 className="h-5 w-5" />
-          世界观设定
-        </h1>
-        {currentTemplate && (
-          <>
-            {isEditingTemplateName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={editingTemplateName}
-                  onChange={(e) => setEditingTemplateName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveTemplateName();
-                    if (e.key === 'Escape') handleCancelEditTemplateName();
-                  }}
-                  className="text-sm bg-background border border-border/50 px-2 py-1 rounded focus:border-primary focus:outline-none"
-                  autoFocus
-                />
-                <button
-                  onClick={handleSaveTemplateName}
-                  disabled={updateTemplateMutation.isPending}
-                  className="p-1 hover:bg-accent/50 rounded text-emerald-600 transition-colors"
-                  title="保存"
-                >
-                  {updateTemplateMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
-                </button>
-                <button
-                  onClick={handleCancelEditTemplateName}
-                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground transition-colors"
-                  title="取消"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <>
-                <span className="text-2xl font-semibold text-foreground">{currentTemplate.name}</span>
-                <div className="flex items-center gap-1 absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+    <ComplexityProvider value={activeComplexity} onChange={setComplexityOverride}>
+      <div className="flex flex-col h-full bg-background">
+        <header className="h-16 border-b border-border/60 flex items-center justify-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0 relative group">
+          <h1 className="text-xl font-semibold text-foreground flex items-center gap-2 absolute left-6">
+            <Globe2 className="h-5 w-5" />
+            世界观设定
+          </h1>
+          {currentWorld && (
+            <>
+              {isEditingTemplateName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editingTemplateName}
+                    onChange={(e) => setEditingTemplateName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveTemplateName();
+                      if (e.key === 'Escape') handleCancelEditTemplateName();
+                    }}
+                    className="text-sm bg-background border border-border/50 px-2 py-1 rounded focus:border-primary focus:outline-none"
+                    autoFocus
+                  />
                   <button
-                    onClick={handleStartEditTemplateName}
-                    className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-foreground transition-colors"
-                    title="修改名称"
+                    onClick={handleSaveTemplateName}
+                    disabled={updateWorldMutation.isPending}
+                    className="p-1 hover:bg-accent/50 rounded text-emerald-600 transition-colors"
+                    title="保存"
                   >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={handleDeleteTemplate}
-                    disabled={deleteTemplateMutation.isPending}
-                    className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-destructive transition-colors"
-                    title="删除世界"
-                  >
-                    {deleteTemplateMutation.isPending ? (
+                    {updateWorldMutation.isPending ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Save className="h-3.5 w-3.5" />
                     )}
                   </button>
+                  <button
+                    onClick={handleCancelEditTemplateName}
+                    className="p-1 hover:bg-accent/50 rounded text-muted-foreground transition-colors"
+                    title="取消"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              </>
+              ) : (
+                <span className="text-2xl font-semibold text-foreground">{worldDetail?.name ?? currentWorld.name}</span>
+              )}
+            </>
+          )}
+          <div className="flex items-center gap-2 absolute right-6">
+            {activeWorld && (
+              <span className="rounded-full border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] text-muted-foreground">
+                {activeWorld.module_count ?? 0} 模块 · {activeWorld.link_count ?? 0} 关联
+              </span>
             )}
-          </>
+            {activeWorld && (
+              <ComplexitySwitcher value={activeComplexity} onChange={setComplexityOverride} />
+            )}
+            {hasEntryPoint && container && (
+              <button
+                onClick={() => setMigrationPanelWorldId(container.id)}
+                className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-500/20 transition-colors dark:text-amber-300"
+                title="打开关联归位面板"
+              >
+                <GitBranch className="h-3.5 w-3.5" />
+                待归位 {containerLinkCount}
+              </button>
+            )}
+            {currentWorld && !isEditingTemplateName && (
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button
+                  onClick={handleStartEditTemplateName}
+                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-foreground transition-colors"
+                  title="修改名称"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={handleDeleteTemplate}
+                  disabled={deleteWorldMutation.isPending}
+                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-destructive transition-colors"
+                  title="删除世界"
+                >
+                  {deleteWorldMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* 容器提示位：仅当前世界就是迁移容器时出现（P2-T13） */}
+        {isContainerWorld && (
+          <div className="flex items-center gap-2 border-b border-border/60 bg-amber-500/10 px-6 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+            这是「关联迁移容器」：暂存无法归属到具体世界的旧关联，可用右上角「待归位」逐条或批量归位。
+          </div>
         )}
-      </header>
 
-      {/* 横向标签栏 */}
-      <div className="flex items-center gap-1 px-6 py-3 border-b border-border/60 bg-card/10 flex-shrink-0 overflow-x-auto">
-        {TAB_ORDER.map((tab) => {
-          const config = TAB_CONFIG[tab];
-          const Icon = config.icon;
-          const isActive = activeTab === tab;
-
-          return (
+        {/* 返回栈面包屑（P2-T7）：仅进入实体后出现 */}
+        {!isAtRoot(navStack) && (
+          <div className="flex items-center gap-2 border-b border-border/60 bg-card/20 px-6 py-1.5 text-xs">
+            {breadcrumbs.map((item, index) => {
+              const isCurrent = index === breadcrumbs.length - 1;
+              return (
+                <span key={item.ref ? refKey(item.ref) : 'root'} className="flex items-center gap-2">
+                  {index > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/60" />}
+                  <button
+                    type="button"
+                    onClick={() => handleBreadcrumbClick(index)}
+                    disabled={isCurrent}
+                    className={
+                      isCurrent
+                        ? 'font-medium text-foreground'
+                        : 'text-muted-foreground hover:text-foreground transition-colors'
+                    }
+                  >
+                    {item.label}
+                  </button>
+                </span>
+              );
+            })}
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`
+              type="button"
+              onClick={handleNavigateBack}
+              className="ml-auto flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/30 hover:text-foreground transition-colors"
+              title="返回（Esc）"
+            >
+              <ChevronLeft className="h-3 w-3" />
+              返回
+            </button>
+          </div>
+        )}
+
+        {/* 横向标签栏 */}
+        <div className="flex items-center gap-1 px-6 py-3 border-b border-border/60 bg-card/10 flex-shrink-0 overflow-x-auto">
+          {TAB_ORDER.map((tab) => {
+            const config = TAB_CONFIG[tab];
+            const Icon = config.icon;
+            const isActive = activeTab === tab;
+            const linkTotal = linkCountByModule.get(tab) ?? 0;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => handleTabClick(tab)}
+                className={`
                 flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap
                 ${isActive
                   ? 'bg-primary/20 text-primary shadow-sm'
                   : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
                 }
               `}
-              title={config.label}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="text-sm font-medium">{config.label}</span>
-            </button>
-          );
-        })}
-      </div>
+                title={config.label}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{config.label}</span>
+                {linkTotal > 0 && (
+                  <span className="rounded-full bg-accent/30 px-1.5 text-[10px]">{linkTotal}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {!currentTemplate && !templatesLoading && templates.length === 0 && (
-            <div className="px-6 py-4">
-              <div className="mt-4 flex flex-col items-center justify-center py-8 text-center">
-                <Globe2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                <p className="text-muted-foreground mb-4">还没有创建世界模板</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleCreateNewWorld}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    <Plus className="h-4 w-4" />
-                    创建世界模板
-                  </button>
-                  <button
-                    onClick={handleImportWorld}
-                    className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-accent/20 rounded-lg transition-colors"
-                  >
-                    <FileUp className="h-4 w-4" />
-                    导入模板
-                  </button>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {!worldDetail && !worldsLoading && worlds.length === 0 && (
+              <div className="px-6 py-4">
+                <div className="mt-4 flex flex-col items-center justify-center py-8 text-center">
+                  <Globe2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground mb-4">还没有创建世界模板</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCreateNewWorld}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      创建世界模板
+                    </button>
+                    <button
+                      onClick={handleImportWorld}
+                      className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-accent/20 rounded-lg transition-colors"
+                    >
+                      <FileUp className="h-4 w-4" />
+                      导入模板
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* 弹窗组件 */}
-          <InitialChoiceModal
-            isOpen={showInitialChoice}
-            onClose={handleInitialChoiceClose}
-            onCreateNew={handleCreateNewWorld}
-            onImport={handleImportWorld}
-          />
-
-          <CreateTemplateModal
-            isOpen={showCreateModal}
-            onClose={() => setShowCreateModal(false)}
-            onSubmit={handleCreateTemplateSubmit}
-            isLoading={createTemplateMutation.isPending}
-          />
-
-          <ImportTemplateModal
-            isOpen={showImportModal}
-            onClose={() => setShowImportModal(false)}
-            onSubmit={handleImportTemplateSubmit}
-            isLoading={importTemplateMutation.isPending}
-          />
-
-          <DeleteConfirmModal
-            isOpen={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            templateName={currentTemplate?.name || ''}
-            isLoading={deleteTemplateMutation.isPending}
-          />
-
-          <div className="flex-1 overflow-hidden">
-            {templateLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : activeTab === 'history' && currentModule ? (
-              <HistoryView moduleId={currentModule.id} projectId={currentProjectId || ''} onNavigateToCharacter={onNavigateToCharacter} />
-            ) : activeTab === 'economy' && currentModule ? (
-              <EconomyView moduleId={currentModule.id} />
-            ) : currentModule ? (
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-4xl mx-auto">
-                  <ModuleSection
-                    module={currentModule}
-                    onModuleUpdate={() => {
-                      if (selectedTemplateId) {
-                        queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'template', selectedTemplateId] });
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <span className="h-12 w-12 text-muted-foreground/30 mb-3 flex items-center justify-center">
-                  {(() => {
-                    const Icon = TAB_CONFIG[activeTab].icon;
-                    return <Icon className="h-12 w-12" />;
-                  })()}
-                </span>
-                <p className="text-muted-foreground">该模块暂无内容</p>
-                <p className="text-sm text-muted-foreground/70 mt-1">点击左侧"添加条目"开始添加设定</p>
               </div>
             )}
+
+            {/* 弹窗组件 */}
+            <InitialChoiceModal
+              isOpen={showInitialChoice}
+              onClose={handleInitialChoiceClose}
+              onCreateNew={handleCreateNewWorld}
+              onImport={handleImportWorld}
+            />
+
+            <CreateTemplateModal
+              isOpen={showCreateModal}
+              onClose={() => setShowCreateModal(false)}
+              onSubmit={handleCreateTemplateSubmit}
+              isLoading={createWorldMutation.isPending}
+            />
+
+            <ImportTemplateModal
+              isOpen={showImportModal}
+              onClose={() => setShowImportModal(false)}
+              onSubmit={handleImportTemplateSubmit}
+              isLoading={isImporting}
+            />
+
+            <DeleteConfirmModal
+              isOpen={showDeleteModal}
+              onClose={() => setShowDeleteModal(false)}
+              onConfirm={handleConfirmDelete}
+              templateName={worldDetail?.name ?? currentWorld?.name ?? ''}
+              isLoading={deleteWorldMutation.isPending}
+            />
+
+            {/* 迁移容器归位面板（P2-T13）：入口满足后才可能打开 */}
+            {migrationPanelWorldId && (
+              <MigrationContainerPanel
+                worldId={migrationPanelWorldId}
+                projectId={currentProjectId ?? ''}
+                onNavigate={handleNavigateToEntity}
+                onResolved={() => setMigrationPanelWorldId(null)}
+              />
+            )}
+
+            <div className="flex-1 overflow-hidden">
+              {worldLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : activeTab === 'history' && currentModule ? (
+                <HistoryView
+                  moduleId={currentModule.id}
+                  projectId={currentProjectId || ''}
+                  worldId={worldDetail?.id}
+                  highlightRef={highlightedRef}
+                  onNavigateToCharacter={onNavigateToCharacter}
+                  onNavigateToEntity={handleNavigateToEntity}
+                />
+              ) : activeTab === 'economy' && currentModule ? (
+                <EconomyView moduleId={currentModule.id} />
+              ) : currentModule ? (
+                <div ref={contentScrollRef} className="flex-1 overflow-y-auto p-6">
+                  <div className="max-w-4xl mx-auto">
+                    <ModuleSection
+                      module={currentModule}
+                      onModuleUpdate={() => {
+                        queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+                      }}
+                      expandedIds={expandedSubmoduleIds}
+                      onToggleExpanded={handleToggleSubmodule}
+                      highlightId={highlightedRef?.id}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <span className="h-12 w-12 text-muted-foreground/30 mb-3 flex items-center justify-center">
+                    {(() => {
+                      const Icon = TAB_CONFIG[activeTab].icon;
+                      return <Icon className="h-12 w-12" />;
+                    })()}
+                  </span>
+                  <p className="text-muted-foreground">该模块暂无内容</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">点击左侧"添加条目"开始添加设定</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ComplexityProvider>
   );
 };
 
