@@ -1,1233 +1,511 @@
-# 世界观设定功能文档
+# 世界观设定功能设计文档（总纲）
 
-## 1. 功能概述
+> 配套阅读：docs/worldbuilding/cross_module_link_design.md（跨模块关联契约与全局规范）
+> 模块详情：history_ui_design.md / politics_ui_design.md / economy_ui_design.md / races_ui_design.md / systems_ui_design.md
+> 本文负责：世界容器、七模块框架、世界生命周期、模块与子模块自定义、跨模块导航、世界脉络入口、视觉规范。
+> 地图与特殊界面本轮保持现状，只做兼容性说明，不做重新设计。
 
-世界观设定是 LocalScribe 的核心功能之一，用于帮助作者构建和管理小说/故事的世界观。它提供了一个结构化的方式来组织世界设定，包括地图、历史、政治、经济、种族、体系和特殊设定等七大模块。
+---
 
-### 1.1 核心特性
+## 1. 定位与设计原则
 
-- **模板化管理**：支持创建、导入、导出世界模板
-- **模块化结构**：七大模块类型，支持子模块和条目层级
-- **历史时间线**：可视化的时间线展示，支持时代-事件层级
-- **JSON 导入导出**：支持模板数据的备份和分享
+### 1.1 一句话定位
 
-## 2. UI 设计
+世界观设定是一个空的、可生长的世界容器：用户新建一个空白世界，按需在七个模块中
+创建自己的设定，任意子模块、字段、类型、等级、颜色、术语都可自定义，所有模块之间
+通过统一关联系统互联。
+
+### 1.2 设计原则
+
+1. 无预置世界观模板：系统不提供仙侠、科幻、西幻、历史、末世等任何预置世界观，
+   也不提供从模板创建。新建世界永远是空白世界。
+2. 系统只提供能力，不提供内容：系统给出模块语法（如历史=时代/事件）、编辑工具、
+   展示能力与推荐 kind；所有具体类型、等级、状态、字段内容由用户创建。
+3. 世界即容器：World 是唯一顶层对象，归属项目；一个项目可以创建多个世界，
+   世界之间互相独立，可单独备份/恢复。
+4. 子模块完全自定义：名称、描述、图标、颜色、排序、层级、语义 kind、状态、等级、
+   自定义字段均可配置；支持树形层级（建议最多 3 层）。
+5. 模块互联：跨模块引用统一走 WorldLink；任何实体都有统一的关联面板、关联计数、
+   行内引用与反向链接；全局提供世界脉络只读总览。
+6. 重要程度不平均：每个模块自行定义实体层级与视觉权重，不做多类型平级 Tab +
+   同构卡片的设计。
+7. 简单与复杂统一：通过复杂度分层（速写 / 结构 / 沙盘）渐进式披露；简单模式
+   3 分钟可用，复杂模式可承载关系网络、流量、时间维度与统计。
+8. 地图与特殊界面本轮不动：保持现状；关联系统对二者只做可选接入，未接入时
+   相关入口隐藏，不影响其他模块使用。
+9. 禁止 emoji：界面、默认配置、示例、按钮、状态中不使用 emoji；图标统一使用
+   Lucide 图标名，颜色使用真实色板。仅标题与颜色选择区域允许少量标题符号/色板表达。
+
+### 1.3 与旧版的核心变化
+
+| 旧版 | 新版 |
+|------|------|
+| 世界模板（WorldTemplate）+ 模板市场 + 系统预设 | 世界（World），项目私有，空白创建 |
+| 预置世界观类型选择器（仙侠/科幻等） | 删除；世界自定义配置从空白开始 |
+| 世界模板导入/导出/复制 | 世界 JSON 备份 / 恢复（迁移用途） |
+| 历史模块与其他模块关联零散、仅人物引用 | 统一 WorldLink：所有模块任意互联 |
+| 政治四类实体平级 Tab | 政权 > 组织 > 人物 > 关系/条约的分层架构 |
+| 经济固定实体类型 + 星级等级 | 三档复杂度 + 线路图/账册的双形态设计 |
+| 种族/体系无设计 | 新增图鉴式与阶梯式设计文档 |
+| 使用 emoji 作为实体的默认图标 | Lucide 图标名 + 用户自定义颜色 |
+
+### 1.4 模块地图
+
+| module_type | 模块定位 | 主要 kind | 详情文档 | 本轮状态 |
+|-------------|----------|-----------|----------|----------|
+| map | 地图与地点 | 地区、地点 | 地图界面设计（现有） | 保持现状，仅作为关联目标接入 |
+| history | 时间轴与事件书卷 | era、event | history_ui_design.md | 保留满意 UI，补全关联 |
+| politics | 权力版图 | polity、organization、figure、treaty | politics_ui_design.md | 重新设计 |
+| economy | 经济脉络 | 资源、商品、产业、市场、货币、主体、制度等，可自定义 | economy_ui_design.md | 重新设计 |
+| races | 种族图鉴 | race、subrace | races_ui_design.md | 新增设计 |
+| systems | 体系进阶 | system、tier、ability、rule、cost | systems_ui_design.md | 新增设计 |
+| special | 特殊设定 | 任意 | 特殊界面设计（现有） | 保持现状，仅做通用引用接入 |
+
+---
+
+## 2. 全局信息架构
 
 ### 2.1 整体布局
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  [Globe2] 世界观设定          当前世界名称           [操作] │
-├─────────────────────────────────────────────────────────────┤
-│  [地图] [历史] [政治] [经济] [种族] [体系] [特殊]           │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│                      模块内容区域                           │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  [Globe] 世界观设定   世界：九州志 [切换] [编辑]      [世界脉络] [设置]  │
+├──────────────────────────────────────────────────────────────────────────┤
+│  [Map]地图  [History]历史  [Landmark]政治  [Coins]经济  [Users]种族      │
+│  [GitBranch]体系  [Sparkles]特殊                   复杂度：[速写|结构|沙盘]│
+├──────────────────────────────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────┬────────────────────────┐  │
+│  │                                           │                        │  │
+│  │              模块内容区域                 │   详情 / 关联抽屉      │  │
+│  │        （各模块自己的主视图）             │   （按需展开）         │  │
+│  │                                           │                        │  │
+│  └───────────────────────────────────────────┴────────────────────────┘  │
+│  状态栏：上次保存 12:30   实体 48   关联 76                              │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
+
+- 顶部头部固定：功能标题、当前世界名称（可编辑）、世界切换、世界脉络入口、设置入口。
+- 第二行标签栏固定七个模块；右侧放复杂度切换器（也可收进模块工具栏）。
+- 内容区域由当前模块完全接管；详情抽屉是全局容器，各模块把实体详情投进去，
+  保证跨模块跳转时交互一致。
+- 状态栏显示保存状态、当前世界实体数与关联数；错误与冲突提示固定在右下角。
 
 ### 2.2 头部区域
 
-- **左侧**：功能标题（Globe2 图标 + "世界观设定"）
-- **中间**：当前世界名称（可编辑，hover 显示编辑/删除按钮）
-- **右侧**：世界切换下拉框（未实现完整功能）
-
-#### 世界名称编辑交互
-
-```typescript
-// 编辑状态切换
-const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
-const [editingTemplateName, setEditingTemplateName] = useState('');
-
-// 保存编辑
-const handleSaveTemplateName = () => {
-  if (currentTemplate && editingTemplateName.trim()) {
-    updateTemplateMutation.mutate({
-      templateId: currentTemplate.id,
-      data: { name: editingTemplateName.trim() },
-    });
-  }
-};
-```
+- 左侧：功能标题（Lucide globe 图标 + 世界观设定）。
+- 中间：当前世界名称，点击进入行内编辑；hover 显示编辑/删除入口；
+  旁边有世界切换下拉（项目内的世界列表 + 新建世界）。
+- 右侧：
+  - 世界脉络：打开全局关联总览（sandbox 默认可见，structure 可手动开启）。
+  - 设置：打开世界设置面板（基础信息、基调、术语、历法、默认复杂度）。
+  - 更多：备份世界、恢复备份、删除世界。
+- 顶部不出现模板、从模板创建、模板市场等入口。
 
 ### 2.3 标签栏
 
-七个固定模块标签，使用图标 + 文字的组合：
+七个固定模块标签，使用 Lucide 图标 + 文字，标签宽度根据文字自适应：
 
-| 模块 | 图标 | 标签 |
-|------|------|------|
-| map | Map | 地图 |
-| history | History | 历史 |
-| politics | Landmark | 政治 |
-| economy | Coins | 经济 |
-| races | Users | 种族 |
-| systems | Cpu | 体系 |
-| special | Sparkles | 特殊 |
+| 模块 | 图标（Lucide 名） | 默认标签 |
+|------|-------------------|----------|
+| map | map | 地图 |
+| history | history | 历史 |
+| politics | landmark | 政治 |
+| economy | coins | 经济 |
+| races | users | 种族 |
+| systems | git-branch | 体系 |
+| special | sparkles | 特殊 |
 
-```typescript
-type TabType = 'map' | 'history' | 'politics' | 'economy' | 'races' | 'systems' | 'special';
+- 模块显示名、图标、描述可在世界设置中修改（module_type 不变）。
+- 标签右侧显示该模块的实体/关联计数徽章；有新关联时显示小圆点。
+- 激活态：领域色浅底 + 强调色文字 + 底部指示条；默认态：弱化文字，hover 提亮。
+- 空模块标签不隐藏，点击后显示该模块的空状态引导。
+- 移动端收窄为图标 + 横向滚动，计数徽章保留。
 
-const TAB_CONFIG: Record<TabType, { label: string; icon: LucideIcon }> = {
-  map: { label: '地图', icon: Map },
-  history: { label: '历史', icon: History },
-  politics: { label: '政治', icon: Landmark },
-  economy: { label: '经济', icon: Coins },
-  races: { label: '种族', icon: Users },
-  systems: { label: '体系', icon: Cpu },
-  special: { label: '特殊', icon: Sparkles },
-};
-```
+### 2.4 全局搜索
 
-#### 标签样式
+- 入口：头部搜索按钮或 Ctrl/Cmd + K。
+- 搜索范围：全部模块的实体名称、描述、标签、自定义字段文本、行内引用显示名。
+- 结果按模块分组，显示：图标、名称、kind 徽章、所在模块、命中的字段摘要、关联数。
+- 支持限定符：模块:政治、kind:polity、关联:历史、标签:古老。
+- 选中结果后跳转到对应模块并打开详情抽屉；搜索面板保留最近记录。
+- 复杂度为 sketch 时同样可用，不依赖关系数据。
 
-- **激活状态**：`bg-primary/20 text-primary shadow-sm`
-- **默认状态**：`text-muted-foreground hover:bg-accent/30 hover:text-foreground`
-- **过渡动画**：`transition-all duration-200`
+### 2.5 跨模块导航
 
-### 2.4 空状态引导
+- 任何关联行、行内引用 chip、搜索结果、世界脉络节点都可以跳转到目标实体。
+- 跳转时把来源写入返回栈，头部显示面包屑：
+  政治 / 大汉帝国  >  历史 / 楚汉争霸  >  角色 / 刘邦。
+- 返回按钮或 Esc 逐级回退，回到原模块时恢复原滚动位置、展开状态与选中项。
+- 抽屉内跳转不关闭抽屉，只替换抽屉内容；面包屑点任意一级可直接跳回。
+- 目标实体已被删除时显示引用已失效，提供查看来源、清理引用两个操作。
 
-当项目没有世界模板时，显示引导界面：
+### 2.6 复杂度控制
 
-```
-┌─────────────────────────────────────┐
-│           [Globe2 图标]             │
-│      还没有创建世界模板             │
-│                                     │
-│  [+ 创建世界模板]  [导入模板]       │
-└─────────────────────────────────────┘
-```
+- 复杂度是全局面板与模块级设置的组合：世界设置里有默认档，模块工具栏里有当前模块档。
+- 切换器为三段式控件：速写 / 结构 / 沙盘，旁边用一句话解释当前档位。
+- 切换只改变披露程度，不删除数据；升档恢复隐藏内容。
+- 首次进入新世界默认速写；当用户主动添加关系、数值或时间范围时，提示可升级到
+  更高档位（非强制）。
+- 地图与特殊界面不接入复杂度切换（保持现状）。
 
-### 2.5 弹窗系统
+---
 
-#### 2.5.1 初始选择弹窗 (InitialChoiceModal)
+## 3. 世界生命周期
 
-首次进入世界观设定时的引导弹窗：
+### 3.1 世界列表与切换
 
-```
-┌─────────────────────────────────────┐
-│  欢迎使用世界观设定              [X] │
-├─────────────────────────────────────┤
-│  您还没有创建任何世界模板，请选择： │
-│                                     │
-│  ┌─────────────┐ ┌─────────────┐   │
-│  │  [FilePlus] │ │   [FileUp]  │   │
-│  │   命名新建  │ │   导入模板  │   │
-│  │ 创建全新世界│ │从JSON导入  │   │
-│  └─────────────┘ └─────────────┘   │
-└─────────────────────────────────────┘
-```
+- 世界列表只包含当前项目下的世界；按更新时间倒序。
+- 列表项显示：封面/占位纹样、世界名称、一句话描述、实体数、关联数、最近编辑时间。
+- 操作：切换、重命名、备份、删除；不提供复制为模板、发布到模板市场、从模板创建。
+- 世界切换后保持当前模块标签；若目标世界该模块为空，显示对应空状态。
+- 未选择世界时，模块区域显示世界选择/创建引导，而不是内容页。
 
-#### 2.5.2 创建世界弹窗 (CreateTemplateModal)
-
-- 输入世界名称
-- 创建后自动创建七大默认模块
-
-#### 2.5.3 导入模板弹窗 (ImportTemplateModal)
-
-- 支持拖拽上传 JSON 文件
-- 自动解析 JSON 中的名称
-- 文件验证（检查 modules 字段）
-
-```typescript
-const validateJson = (content: string): boolean => {
-  try {
-    const data = JSON.parse(content);
-    if (!data.modules || !Array.isArray(data.modules)) {
-      setError('无效的模板文件：缺少modules字段');
-      return false;
-    }
-    return true;
-  } catch (e) {
-    setError('无效的JSON文件');
-    return false;
-  }
-};
-```
-
-#### 2.5.4 删除确认弹窗 (DeleteConfirmModal)
-
-- 警告样式（琥珀色背景）
-- 显示要删除的世界名称
-- 确认后执行级联删除
-
-## 3. 历史模块 (HistoryView)
-
-历史模块是世界观设定中最复杂的模块，采用可视化时间线设计。
-
-### 3.1 整体布局
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ [Clock]添加时代    [搜索框]                      [+]添加事件   │
-├────────────────────────────────────────────────────────────────┤
-│ ┌────┐                                                         │
-│ │    │  ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 时代1  │
-│ │时间│  ○ 事件1.1    ○ 事件1.2    ○ 事件1.3                    │
-│ │线  │  ┌──────────────────────────────────────────────┐       │
-│ │    │  │ 事件详情卡片                                 │       │
-│ │    │  │ - 描述                                       │       │
-│ │    │  │ - 条目列表                                   │       │
-│ └────┘  └──────────────────────────────────────────────┘       │
-│                                                                │
-│  ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 独立事件      │
-│  ○ 事件2.1    ○ 事件2.2                                        │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### 3.2 顶部工具栏
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ [Clock]添加时代    [🔍 搜索时代、事件或条目...]    [+]添加事件 │
-└────────────────────────────────────────────────────────────────┘
-```
-
-- **添加时代按钮**：打开添加时代弹窗
-- **搜索框**：实时过滤时代、事件和条目
-- **添加事件按钮**：打开添加事件弹窗
-
-### 3.3 时间线设计
-
-#### 3.3.1 视觉元素
-
-- **时间线主轴**：左侧垂直渐变线
-  - 渐变：`from-primary/60 via-accent/40 to-muted/20`
-  - 宽度：`w-1.5`
-  - 圆角：`rounded-full`
-
-- **时代节点**：
-  - 大圆点（`w-4 h-4`）
-  - 渐变背景
-  - 发光效果
-
-- **事件节点**：
-  - 小圆点（根据级别不同大小）
-  - 悬停显示 Tooltip
-
-#### 3.3.2 事件级别样式
-
-| 级别 | 大小 | 颜色 | 用途 |
-|------|------|------|------|
-| critical | 16px/6px | primary | 关键事件 |
-| major | 12px/5px | accent | 重要事件 |
-| normal | 10px/4px | muted-foreground | 普通事件 |
-| minor | 8px/3px | muted-foreground/50 | 次要事件 |
-
-```typescript
-const getEventDotSize = (level: EventLevel): { size: number; innerSize: number } => {
-  switch (level) {
-    case 'critical': return { size: 16, innerSize: 6 };
-    case 'major': return { size: 12, innerSize: 5 };
-    case 'normal': return { size: 10, innerSize: 4 };
-    case 'minor': return { size: 8, innerSize: 3 };
-  }
-};
-```
-
-### 3.4 时代卡片
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 时代名称   │
-│ 起: 阳阙历元年 ~ 止: 阳阙历1633年                              │
-│                                                                │
-│ 时代描述文字...                                                │
-│                                                                │
-│ [展开/折叠]                                                    │
-├────────────────────────────────────────────────────────────────┤
-│ ○ 事件1  ○ 事件2  ○ 事件3                                      │
-│                                                                │
-│ ┌────────────────────────────────────────────────────────────┐ │
-│ │ [事件卡片]                                                  │ │
-│ └────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────┘
-```
-
-#### 时代主题配置
-
-```typescript
-const ERA_THEME_CONFIG: Record<EraTheme, EraThemeConfig> = {
-  ochre: {
-    label: 'Ochre Era',
-    labelCn: '赭石纪元',
-    description: '古老而神秘的年代，充满原始力量',
-    gradient: 'from-stone-100 to-amber-50',
-    border: 'border-amber-200',
-    text: 'text-amber-900',
-    accent: 'bg-amber-500',
-  },
-  // ... 其他主题
-};
-```
-
-### 3.5 事件卡片 (EventCard)
-
-#### 3.5.1 Critical 级别卡片
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ [光晕效果]                                                     │
-│                                                                │
-│  ⚔️  事件名称                            [编辑] [删除]         │
-│      关键事件                                                  │
-│                                                                │
-│  📅  阳阙历元年                                                │
-│                                                                │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │ 事件描述...                                             │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                │
-│  相关条目:                                                     │
-│  • 条目1: 内容1                                                │
-│  • 条目2: 内容2                                                │
-│                                                                │
-│  [+ 添加条目]                                                  │
-└────────────────────────────────────────────────────────────────┘
-```
-
-#### 3.5.2 卡片样式配置
-
-```typescript
-const LEVEL_CONFIG: Record<EventLevel, LevelConfig> = {
-  critical: {
-    label: 'Critical',
-    labelCn: '关键',
-    flexBasis: 'basis-full',
-    minHeight: 'min-h-[200px]',
-    padding: 'p-6',
-    bgClass: 'bg-gradient-to-br from-indigo-50 via-purple-50 to-amber-50',
-    borderClass: 'border-2 border-indigo-200',
-    textClass: 'text-indigo-900',
-    titleSize: 'text-xl font-bold',
-    glowColor: 'rgba(99, 102, 241, 0.3)',
-  },
-  // ... 其他级别
-};
-```
-
-#### 3.5.3 动画效果
-
-使用 Framer Motion 实现流畅动画：
-
-```typescript
-const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }
-  },
-  exit: { 
-    opacity: 0, 
-    y: -10, 
-    scale: 0.98,
-    transition: { duration: 0.2 }
-  },
-};
-
-// 悬停效果
-whileHover={{ y: -4, scale: 1.005 }}
-transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-```
-
-### 3.6 弹窗组件
-
-#### 3.6.1 添加时代弹窗 (AddEraModal)
+### 3.2 创建空白世界
 
 ```
 ┌─────────────────────────────────────────────┐
-│ 添加时代                                 [X] │
+│  新建世界                                [X] │
 ├─────────────────────────────────────────────┤
-│ 时代名称 *                                  │
-│ [________________________]                  │
+│  世界名称 *                                 │
+│  [____________________________]             │
 │                                             │
-│ 时代基调                                    │
-│ ┌────┬────┬────┬────┐                       │
-│ │🟤  │🔴  │🔵  │🟢  │                       │
-│ │赭石│赤红│靛蓝│翠绿│                       │
-│ └────┴────┴────┴────┘                       │
-│ 古老而神秘的年代，充满原始力量              │
+│  一句话描述（可选）                         │
+│  [____________________________]             │
 │                                             │
-│ 起始时间              结束时间              │
-│ [________]            [________]            │
-│ 支持：元年、阿拉伯数字、中文数字            │
+│  视觉基调（可选，可随时修改）               │
+│  [羊皮纸] [墨色] [青灰] [自定义]            │
+│  强调色  [色板：预设色块 + 取色器]          │
 │                                             │
-│ 时代描述                                    │
-│ [                            ]              │
-│ [                            ]              │
+│  默认复杂度                                 │
+│  ( ) 速写   ( ) 结构   ( ) 沙盘             │
 │                                             │
-│                    [取消]  [创建]           │
+│  提示：新世界为空，不包含任何预设内容。     │
+│                                             │
+│                      [取消]  [创建空白世界] │
 └─────────────────────────────────────────────┘
 ```
 
-#### 3.6.2 添加事件弹窗 (AddEventModal)
+- 创建成功后进入世界，默认落在历史模块（可配置默认模块）。
+- 不展示任何世界观类型选项（仙侠/科幻/西幻/历史/末世等）。
+- 不提供系统预设的模块内容、示例事件、示例政权、示例种族。
+- 可选的视觉基调只影响观感，不携带任何设定数据。
+
+### 3.3 世界设置
+
+- 基础信息：名称、描述、封面、默认模块。
+- 视觉基调：palette、accent、texture、radius（见契约 2.8），带实时预览。
+- 术语替换：将默认模块名/通用称谓替换为世界内称呼，例如
+  政治 -> 朝堂、国家 -> 宗门、角色 -> 人物、体系 -> 道途。
+  术语只影响显示，不改变数据模型与 module_type/kind。
+- 历法：纪年名称、元年标签、时间格式（如 阳阙历三年）。
+- 默认复杂度：速写/结构/沙盘。
+- 模块配置入口：七个模块各一行，显示当前 kind 数、字段数、是否自定义；点击进入
+  对应模块的配置面板。
+- 危险操作：删除世界、清空世界数据（需二次确认并输入世界名）。
+
+### 3.4 世界备份与恢复
+
+- 备份：导出当前世界完整 JSON，包含 World、Module.config、Submodule.meta、Item.content、
+  WorldLink；文件名为 世界名-日期.world.json。
+- 恢复：选择 JSON 文件，校验版本与结构，支持两种模式：
+  - 恢复为新世界（默认）：在新 id 空间重建，避免覆盖现有数据。
+  - 覆盖当前世界：仅在世界为空或用户明确确认时可用。
+- 备份是个人数据的迁移/分享手段，不叫模板，不进入任何系统模板库。
+- 恢复时保留 kind、meta、config、link_type；未知 kind/link_type 降级为 custom 并在
+  导入报告中列出。
+- 关联导入时重建 id 映射；失效引用单独列出，可选择丢弃或保留为警示引用。
+
+### 3.5 删除世界
+
+- 二次确认弹窗显示：世界名称、实体数、关联数、最近编辑时间。
+- 提供级联删除说明；确认按钮使用危险色，需输入世界名称才能启用（重数据保护）。
+- 删除后返回世界列表；不做软删除回收站（本轮不做）。
+
+### 3.6 首次进入与空状态
 
 ```
-┌─────────────────────────────────────────────┐
-│ 添加历史事件                             [X] │
-├─────────────────────────────────────────────┤
-│ 所属时代                                    │
-│ [无（独立事件）▼]                           │
-│                                             │
-│ 事件名称 *                                  │
-│ [________________________]                  │
-│                                             │
-│ 事件类型                                    │
-│ [默认] [⚔️战争] [🏛️政治] [✨发现] [...]      │
-│                                             │
-│ 事件级别                                    │
-│ [关键] [重要] [普通] [次要]                 │
-│                                             │
-│ 发生时间              图标                  │
-│ [________]            [____]                │
-│                                             │
-│ 事件描述                                    │
-│ [                            ]              │
-│                                             │
-│                    [取消]  [创建]           │
-└─────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                      [Globe 图标]                          │
+│                    欢迎来到你的世界                        │
+│                                                            │
+│  这里没有任何预设内容。你可以：                            │
+│  1. 先写一句话世界观（可选）                               │
+│  2. 到历史模块创建一个时代与第一个事件                     │
+│  3. 到政治模块创建一个政权与它的统治者                     │
+│  4. 随时在设置里自定义模块名、类型与术语                   │
+│                                                            │
+│    [开始：写一句话]   [直接进入历史]   [世界设置]          │
+└────────────────────────────────────────────────────────────┘
 ```
 
-### 3.7 搜索功能
+- 七个模块的空状态各自说明本模块能做什么，并给一个主行动按钮（见各模块文档）。
+- 空状态不使用插画堆砌与 emoji，使用简单的线性图标 + 一句引导 + 主按钮。
+- 当用户完成第一个实体后，空状态替换为模块内容，并提示可以添加关联。
 
-搜索逻辑：
+## 4. 模块与子模块框架
 
-```typescript
-// 搜索过滤
-const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-
-// 过滤时代
-const filteredEras = eras.filter((era) =>
-  era.name.toLowerCase().includes(normalizedSearchQuery) ||
-  (era.description?.toLowerCase().includes(normalizedSearchQuery))
-);
-
-// 过滤事件（包括事件内的条目）
-const filteredEvents = events.filter((event) => {
-  const matchesEvent =
-    event.name.toLowerCase().includes(normalizedSearchQuery) ||
-    (event.description?.toLowerCase().includes(normalizedSearchQuery));
-  const matchesItems = event.items.some(
-    (item) =>
-      item.name.toLowerCase().includes(normalizedSearchQuery) ||
-      Object.values(item.content).some((v) => v.toLowerCase().includes(normalizedSearchQuery))
-  );
-  return matchesEvent || matchesItems;
-});
-
-// 自动展开包含匹配事件的时代
-useEffect(() => {
-  if (normalizedSearchQuery && filteredEvents.length > 0) {
-    const matchingEraIds = new Set(
-      filteredEvents
-        .filter((e) => e.eraId)
-        .map((e) => e.eraId as string)
-    );
-    setExpandedEras(matchingEraIds);
-  }
-}, [normalizedSearchQuery, filteredEvents]);
-```
-
-## 4. 前端实现
-
-### 4.1 组件结构
+### 4.1 数据层级
 
 ```
-frontend/src/components/Worldbuilding/
-├── WorldbuildingView.tsx          # 主视图组件
-├── HistoryView.tsx                # 历史模块视图
-└── HistoryView/
-    ├── EventCard.tsx              # 事件卡片
-    ├── HistorySkeleton.tsx        # 加载骨架屏
-    ├── TimelineTooltip.tsx        # 时间线提示
-    ├── types.ts                   # TypeScript 类型定义
-    ├── config.ts                  # 配置常量
-    └── modals/
-        ├── AddEraModal.tsx        # 添加时代
-        ├── EditEraModal.tsx       # 编辑时代
-        ├── AddEventModal.tsx      # 添加事件
-        ├── EditEventModal.tsx     # 编辑事件
-        ├── AddItemModal.tsx       # 添加条目
-        └── EditItemModal.tsx      # 编辑条目
+World（世界）
+ └─ WorldModule（七个固定模块，config 可自定义）
+     ├─ WorldSubmodule（用户自定义分类/实体，可树形嵌套，kind + meta）
+     │   └─ WorldModuleItem（字段组/列表/长文，content JSON）
+     └─ WorldModuleItem（不挂子模块的通用条目）
+
+WorldLink（跨模块关联，独立存表，连接任意两个实体）
+Character（应用级全局角色，被各模块引用，不在世界内复制）
 ```
 
-### 4.2 状态管理
-
-使用 React Query 进行服务端状态管理：
-
-```typescript
-// 获取模板列表
-const { data: templates = [], isLoading: templatesLoading } = useQuery({
-  queryKey: ['worldbuilding', 'templates', currentProjectId],
-  queryFn: () => worldbuildingApi.getTemplates({ project_id: currentProjectId ?? undefined }),
-  enabled: !!currentProjectId,
-  staleTime: 300,
-});
-
-// 获取当前模板详情
-const { data: currentTemplate, isLoading: templateLoading } = useQuery({
-  queryKey: ['worldbuilding', 'template', selectedTemplateId],
-  queryFn: () => worldbuildingApi.getTemplate(selectedTemplateId!, { include_modules: true }),
-  enabled: !!selectedTemplateId,
-});
-```
-
-### 4.3 API 服务
-
-```typescript
-// frontend/src/services/worldbuildingApi.ts
-
-export const worldbuildingApi = {
-  // 模板操作
-  getTemplates: (params?: { skip?: number; limit?: number; project_id?: string }) =>
-    api.get<WorldTemplate[]>('/worldbuilding/templates', { params }),
-  
-  createTemplate: (data: { name: string; description?: string; project_id?: string }) =>
-    api.post<WorldTemplate>('/worldbuilding/templates', data),
-  
-  updateTemplate: (templateId: string, data: Partial<...>) =>
-    api.put<WorldTemplate>(`/worldbuilding/templates/${templateId}`, data),
-  
-  deleteTemplate: (templateId: string) =>
-    api.delete(`/worldbuilding/templates/${templateId}`),
-  
-  // 模块操作
-  getModules: (templateId: string) =>
-    api.get<WorldModule[]>(`/worldbuilding/templates/${templateId}/modules`),
-  
-  createModule: (templateId: string, data: {...}) =>
-    api.post<WorldModule>(`/worldbuilding/templates/${templateId}/modules`, data),
-  
-  // 子模块操作
-  getSubmodules: (moduleId: string) =>
-    api.get<WorldSubmodule[]>(`/worldbuilding/modules/${moduleId}/submodules`),
-  
-  createSubmodule: (moduleId: string, data: {...}) =>
-    api.post<WorldSubmodule>(`/worldbuilding/modules/${moduleId}/submodules`, data),
-  
-  updateSubmodule: (submoduleId: string, data: Partial<...>) =>
-    api.put<WorldSubmodule>(`/worldbuilding/submodules/${submoduleId}`, data),
-  
-  deleteSubmodule: (submoduleId: string) =>
-    api.delete(`/worldbuilding/submodules/${submoduleId}`),
-  
-  // 条目操作
-  getItems: (moduleId: string, params?: { submodule_id?: string; include_all?: boolean }) =>
-    api.get<WorldModuleItem[]>(`/worldbuilding/modules/${moduleId}/items`, { params }),
-  
-  createItem: (moduleId: string, data: {...}) =>
-    api.post<WorldModuleItem>(`/worldbuilding/modules/${moduleId}/items`, data),
-  
-  updateItem: (itemId: string, data: Partial<...>) =>
-    api.put<WorldModuleItem>(`/worldbuilding/items/${itemId}`, data),
-  
-  deleteItem: (itemId: string) =>
-    api.delete(`/worldbuilding/items/${itemId}`),
-  
-  // 导入导出
-  importTemplate: (data: { name: string; template_data: Record<string, unknown>; project_id?: string }) =>
-    api.post<WorldTemplate>('/worldbuilding/templates/import', data),
-  
-  exportTemplate: (templateId: string) =>
-    api.get<Record<string, unknown>>(`/worldbuilding/templates/${templateId}/export`),
-  
-  // 文件下载
-  downloadTemplateAsFile: async (templateId: string, filename?: string) => {
-    const data = await api.get<Record<string, unknown>>(`/worldbuilding/templates/${templateId}/export`);
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    // ... 创建下载链接
-  },
-};
-```
-
-### 4.4 数据类型定义
-
-```typescript
-// 世界模板
-export interface WorldTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  cover_image?: string;
-  tags: string[];
-  is_public: boolean;
-  is_system_template: boolean;
-  project_id?: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  module_count: number;
-  instance_count: number;
-}
-
-// 世界模块
-export interface WorldModule {
-  id: string;
-  template_id: string;
-  module_type: 'map' | 'history' | 'politics' | 'economy' | 'races' | 'systems' | 'special';
-  name: string;
-  description?: string;
-  icon?: string;
-  order_index: number;
-  is_collapsible: boolean;
-  is_required: boolean;
-  created_at: string;
-  updated_at: string;
-  submodule_count: number;
-  item_count: number;
-  submodules?: WorldSubmodule[];
-  items?: WorldModuleItem[];
-}
-
-// 子模块
-export interface WorldSubmodule {
-  id: string;
-  module_id: string;
-  name: string;
-  description?: string;
-  order_index: number;
-  color?: string;
-  icon?: string;
-  parent_id?: string;
-  created_at: string;
-  updated_at: string;
-  item_count: number;
-  items?: WorldModuleItem[];
-}
-
-// 模块条目
-export interface WorldModuleItem {
-  id: string;
-  module_id: string;
-  submodule_id?: string;
-  name: string;
-  content: Record<string, string>;
-  order_index: number;
-  is_published: boolean;
-  created_at: string;
-  updated_at: string;
-}
-```
-
-## 5. 后端实现
-
-### 5.1 数据模型
-
-```python
-# backend/app/models/worldbuilding.py
-
-class WorldTemplate(Base):
-    """世界模板 - 可重用的世界观模板"""
-    __tablename__ = "world_templates"
-
-    id = Column(String(36), primary_key=True, index=True)
-    name = Column(String(255), nullable=False, index=True)
-    description = Column(Text)
-    cover_image = Column(String(500))
-    tags = Column(JSON)
-    is_public = Column(Boolean, default=False)
-    is_system_template = Column(Boolean, default=False)
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    created_by = Column(String(36), nullable=True)
-
-    # 关系
-    modules = relationship("WorldModule", back_populates="template", cascade="all, delete-orphan")
-    instances = relationship("WorldInstance", back_populates="template", cascade="all, delete-orphan")
-    project = relationship("Project", back_populates="world_templates")
-
-
-class WorldModule(Base):
-    """世界模块 - 地图、历史、政治、经济、种族、体系、特殊"""
-    __tablename__ = "world_modules"
-
-    id = Column(String(36), primary_key=True, index=True)
-    template_id = Column(String(36), ForeignKey("world_templates.id"), nullable=False)
-    module_type = Column(String(50), nullable=False, index=True)
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    icon = Column(String(100))
-    order_index = Column(Integer, default=0)
-    is_collapsible = Column(Boolean, default=True)
-    is_required = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    # 关系
-    template = relationship("WorldTemplate", back_populates="modules")
-    submodules = relationship("WorldSubmodule", back_populates="module", cascade="all, delete-orphan")
-    items = relationship("WorldModuleItem", back_populates="module", cascade="all, delete-orphan")
-
-
-class WorldSubmodule(Base):
-    """子模块 - 模块下的分类（如种族下的不同种族）
-    
-    对于历史模块：
-    - 时代：parent_id 为 null
-    - 事件：parent_id 指向时代
-    """
-    __tablename__ = "world_submodules"
-
-    id = Column(String(36), primary_key=True, index=True)
-    module_id = Column(String(36), ForeignKey("world_modules.id"), nullable=False)
-    parent_id = Column(String(36), ForeignKey("world_submodules.id"), nullable=True)
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    order_index = Column(Integer, default=0)
-    color = Column(String(20))
-    icon = Column(String(100))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    # 关系
-    module = relationship("WorldModule", back_populates="submodules")
-    items = relationship("WorldModuleItem", back_populates="submodule", cascade="all, delete-orphan")
-    children = relationship("WorldSubmodule", backref="parent", remote_side=[id], cascade="all, delete-orphan")
-
-
-class WorldModuleItem(Base):
-    """模块项 - 具体的世界设定内容"""
-    __tablename__ = "world_module_items"
-
-    id = Column(String(36), primary_key=True, index=True)
-    module_id = Column(String(36), ForeignKey("world_modules.id"), nullable=False)
-    submodule_id = Column(String(36), ForeignKey("world_submodules.id"), nullable=True)
-    name = Column(String(255), nullable=False)
-    content = Column(JSON)
-    order_index = Column(Integer, default=0)
-    is_published = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    # 关系
-    module = relationship("WorldModule", back_populates="items")
-    submodule = relationship("WorldSubmodule", back_populates="items")
-```
-
-### 5.2 API 路由
-
-```python
-# backend/app/api/v1/worldbuilding.py
-
-router = APIRouter()
-
-# ========== 世界模板 API ==========
-
-@router.post("/templates", response_model=WorldTemplateResponse)
-def create_world_template(template_data: WorldTemplateCreate, db: Session = Depends(get_db)):
-    """创建新的世界模板"""
-    template = WorldTemplate(id=str(uuid.uuid4()), **template_data.model_dump())
-    db.add(template)
-    db.commit()
-    db.refresh(template)
-    return template
-
-@router.get("/templates", response_model=List[WorldTemplateResponse])
-def get_world_templates(
-    skip: int = 0,
-    limit: int = 100,
-    name: Optional[str] = None,
-    is_public: Optional[bool] = None,
-    project_id: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-    """获取世界模板列表"""
-    query = db.query(WorldTemplate)
-    if name:
-        query = query.filter(WorldTemplate.name.ilike(f"%{name}%"))
-    if is_public is not None:
-        query = query.filter(WorldTemplate.is_public == is_public)
-    if project_id is not None:
-        query = query.filter(WorldTemplate.project_id == project_id)
-    
-    templates = query.offset(skip).limit(limit).all()
-    
-    # 计算模块和实例数量
-    for template in templates:
-        template.module_count = db.query(WorldModule).filter(
-            WorldModule.template_id == template.id
-        ).count()
-        template.instance_count = db.query(WorldInstance).filter(
-            WorldInstance.template_id == template.id
-        ).count()
-    
-    return templates
-
-@router.get("/templates/{template_id}", response_model=WorldTemplateWithModules)
-def get_world_template(
-    template_id: str, 
-    include_modules: bool = True, 
-    db: Session = Depends(get_db)
-):
-    """获取特定世界模板的详细信息"""
-    template = db.query(WorldTemplate).filter(WorldTemplate.id == template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="世界模板不存在")
-    
-    if include_modules:
-        modules = load_template_modules_with_selectinload(template_id, db)
-        # ... 构建嵌套响应
-    
-    return template
-
-@router.put("/templates/{template_id}", response_model=WorldTemplateResponse)
-def update_world_template(
-    template_id: str, 
-    template_data: WorldTemplateUpdate, 
-    db: Session = Depends(get_db)
-):
-    """更新世界模板"""
-    template = db.query(WorldTemplate).filter(WorldTemplate.id == template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="世界模板不存在")
-    
-    update_data = template_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(template, field, value)
-    
-    db.commit()
-    db.refresh(template)
-    return template
-
-@router.delete("/templates/{template_id}")
-def delete_world_template(template_id: str, db: Session = Depends(get_db)):
-    """删除世界模板（级联删除模块、子模块、条目）"""
-    template = db.query(WorldTemplate).filter(WorldTemplate.id == template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="世界模板不存在")
-    
-    # 检查是否有实例在使用
-    instance_count = db.query(WorldInstance).filter(
-        WorldInstance.template_id == template_id
-    ).count()
-    if instance_count > 0:
-        raise HTTPException(status_code=400, detail="无法删除正在使用的世界模板")
-    
-    db.delete(template)
-    db.commit()
-    return {"message": "世界模板删除成功"}
-
-
-# ========== 模块 API ==========
-
-@router.post("/templates/{template_id}/modules", response_model=WorldModuleResponse)
-def create_world_module(
-    template_id: str, 
-    module_data: WorldModuleCreate, 
-    db: Session = Depends(get_db)
-):
-    """为世界模板创建模块"""
-    # 检查模板是否存在
-    template = db.query(WorldTemplate).filter(WorldTemplate.id == template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="世界模板不存在")
-    
-    # 检查模块类型是否重复
-    existing = db.query(WorldModule).filter(
-        WorldModule.template_id == template_id,
-        WorldModule.module_type == module_data.module_type,
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="该模块类型已存在")
-    
-    module = WorldModule(
-        id=str(uuid.uuid4()), 
-        template_id=template_id, 
-        **module_data.model_dump()
-    )
-    db.add(module)
-    db.commit()
-    db.refresh(module)
-    return module
-
-
-# ========== 子模块 API ==========
-
-@router.post("/modules/{module_id}/submodules", response_model=WorldSubmoduleResponse)
-def create_world_submodule(
-    module_id: str, 
-    submodule_data: WorldSubmoduleCreate, 
-    db: Session = Depends(get_db)
-):
-    """为世界模块创建子模块"""
-    module = db.query(WorldModule).filter(WorldModule.id == module_id).first()
-    if not module:
-        raise HTTPException(status_code=404, detail="世界模块不存在")
-    
-    submodule = WorldSubmodule(
-        id=str(uuid.uuid4()), 
-        module_id=module_id, 
-        **submodule_data.model_dump()
-    )
-    db.add(submodule)
-    db.commit()
-    db.refresh(submodule)
-    return submodule
-
-
-# ========== 模块项 API ==========
-
-@router.post("/modules/{module_id}/items", response_model=WorldModuleItemResponse)
-def create_world_module_item(
-    module_id: str, 
-    item_data: WorldModuleItemCreate, 
-    db: Session = Depends(get_db)
-):
-    """为世界模块创建项"""
-    module = db.query(WorldModule).filter(WorldModule.id == module_id).first()
-    if not module:
-        raise HTTPException(status_code=404, detail="世界模块不存在")
-    
-    if item_data.submodule_id:
-        submodule = db.query(WorldSubmodule).filter(
-            WorldSubmodule.id == item_data.submodule_id
-        ).first()
-        if not submodule:
-            raise HTTPException(status_code=404, detail="子模块不存在")
-    
-    item = WorldModuleItem(
-        id=str(uuid.uuid4()), 
-        module_id=module_id, 
-        **item_data.model_dump()
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
-
-
-# ========== 导入导出 API ==========
-
-@router.post("/templates/import", response_model=WorldTemplateResponse)
-def import_world_template(
-    import_data: WorldTemplateImport, 
-    db: Session = Depends(get_db)
-):
-    """从JSON数据导入世界模板"""
-    # 创建新模板
-    template = WorldTemplate(
-        id=str(uuid.uuid4()),
-        name=import_data.name,
-        description=import_data.description,
-        project_id=import_data.project_id,
-    )
-    db.add(template)
-    
-    # 导入模块
-    for module_data in import_data.modules:
-        module = WorldModule(
-            id=str(uuid.uuid4()),
-            template_id=template.id,
-            **module_data.model_dump(exclude={'submodules', 'items'})
-        )
-        db.add(module)
-        
-        # 导入子模块和条目...
-    
-    db.commit()
-    return template
-
-@router.get("/templates/{template_id}/export")
-def export_world_template(template_id: str, db: Session = Depends(get_db)):
-    """导出世界模板为JSON"""
-    template = db.query(WorldTemplate).filter(WorldTemplate.id == template_id).first()
-    if not template:
-        raise HTTPException(status_code=404, detail="世界模板不存在")
-    
-    # 加载完整数据
-    modules = load_template_modules_with_selectinload(template_id, db)
-    
-    # 构建导出数据
-    export_data = {
-        "template": WorldTemplateResponse.model_validate(template).model_dump(),
-        "modules": [WorldModuleWithItems.model_validate(m).model_dump() for m in modules],
-    }
-    
-    return export_data
-```
-
-### 5.3 数据加载优化
-
-使用 `selectinload` 避免 N+1 查询问题：
-
-```python
-def load_template_modules_with_selectinload(template_id: str, db: Session):
-    """使用selectinload优化加载模板的模块、子模块和项"""
-    # 第一步：加载所有模块及其子模块
-    modules = (
-        db.query(WorldModule)
-        .filter(WorldModule.template_id == template_id)
-        .options(selectinload(WorldModule.submodules))
-        .order_by(WorldModule.order_index)
-        .all()
-    )
-
-    if not modules:
-        return []
-
-    # 第二步：批量加载所有模块的项
-    module_ids = [module.id for module in modules]
-    module_items = (
-        db.query(WorldModuleItem)
-        .filter(
-            WorldModuleItem.module_id.in_(module_ids),
-            WorldModuleItem.submodule_id.is_(None),
-        )
-        .all()
-    )
-
-    # 将模块项分配到对应的模块
-    module_items_map = {}
-    for item in module_items:
-        if item.module_id not in module_items_map:
-            module_items_map[item.module_id] = []
-        module_items_map[item.module_id].append(item)
-
-    # 第三步：批量加载所有子模块的项
-    all_submodule_ids = []
-    for module in modules:
-        if module.submodules:
-            all_submodule_ids.extend([submodule.id for submodule in module.submodules])
-
-    if all_submodule_ids:
-        submodule_items = (
-            db.query(WorldModuleItem)
-            .filter(WorldModuleItem.submodule_id.in_(all_submodule_ids))
-            .all()
-        )
-
-        # 将子模块项分配到对应的子模块
-        submodule_items_map = {}
-        for item in submodule_items:
-            if item.submodule_id not in submodule_items_map:
-                submodule_items_map[item.submodule_id] = []
-            submodule_items_map[item.submodule_id].append(item)
-
-        # 为每个子模块设置items
-        for module in modules:
-            if module.submodules:
-                for submodule in module.submodules:
-                    submodule.items = submodule_items_map.get(submodule.id, [])
-
-    # 为每个模块设置items
-    for module in modules:
-        module.items = module_items_map.get(module.id, [])
-
-    return modules
-```
-
-## 6. 业务逻辑
-
-### 6.1 创建世界流程
-
-```
-1. 用户点击"创建世界模板"或首次进入时显示 InitialChoiceModal
-2. 用户选择"命名新建"
-3. 打开 CreateTemplateModal，输入世界名称
-4. 调用 POST /worldbuilding/templates 创建模板
-5. 自动调用 POST /worldbuilding/templates/{id}/modules 创建七大默认模块
-6. 切换到新创建的世界
-```
-
-### 6.2 导入模板流程
-
-```
-1. 用户选择"导入模板"
-2. 打开 ImportTemplateModal
-3. 用户拖拽或选择 JSON 文件
-4. 前端验证 JSON 格式（检查 modules 字段）
-5. 用户输入/确认世界名称
-6. 调用 POST /worldbuilding/templates/import
-7. 后端解析并创建模板、模块、子模块、条目
-8. 切换到导入的世界
-```
-
-### 6.3 历史模块数据结构
-
-历史模块使用特殊的层级结构：
-
-```
-WorldModule (module_type='history')
-├── WorldSubmodule (parent_id=null) -> 时代 (Era)
-│   ├── icon: "era:{startDate}:{endDate}"
-│   ├── color: "era:{theme}"
-│   └── children (WorldSubmodule) -> 事件 (Event)
-│       ├── icon: "date:{eventDate}" 或自定义 emoji
-│       ├── color: "event:{type}:{level}" 或 "level:{level}"
-│       └── items (WorldModuleItem) -> 事件条目
-└── WorldSubmodule (parent_id=null) -> 独立事件
-```
-
-#### 时代数据结构
-
-```typescript
-interface Era {
-  id: string;
-  name: string;
-  description?: string;
-  startDate: string;  // 从 icon 字段解析: era:start:end
-  endDate: string;
-  order_index: number;
-  theme: EraTheme;    // 从 color 字段解析: era:theme
-}
-```
-
-#### 事件数据结构
-
-```typescript
-interface Event {
-  id: string;
-  name: string;
-  description?: string;
-  level: EventLevel;      // 从 color 字段解析
-  eventDate?: string;     // 从 icon 字段解析: date:eventDate
-  icon?: string;          // 自定义 emoji
-  order_index: number;
-  eraId?: string;         // parent_id
-  items: EventItem[];
-  eventType?: EventType;  // 从 color 字段解析
-}
-```
-
-### 6.4 时间解析逻辑
-
-```typescript
-// utils/timeParser.ts
-
-export function compareTimes(timeA: string, timeB: string): number {
-  // 解析时间字符串，支持：
-  // - 元年、一年、1年
-  // - 阳阙历元年、阳阙历一年
-  // - 公元前/后
-  // - 阿拉伯数字、中文数字
-  
-  const parsedA = parseTime(timeA);
-  const parsedB = parseTime(timeB);
-  
-  return parsedA - parsedB;
-}
-
-export function calculateEraBasedPositions(
-  events: TimelineEvent[],
-  eras: EraTimeInfo[],
-  options: { padding: number; minSpacing: number }
-): Map<string, number> {
-  // 根据时代信息计算事件在时间轴上的位置
-  // 返回事件ID到位置百分比的映射
-}
-```
-
-## 7. 样式系统
-
-### 7.1 颜色变量
-
-```css
-/* Tailwind CSS 自定义配置 */
-:root {
-  --primary: 238 83% 67%;        /* Indigo-500 */
-  --accent: 262 83% 58%;         /* Purple-600 */
-  --muted-foreground: 215 16% 47%; /* Slate-500 */
-}
-```
-
-### 7.2 动画配置
-
-```typescript
-// HistoryView/config.ts
-
-export const animationConfig = {
-  spring: { type: 'spring', stiffness: 300, damping: 25 },
-  ease: [0.25, 0.46, 0.45, 0.94],
-  duration: { fast: 0.2, normal: 0.3, slow: 0.4 },
-};
-
-export const eraVariants = {
-  hidden: { opacity: 0, x: -30 },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { duration: 0.5, ease: animationConfig.ease }
-  },
-};
-
-export const contentVariants = {
-  hidden: { opacity: 0, height: 0 },
-  visible: { 
-    opacity: 1, 
-    height: 'auto',
-    transition: { duration: 0.3 }
-  },
-  exit: { 
-    opacity: 0, 
-    height: 0,
-    transition: { duration: 0.2 }
-  },
-};
-```
-
-## 8. 扩展性设计
-
-### 8.1 添加新模块类型
-
-1. 在 `TabType` 中添加新类型
-2. 在 `TAB_CONFIG` 中配置图标和标签
-3. 在 `TAB_ORDER` 中添加排序
-4. 创建对应的视图组件
-5. 后端 `ModuleType` 枚举添加新类型
-
-### 8.2 自定义事件类型
-
-事件类型配置在 `EVENT_TYPE_CONFIG` 中：
-
-```typescript
-export const EVENT_TYPE_CONFIG: Record<EventType, EventTypeConfig> = {
-  war: {
-    type: 'war',
-    label: 'War',
-    labelCn: '战争',
-    description: '涉及武装冲突的重大事件，影响政治格局和民众生活',
-    icon: '⚔️',
-    color: '#dc2626',
-    gradient: 'from-red-50 to-orange-50',
-    border: 'border-red-200',
-    text: 'text-red-900',
-    accent: 'bg-red-500',
-  },
-  // ... 其他类型
-};
-```
-
-## 9. 文件清单
-
-### 9.1 前端文件
-
-| 文件路径 | 说明 |
-|---------|------|
-| `frontend/src/components/Worldbuilding/WorldbuildingView.tsx` | 世界观设定主视图 |
-| `frontend/src/components/Worldbuilding/HistoryView.tsx` | 历史模块视图 |
-| `frontend/src/components/Worldbuilding/HistoryView/EventCard.tsx` | 事件卡片组件 |
-| `frontend/src/components/Worldbuilding/HistoryView/HistorySkeleton.tsx` | 加载骨架屏 |
-| `frontend/src/components/Worldbuilding/HistoryView/TimelineTooltip.tsx` | 时间线提示 |
-| `frontend/src/components/Worldbuilding/HistoryView/types.ts` | 类型定义 |
-| `frontend/src/components/Worldbuilding/HistoryView/config.ts` | 配置常量 |
-| `frontend/src/components/Worldbuilding/HistoryView/modals/*.tsx` | 各种弹窗组件 |
-| `frontend/src/services/worldbuildingApi.ts` | API 服务 |
-
-### 9.2 后端文件
-
-| 文件路径 | 说明 |
-|---------|------|
-| `backend/app/models/worldbuilding.py` | 数据模型定义 |
-| `backend/app/schemas/worldbuilding.py` | Pydantic Schema |
-| `backend/app/api/v1/worldbuilding.py` | API 路由处理 |
-
-## 10. 注意事项
-
-1. **级联删除**：删除模板会级联删除所有模块、子模块和条目
-2. **模块类型唯一**：一个模板中每种模块类型只能有一个
-3. **历史模块特殊处理**：使用 icon 和 color 字段存储额外元数据
-4. **时间解析**：支持多种时间格式，但建议使用统一的纪元格式
-5. **性能优化**：使用 `selectinload` 避免 N+1 查询
+- 七个模块由系统创建，模块类型固定；模块的展示名、图标、描述、config 可自定义。
+- 子模块是用户内容的主要载体：分类、实体、节点都用它表达；层级建议不超过 3 层。
+- 条目不参与全局寻址，主要承载长文与可重复字段；需要被关联的对象应建模为子模块。
+- 所有实体都有稳定 id；关联只存 id，显示名实时解析。
+
+### 4.2 子模块管理器
+
+入口：模块工具栏的管理分类按钮；结构/沙盘复杂度下常驻，速写复杂度下收进更多菜单。
+
+- 管理器以树形列表呈现分类：缩进表示层级，行内显示名称、kind、图标、颜色、实体数。
+- 支持新建、重命名、描述、图标（Lucide 选择器）、颜色（色板）、kind 绑定、层级调整、
+  拖拽排序、显隐、删除（提示关联影响）。
+- 推荐 kind 是可选快捷项，不强制、不预置具体内容；用户可完全自定义 kind。
+- 删除分类时提示其下条目数与关联数，并选择级联删除或迁移到父级。
+- 分类不写死世界观内容：政权可改名为宗门，条约可改名为盟约。
+
+### 4.3 自定义字段编辑器
+
+- 入口：模块配置面板的字段分页；按 kind 分组，例如政权、组织、人物各有一套字段。
+- 字段类型：文本、长文、数字、单选、多选、日期、实体引用、图片。
+- 字段属性：标签、必填、默认值、占位提示、可见复杂度（速写/结构/沙盘）、排序。
+- 实体引用字段复用通用实体选择器，选择结果落 EntityRef，不新增关联记录；
+  需要时间、备注、强度等语义时，改用 LinkPanel 添加正式关联。
+- 支持从模板化字段组批量添加？不。系统不预置字段组；用户可自建后另存为个人字段组，
+  仅存于本地世界配置，不进入系统预设库。
+- 修改字段不破坏已有数据；删除字段时提示数据保留但不再展示，可恢复。
+
+### 4.4 模块配置入口
+
+- 每个模块工具栏提供配置按钮，面板分页：分类与 kind、字段、等级、状态、关联类型、
+  术语、展示与复杂度。
+- 等级（LevelDef）与状态（StatusDef）由用户定义，例如政权等级可以是超级大国/王国/城邦，
+  也可以是掌门/长老/弟子；系统不规定语义与档数。
+- 关联类型分页可新增自定义关联；自定义关联必须声明方向、标签、源/目标 kind 范围。
+- 所有配置随世界保存，也随世界备份导出；不产生任何系统级预设。
+
+### 4.5 空模块状态
+
+- 七个模块各自有空状态：一个线性图标、一句模块定位、两三个示例能力描述、一个主按钮。
+- 主按钮示例：历史=创建第一个时代；政治=创建第一个政权；经济=填写经济速写；
+  种族=创建第一个种族；体系=创建第一个体系；地图/特殊保持现状。
+- 空状态下方显示快捷入口：添加关联、打开配置、切换复杂度。
+- 当模块内已有实体但尚未建立任何关联时，显示轻量提示条：为它添加一条跨模块关联，
+  世界会更完整。提示可关闭，不重复打扰。
+
+### 4.6 模块展示模式与复杂度
+
+- 每个模块在 ModuleConfig.displayMode 中保存默认视图，用户可随时切换。
+- 建议视图：历史=时间轴书卷；政治=版图/名录/沿革；经济=速写/脉络图/沙盘；
+  种族=图鉴/血缘树；体系=阶梯/典籍；地图/特殊沿用现状。
+- 复杂度控制披露：速写隐藏画布、数值、时间范围与统计；结构启用实体、字段组、
+  关联面板与关系视图；沙盘启用流量、指标、时间刷、世界脉络。
+- 模块可声明自己不支持某些复杂度能力，界面给出降级提示而不是禁用整个模块。
+
+### 4.7 通用卡片与列表规范
+
+- 卡片不是同构网格：每个模块自行决定主卡片的尺寸、层级与信息密度，但共用以下纪律：
+  - 一级实体（模块主干）面积最大，承载标题、关键字段、关联计数与主要操作。
+  - 次级实体以紧凑行、chips、卫星节点或附属区呈现，不抢一级实体的视觉权重。
+  - 关系/边不渲染成实体卡片，使用连线、缎带、矩阵或分组列表表达。
+- 卡片统一提供：名称、kind 徽章、状态徽章、关联计数、hover 预览、更多操作。
+- 列表视图用于批量维护，列可由用户选择；排序、筛选、分组状态持久化到本地。
+- 所有列表与卡片支持键盘导航与多选批量操作。
+
+## 5. 跨模块关联（WorldLink 摘要）
+
+本节只说明总纲职责；完整数据模型、关联类型注册表与 UI 规范以 cross_module_link_design.md 为准。
+
+### 5.1 统一关联面板
+
+- 任何实体详情都有「关联」区域，分出链与入链两组，按目标模块分组展示。
+- 行内容：关联类型标签（入链显示 reverseLabel）、目标名称、kind 徽章、时间范围、备注。
+- hover 预览目标；点击跳转；入链不可直接删除，但可跳到源实体修改。
+- 卡片与画布节点显示关联计数徽章；计数在列表页批量获取，不产生重复查询。
+
+### 5.2 添加关联
+
+- 统一入口：关联面板的添加关联按钮，或在画布上从节点拖出连线。
+- 流程：选模块 → 搜索或筛选实体 → 选关联类型（按 kind 自动过滤）→ 可选时间、备注、强度等 meta。
+- 支持多选批量创建；支持最近使用与当前画布内实体两个快捷范围。
+- 类型不匹配时只允许 core.references、core.related_to、custom.link 三种通用类型。
+
+### 5.3 行内引用
+
+- 富文本输入 at 符号打开通用实体选择器，插入 token：双中括号包裹的 模块:kind:id 加显示名。
+- 渲染为可点击 chip；只存 id，显示名实时解析；失效引用用警示样式并提供清理。
+- 行内引用不占用关联类型，不进入世界脉络；适合叙述性提及。
+
+### 5.4 关联计数与反向链接
+
+- 实体卡片、画布节点、列表行显示关联计数；出链与入链分开展示。
+- 重命名实体不改关联数据；删除实体时列出受影响的关联并提供级联或保留失效引用。
+- 反向链接由查询生成，不重复存储；对称关联只落一条边。
+
+### 5.5 世界脉络
+
+- 入口在世界观设定头部；默认沙盘档可见，结构档可手动开启。
+- 只读力导向图：节点按模块着色、按关联数或等级定大小；边按关联类型着色与线型。
+- 支持按模块、kind、关联类型、时间范围筛选；默认隐藏孤立节点。
+- 超过约 800 节点时降级为模块矩阵加推荐关联列表。
+
+## 6. 七大模块总览
+
+### 6.1 地图（本轮保持现状）
+
+- 地图界面不重新设计；本轮只做兼容：允许其他模块把地区/地点作为关联目标。
+- 地图未接入 WorldLink 时，所有指向地图的关联入口隐藏，已有数据不报错。
+- 后续接入时按契约补充 kind 与 LinkType 即可，不需要改其他模块。
+
+### 6.2 历史
+
+- 定位：书卷式时间轴；保留现有向下展开、时间轴、大小错落事件卡片与动画。
+- 层级：时代（era）→ 事件（event）→ 事件条目；独立事件归入时间之外伪时代。
+- 本轮增强：事件与时代可关联政治、经济、种族、体系、角色与地图；详情含统一 LinkPanel。
+- 详细设计见 history_ui_design.md。
+
+### 6.3 政治
+
+- 定位：权力版图；政权是第一层级主干，组织为卫星，人物为紧凑行，条约与关系是边。
+- 视图：版图、名录、沿革；关系层可筛选同盟/敌对/附庸/贸易，条约以缎带表达。
+- 人物引用全局 Character，不复制人物数据；政治侧只存职位、任期与派系。
+- 详细设计见 politics_ui_design.md。
+
+### 6.4 经济
+
+- 定位：经济脉络；用速写、结构、沙盘三档复杂度统一简单与复杂两种形态。
+- 简单：三五个字段的经济速写；复杂：资源、产业、市场、货币、主体与制度构成网络与流量。
+- 同一套数据模型，切换复杂度只改变披露程度；1 个实体、1 条边也能成立。
+- 详细设计见 economy_ui_design.md。
+
+### 6.5 种族
+
+- 定位：种族图鉴；race 与 subrace 两层，主打卡片图鉴与血缘树，轻量但有设计感。
+- 快捷可用：名称加一句话加代表色即可成立；再按需补充外貌、寿命、文化、天赋与聚居。
+- 关联：聚居/起源指向地图，血缘连接种族，代表人物引用角色，特产与偏好连接经济，亲和连接体系。
+- 详细设计见 races_ui_design.md。
+
+### 6.6 体系
+
+- 定位：体系进阶；system 到 tier 到 ability/rule/cost 的有序进阶结构。
+- 简单模式只需体系名加有序等级列表；复杂模式呈现分支、前置、代价、克制与跨体系关系。
+- 关联：角色境界、种族亲和、历史突破、经济资源、政治组织的修习与推行。
+- 详细设计见 systems_ui_design.md。
+
+### 6.7 特殊（本轮保持现状）
+
+- 特殊界面不重新设计；本轮只做兼容：允许特殊条目被其他模块通用引用。
+- 未接入时，指向特殊模块的关联入口隐藏；接入后按契约补 kind 与 LinkType。
+
+### 6.8 模块之间的主要关联通道
+
+- 历史是时间背景：事件与时代可指向其他一切模块。
+- 政治是权力枢纽：政权连接领土、组织、人物、条约、经济管制与种族构成。
+- 经济是资源与流转：连接政治制度、历史周期、种族特产、体系消耗与地图地区。
+- 种族与体系互相连接，并分别连向角色：种族归属、体系修习与境界。
+- 角色贯穿全部模块：登场于历史、效力于政权、拥有经济实体、归属种族、修习体系。
+
+## 7. 全局交互与状态
+
+### 7.1 保存策略
+
+- 实体与关联编辑采用自动保存：字段失焦或停顿约 800ms 后保存，状态栏显示保存中/已保存/失败重试。
+- 结构化配置（模块配置、字段、等级、关联类型）使用显式保存按钮，避免半成品配置生效。
+- 冲突处理：同一实体被两处修改时提示版本冲突，提供保留本地、保留远端、并排对比三种选择。
+
+### 7.2 键盘与快捷操作
+
+- Ctrl/Cmd + K：全局搜索；Esc：关闭抽屉或返回上一级。
+- N：新建当前模块实体；L：为当前实体添加关联；[ 与 ]：在实体列表中切换。
+- 抽屉与列表支持完整 Tab 焦点顺序；画布支持方向键移动、Enter 打开、Esc 退出。
+
+### 7.3 加载、空与错误状态
+
+- 列表与画布使用骨架屏；关联计数与详情支持局部加载，不阻塞主视图。
+- 空模块、筛选无结果、加载失败、引用失效分别有独立状态样式与行动按钮。
+- 删除、清空、覆盖恢复等危险操作统一使用二次确认与危险色按钮。
+
+### 7.4 可访问性与响应式
+
+- 所有操作可仅用键盘完成；图标按钮有 aria-label；抽屉与弹窗有焦点陷阱与 Esc 关闭。
+- 正文对比度达到 WCAG AA；颜色不作为唯一信息载体，状态同时有文字。
+- 支持 prefers-reduced-motion：关闭画布动画与卡片入场动画。
+- 宽屏使用内容区加详情抽屉两栏；中屏抽屉覆盖；窄屏改为单列与底部操作条。
+
+## 8. 视觉规范
+
+### 8.1 世界基调与领域色
+
+- 世界基调由 WorldTone 控制：羊皮纸、墨色、青灰或自定义；纹理可选无、纸张、网格、星野。
+- 领域色建议：历史 amber、政治 red 与 gold、经济 green 与 cyan、种族 teal、体系 violet、角色 slate、地图 blue、特殊 neutral。
+- 同一语义在全世界观内保持同一颜色；暗色模式单独取值，不用简单反色。
+
+### 8.2 图标与 emoji 规范
+
+- 全文与界面禁止 emoji；图标统一使用 Lucide 图标名，例如 landmark、scroll-text、coins、users、git-branch、map-pin。
+- 例外只有两处：标题区域允许少量标题符号；颜色选择区域使用真实色板表达。
+- 等级与状态不使用星号或 emoji 圆点拼贴，使用文字徽章加色阶或分段进度条。
+
+### 8.3 卡片、层级与动效
+
+- 视觉层级由尺寸、位置、留白与阴影共同表达，不靠颜色堆叠；一级实体与次级实体差异明显。
+- 卡片圆角与描边跟随世界基调；同屏最多两级阴影，避免浮层过重。
+- 动效 150 到 300ms，缓动统一；跨模块跳转使用轻量过渡，不播放全屏动画。
+
+## 9. 三分钟最小可用路径
+
+- 历史：创建时代 → 填写名称与起始时间 → 在时代下添加一个事件即可。
+- 政治：创建政权 → 填写名称与等级 → 引用一个角色作为统治者即可。
+- 经济：填写经济速写卡的五项（经济形态、货币、主要资源、主要产业、分配特征）即可。
+- 种族：创建种族 → 名称加一句话加代表色即可。
+- 体系：创建体系 → 名称加三档等级（可只写名称）加一句话说明即可。
+- 角色：沿用应用现有的角色体系，其他模块通过引用使用，不在模块内重复创建。
+- 完成任一模块的第一个实体后，界面提示为它添加一条关联，引导进入 WorldLink。
+
+## 10. 实现边界与迁移
+
+### 10.1 前端结构建议（设计层）
+
+- 容器：WorldbuildingView 负责头部、标签栏、详情抽屉、返回栈与全局搜索。
+- 通用：WorldEntityList、WorldEntityCard、SubmoduleManager、FieldSchemaEditor、LinkPanel、EntityPicker、WorldWeb、ComplexitySwitcher。
+- 模块：各模块提供自己的主视图组件与详情组件，通过注册表接入容器，不侵入其他模块。
+- 状态：服务端状态用查询缓存，界面状态（当前模块、抽屉、返回栈、复杂度）用轻量本地状态。
+
+### 10.2 API 路由建议
+
+- 世界：/worldbuilding/worlds 及子资源，取代原 /worldbuilding/templates。
+- 模块与子模块：/worlds/{worldId}/modules、/modules/{moduleId}/submodules、/submodules/{id}。
+- 条目：/modules/{moduleId}/items、/items/{id}。
+- 关联：/worlds/{worldId}/links，支持按源/目标过滤、批量计数、批量创建与删除。
+- 备份：/worlds/{worldId}/export 与 /worldbuilding/worlds/import。
+- 旧接口可保留一个迁移期作为兼容层，但不再新增模板相关接口。
+
+### 10.3 数据与迁移
+
+- 旧数据保持可读：WorldTemplate 映射为 World，template_id 映射为 world_id，moduleConfig 条目迁移为 WorldModule.config。
+- 子模块颜色前缀编码迁移为 kind 加 meta；各模块自建的跨模块引用数组迁移为 WorldLink 记录。
+- 政治模块内复制的人物数据迁移时标记为历史数据，并尽可能绑定到全局 Character；新数据一律引用。
+- 预置世界观配置不迁移、不保留；用户自己的字段与类型按 ModuleConfig 保留。
+- 完整映射表见 cross_module_link_design.md 第 8 节。
+
+### 10.4 本轮不做的事
+
+- 不改动地图界面与特殊界面的 UI；只保留可选接入位。
+- 不实现世界协作、权限、公开分享与模板市场。
+- 不做世界版本历史与回收站。
+- 不实现自动生成内容、AI 填充预设、系统推荐世界观。
+- 不重构应用级角色模块；只在其他模块中引用它。
+
+---
+
+本文与 cross_module_link_design.md 及各模块文档共同构成世界观设定的完整设计。
+如有冲突，以 cross_module_link_design.md 的数据模型与术语为准；模块内的视觉与交互以各模块文档为准。

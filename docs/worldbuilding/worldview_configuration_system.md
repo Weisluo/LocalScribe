@@ -1,869 +1,203 @@
-# 世界观配置系统设计方案
+# 世界观自定义配置系统设计方案
 
-> LocalScribe 世界观设定 - 世界观类型适配系统
-
----
-
-## 一、概述
-
-### 1.1 设计目标
-
-为 LocalScribe 提供灵活的世界观类型适配系统，支持**仙侠、历史、西幻、现代、科幻、末世**六种主要世界观类型，实现模块内容的智能适配和个性化展示。
-
-### 1.2 支持的世界观类型
-
-| 世界观类型 | 中文名称 | 核心特征 | 典型示例 | 是否系统预设 |
-|-----------|---------|---------|---------|-------------|
-| `xianxia` | 仙侠 | 修真修仙、门派斗争、法宝丹药 | 《凡人修仙传》、《诛仙》 | ✅ 系统预设 |
-| `historical` | 历史 | 真实历史背景、王朝更迭 | 《三国演义》、《大明王朝》 | ✅ 系统预设 |
-| `western` | 西幻 | 魔法、骑士、龙与地下城 | 《指环王》、《冰与火之歌》 | ✅ 系统预设 |
-| `modern` | 现代 | 当代社会、科技文明 | 现实世界、近未来设定 | ✅ 系统预设 |
-| `scifi` | 科幻 | 高科技、星际文明、人工智能 | 《三体》、《星际迷航》 | ✅ 系统预设 |
-| `apocalypse` | 末世 | 灾难后世界、生存斗争 | 《辐射》、《最后生还者》 | ✅ 系统预设 |
-| `custom` | 自定义 | 用户自定义的世界观类型 | 用户自定义设定 | ❌ 用户创建 |
+> 配套阅读：`docs/worldbuilding/cross_module_link_design.md`（数据模型与术语契约）
+> 本文取代旧版《世界观配置系统设计方案》。旧版中的仙侠、历史、西幻、现代、科幻、末世
+> 等系统预设全部删除，不再保留任何预置世界观类型、预置模块内容与预置图标。
 
 ---
 
-## 二、世界观配置架构
+## 一、定位与原则
 
-### 2.1 核心配置接口
+### 1.1 这个系统解决什么
 
-```typescript
-// 世界观基础配置
-export interface WorldviewConfig {
-  id: string;
-  type: WorldviewType;
-  name: string;
-  description: string;
-  
-  // 基础属性
-  timeScale: TimeScale;
-  techLevel: TechLevel;
-  magicLevel: MagicLevel;
-  politicalComplexity: ComplexityLevel;
-  economicSystem: EconomicSystemType;
-  
-  // 模块适配配置
-  moduleConfigs: {
-    history: HistoryModuleConfig;
-    politics: PoliticsModuleConfig;
-    economy: EconomyModuleConfig;
-    map: MapModuleConfig;
-    races: RacesModuleConfig;
-    systems: SystemsModuleConfig;
-  };
-  
-  // 视觉主题
-  theme: WorldviewTheme;
-  
-  // 关联规则
-  relationRules: RelationRule[];
-  
-  // 预设内容
-  presets: WorldviewPreset[];
-}
+世界观设定不提供任何现成世界观，而是提供一套**自定义工具**，让用户为自己的世界
+定义名称、术语、类型、等级、状态、字段、关联与展示方式。同一个世界可以在不同阶段
+逐步配置，从三五个字段的速写到完整的关系网络。
 
-// 世界观类型定义
-export type WorldviewType = 
-  | 'xianxia'     // 仙侠
-  | 'historical'  // 历史
-  | 'western'     // 西幻
-  | 'modern'      // 现代
-  | 'scifi'       // 科幻
-  | 'apocalypse'  // 末世
-  | 'custom';     // 自定义
+### 1.2 设计原则
 
-// 时间尺度
-export type TimeScale = 
-  | 'ancient'     // 古代
-  | 'medieval'    // 中世纪
-  | 'renaissance' // 文艺复兴
-  | 'industrial'  // 工业时代
-  | 'modern'      // 现代
-  | 'future';     // 未来
-
-// 科技水平
-export type TechLevel = 
-  | 'primitive'   // 原始
-  | 'medieval'    // 中世纪
-  | 'industrial'  // 工业
-  | 'information' // 信息
-  | 'advanced'    // 先进
-  | 'transcendent'; // 超越
-
-// 魔法水平
-export type MagicLevel = 
-  | 'none'        // 无魔法
-  | 'low'         // 低魔
-  | 'medium'      // 中魔
-  | 'high'        // 高魔
-  | 'divine';     // 神级
-
-// 复杂度等级
-export type ComplexityLevel = 
-  | 'simple'      // 简单
-  | 'complex'     // 复杂
-  | 'highly_complex'; // 高度复杂
-
-// 经济系统类型
-export type EconomicSystemType = 
-  | 'barter'      // 物物交换
-  | 'feudal'      // 封建
-  | 'mercantile'  // 重商主义
-  | 'capitalist'  // 资本主义
-  | 'socialist'   // 社会主义
-  | 'post_scarcity'; // 后稀缺
-```
-
-### 2.2 模块特定配置
-
-```typescript
-// 历史模块配置
-export interface HistoryModuleConfig {
-  // 时间单位
-  timeUnit: 'year' | 'era' | 'cycle' | 'epoch';
-  
-  // 事件类型适配
-  eventTypes: WorldviewEventType[];
-  
-  // 时代主题适配
-  eraThemes: WorldviewEraTheme[];
-  
-  // 时间轴样式
-  timelineStyle: 'linear' | 'cyclical' | 'spiral' | 'branching';
-  
-  // 历史记录方式
-  recordingMethod: 'chronicle' | 'oral' | 'digital' | 'magical';
-}
-
-// 政治模块配置
-export interface PoliticsModuleConfig {
-  // 政治实体类型
-  entityTypes: WorldviewPoliticalEntityType[];
-  
-  // 政治体制
-  governmentTypes: WorldviewGovernmentType[];
-  
-  // 立场体系
-  alignmentSystem: 'dnd' | 'confucian' | 'modern' | 'faction';
-  
-  // 权力结构
-  powerStructure: 'centralized' | 'decentralized' | 'federal' | 'tribal';
-}
-
-// 经济模块配置
-export interface EconomyModuleConfig {
-  // 经济实体类型
-  entityTypes: WorldviewEconomicEntityType[];
-  
-  // 货币系统
-  currencyTypes: WorldviewCurrencyType[];
-  
-  // 资源类型
-  resourceTypes: WorldviewResourceType[];
-  
-  // 贸易方式
-  tradeMethods: WorldviewTradeMethod[];
-}
-```
+1. 空白起步：新建世界不携带任何预设类型、预设字段与预设示例。
+2. 能力与内容分离：系统提供字段类型、展示组件、校验与关联能力，内容全部由用户填写。
+3. 术语可替换：默认术语只是显示占位，用户可以改成自己世界里的称呼。
+4. 渐进式配置：可以先不配置直接用，需要时再逐步加类型、字段、等级与关联。
+5. 配置随世界走：所有配置保存在世界内，随世界备份导出，不进入系统级共享库。
+6. 可撤销：配置修改不破坏已有数据；删除的字段与类型进入可恢复状态。
+7. 禁止预设：不提供任何世界观类型选择器、推荐世界观、模板市场与 AI 自动填充。
 
 ---
 
-## 三、世界观特定配置
+## 二、配置层级
 
-### 3.1 仙侠世界观配置
+配置分四层，逐层覆盖，越靠下越具体：
 
-```typescript
-const xianxiaConfig: WorldviewConfig = {
-  id: 'xianxia-default',
-  type: 'xianxia',
-  name: '标准仙侠世界',
-  description: '修真修仙的东方玄幻世界，包含门派斗争、法宝丹药等元素',
-  
-  timeScale: 'ancient',
-  techLevel: 'medieval',
-  magicLevel: 'high',
-  politicalComplexity: 'complex',
-  economicSystem: 'feudal',
-  
-  moduleConfigs: {
-    history: {
-      timeUnit: 'era',
-      eventTypes: [
-        { type: 'cultivation_breakthrough', label: '修为突破', icon: '🧘', color: '#8b5cf6' },
-        { type: 'sect_foundation', label: '门派创立', icon: '🏯', color: '#059669' },
-        { type: 'treasure_discovery', label: '法宝现世', icon: '💎', color: '#f59e0b' },
-        { type: 'tribulation', label: '天劫降临', icon: '⚡', color: '#dc2626' }
-      ],
-      eraThemes: [
-        { theme: 'primordial', label: '洪荒时代', color: '#7c3aed' },
-        { theme: 'immortal', label: '仙道盛世', color: '#10b981' },
-        { theme: 'demonic', label: '魔道乱世', color: '#ef4444' }
-      ],
-      timelineStyle: 'cyclical',
-      recordingMethod: 'magical'
-    },
-    
-    politics: {
-      entityTypes: [
-        { type: 'sect', label: '修仙门派', icon: '🏯', color: '#059669' },
-        { type: 'clan', label: '修仙世家', icon: '👨‍👩‍👧‍👦', color: '#7c3aed' },
-        { type: 'immortal_emperor', label: '仙帝', icon: '👑', color: '#f59e0b' },
-        { type: 'demon_king', label: '魔尊', icon: '😈', color: '#dc2626' }
-      ],
-      governmentTypes: [
-        { type: 'sect_hierarchy', label: '门派等级制' },
-        { type: 'immortal_monarchy', label: '仙帝专制' },
-        { type: 'alliance_council', label: '联盟议会制' }
-      ],
-      alignmentSystem: 'confucian',
-      powerStructure: 'decentralized'
-    },
-    
-    economy: {
-      entityTypes: [
-        { type: 'spirit_stone', label: '灵石', icon: '💎', color: '#8b5cf6' },
-        { type: 'elixir', label: '丹药', icon: '💊', color: '#10b981' },
-        { type: 'magical_artifact', label: '法宝', icon: '⚔️', color: '#f59e0b' },
-        { type: 'cultivation_resource', label: '修炼资源', icon: '🌿', color: '#059669' }
-      ],
-      currencyTypes: [
-        { type: 'spirit_stone', label: '灵石货币' },
-        { type: 'contribution_point', label: '贡献点' },
-        { type: 'favor', label: '人情债' }
-      ],
-      resourceTypes: [
-        { type: 'spiritual', label: '灵气资源' },
-        { type: 'alchemical', label: '炼丹材料' },
-        { type: 'artifact', label: '炼器材料' }
-      ],
-      tradeMethods: [
-        { type: 'auction', label: '拍卖会' },
-        { type: 'barter', label: '以物易物' },
-        { type: 'mission_reward', label: '任务奖励' }
-      ]
-    }
-  },
-  
-  theme: {
-    primaryColor: '#7c3aed',
-    secondaryColor: '#10b981',
-    accentColor: '#f59e0b',
-    backgroundGradient: 'linear-gradient(135deg, #7c3aed 0%, #10b981 50%, #f59e0b 100%)',
-    fontFamily: 'Noto Serif SC, serif'
-  }
-};
-```
+| 层级 | 载体 | 内容 | 作用范围 |
+|------|------|------|----------|
+| 世界级 | World.settings | 基调、术语、历法、默认复杂度、默认模块 | 整个世界 |
+| 模块级 | WorldModule.config | 类型、等级、状态、字段、自定义关联、展示模式 | 单个模块 |
+| 实体级 | submodule.meta、item.content | 字段值、标签、时间、状态、备注 | 单个实体 |
+| 关联级 | WorldLink、CustomLinkTypeDef | 关联记录与自定义关联类型 | 单个关联 / 单个模块 |
 
-### 3.2 科幻世界观配置
+覆盖规则：模块级术语优先于世界级术语；实体级字段定义来自所属 kind；未配置时使用
+系统内置的最小默认（仅字段类型与空配置，不含任何世界观内容）。
 
-```typescript
-const scifiConfig: WorldviewConfig = {
-  id: 'scifi-default',
-  type: 'scifi',
-  name: '标准科幻世界',
-  description: '高科技的星际文明世界，包含人工智能、星际旅行等元素',
-  
-  timeScale: 'future',
-  techLevel: 'advanced',
-  magicLevel: 'none',
-  politicalComplexity: 'highly_complex',
-  economicSystem: 'post_scarcity',
-  
-  moduleConfigs: {
-    history: {
-      timeUnit: 'epoch',
-      eventTypes: [
-        { type: 'technological_breakthrough', label: '科技突破', icon: '🔬', color: '#0ea5e9' },
-        { type: 'first_contact', label: '首次接触', icon: '👽', color: '#10b981' },
-        { type: 'ai_awakening', label: 'AI觉醒', icon: '🤖', color: '#64748b' },
-        { type: 'interstellar_war', label: '星际战争', icon: '🚀', color: '#dc2626' }
-      ],
-      eraThemes: [
-        { theme: 'space_age', label: '太空时代', color: '#0ea5e9' },
-        { theme: 'ai_dominance', label: 'AI主导', color: '#64748b' },
-        { theme: 'galactic_empire', label: '银河帝国', color: '#7c3aed' }
-      ],
-      timelineStyle: 'linear',
-      recordingMethod: 'digital'
-    },
-    
-    politics: {
-      entityTypes: [
-        { type: 'stellar_empire', label: '星际帝国', icon: '👑', color: '#7c3aed' },
-        { type: 'corporate_alliance', label: '企业联盟', icon: '🏢', color: '#0ea5e9' },
-        { type: 'ai_governance', label: 'AI治理', icon: '🤖', color: '#64748b' },
-        { type: 'rebel_faction', label: '反抗组织', icon: '⚔️', color: '#dc2626' }
-      ],
-      governmentTypes: [
-        { type: 'technocracy', label: '技术官僚制' },
-        { type: 'corporate_oligarchy', label: '企业寡头制' },
-        { type: 'ai_demarchy', label: 'AI抽签制' }
-      ],
-      alignmentSystem: 'modern',
-      powerStructure: 'federal'
-    },
-    
-    economy: {
-      entityTypes: [
-        { type: 'energy_credit', label: '能量信用', icon: '⚡', color: '#f59e0b' },
-        { type: 'nanomaterial', label: '纳米材料', icon: '🔬', color: '#64748b' },
-        { type: 'data_asset', label: '数据资产', icon: '💾', color: '#0ea5e9' },
-        { type: 'intellectual_property', label: '知识产权', icon: '📜', color: '#7c3aed' }
-      ],
-      currencyTypes: [
-        { type: 'digital_credit', label: '数字信用' },
-        { type: 'energy_unit', label: '能量单位' },
-        { type: 'reputation', label: '声誉积分' }
-      ],
-      resourceTypes: [
-        { type: 'energy', label: '能源' },
-        { type: 'computational', label: '计算资源' },
-        { type: 'biological', label: '生物资源' }
-      ],
-      tradeMethods: [
-        { type: 'quantum_exchange', label: '量子交易' },
-        { type: 'ai_negotiation', label: 'AI协商' },
-        { type: 'reputation_based', label: '声誉交易' }
-      ]
-    }
-  },
-  
-  theme: {
-    primaryColor: '#0ea5e9',
-    secondaryColor: '#64748b',
-    accentColor: '#7c3aed',
-    backgroundGradient: 'linear-gradient(135deg, #0ea5e9 0%, #64748b 50%, #7c3aed 100%)',
-    fontFamily: 'Inter, system-ui, sans-serif'
-  }
-};
-```
+## 三、世界级配置
 
-### 3.3 其他世界观配置摘要
+### 3.1 基础信息
 
-```typescript
-// 历史世界观配置摘要
-const historicalConfig: Partial<WorldviewConfig> = {
-  timeScale: 'medieval',
-  techLevel: 'medieval',
-  magicLevel: 'none',
-  politicalComplexity: 'complex',
-  economicSystem: 'feudal'
-};
+- 名称、一句话描述、封面图、默认打开的模块。
+- 名称与描述支持行内编辑，不设模板标签、公开状态、系统模板标识等字段。
 
-// 西幻世界观配置摘要
-const westernConfig: Partial<WorldviewConfig> = {
-  timeScale: 'medieval',
-  techLevel: 'medieval',
-  magicLevel: 'medium',
-  politicalComplexity: 'complex',
-  economicSystem: 'feudal'
-};
+### 3.2 视觉基调
 
-// 现代世界观配置摘要
-const modernConfig: Partial<WorldviewConfig> = {
-  timeScale: 'modern',
-  techLevel: 'information',
-  magicLevel: 'none',
-  politicalComplexity: 'highly_complex',
-  economicSystem: 'capitalist'
-};
+- palette：羊皮纸、墨色、青灰、自定义；决定背景、纸纹与文字色倾向。
+- accent：世界主强调色；模块可在 ModuleConfig.palette 中覆盖。
+- texture：无、纸张、网格、星野；radius：小、中、大圆角。
+- 提供实时预览卡，预览使用当前世界的真实内容片段，不使用示例世界观文案。
 
-// 末世世界观配置摘要
-const apocalypseConfig: Partial<WorldviewConfig> = {
-  timeScale: 'modern',
-  techLevel: 'industrial',
-  magicLevel: 'none',
-  politicalComplexity: 'simple',
-  economicSystem: 'barter'
-};
-```
+### 3.3 术语替换
+
+- 术语表为键值对：默认术语到世界内称呼，例如 国家 -> 宗门、政治 -> 朝堂。
+- 可替换范围：模块名、通用称谓、角色称谓、时间称谓、关联标签。
+- 替换只影响显示与导出文案，不改变 module_type、kind、link_type 等稳定标识。
+- 提供恢复默认按钮；术语冲突或为空时回退到默认值并给出提示。
+
+### 3.4 历法
+
+- 纪年名称、元年标签、时间格式、是否使用统一纪年。
+- 时间输入保留自然语言解析能力（如 阳阙历三年、第三纪元初），解析失败时按原文存储。
+- 历法属于展示与排序配置，不引入任何预设历史年表。
+
+### 3.5 默认复杂度与默认模块
+
+- 默认复杂度：速写、结构、沙盘；新实体与新模块继承该档位。
+- 默认模块：进入世界时打开哪个模块，默认历史。
+- 两者都是偏好设置，可随时修改，不影响已有数据。
+
+## 四、模块级配置
+
+### 4.1 类型管理（kind）
+
+- 每个模块可维护自己的 kind 列表；kind 是实体语义类型，例如政权、组织、人物、条约。
+- EntityTypeDef 字段：id、label、icon、color、description、parentKind、defaultFields。
+- 系统提供的推荐 kind 只是可一键添加的快捷项，不预置数据、不强制使用；用户可改名、改色、改图标、删除。
+- kind 被删除时，其下实体迁移到父 kind 或指定 kind，并保留字段值。
+
+### 4.2 等级与状态
+
+- LevelDef：id、label、rank、color、description；rank 决定视觉权重与排序。
+- StatusDef：id、label、color、isTerminal；用于存续、已灭亡、流亡、失效等状态。
+- 每个模块自由定义档数与语义；政治、经济、种族、体系的等级不共用同一套标准。
+- 等级与状态在卡片上以文字徽章加色阶呈现，不使用星号或 emoji 拼贴。
+
+### 4.3 字段配置
+
+- CustomFieldDef：id、label、type、required、options、defaultValue、placeholder、entityRefFilter。
+- 字段类型：文本、长文、数字、单选、多选、日期、实体引用、图片。
+- 字段按 kind 分组；同一 kind 下所有实体共享字段定义。
+- 字段可标记可见复杂度：速写可见、结构起可见、沙盘起可见。
+- 实体引用字段只保存 EntityRef，不创建关联；需要语义与时间范围时用 LinkPanel。
+- 字段调整是加法：改名保留原值，删除标记为归档，可恢复；不做破坏性迁移。
+
+### 4.4 自定义关联类型
+
+- CustomLinkTypeDef：id、label、reverseLabel、directed、icon、color、source、target。
+- 自定义关联必须声明源与目标的 module/kind 范围，界面据此过滤可选类型。
+- 与系统核心关联类型共存；核心类型不可删除，但可改名、改色、改图标。
+- 删除自定义关联类型时，已有该类型关联转为 core.related_to 并保留备注。
+
+### 4.5 展示与复杂度
+
+- displayMode：模块默认视图，如时间轴、版图、脉络图、图鉴、阶梯。
+- defaultComplexity：该模块默认档位；用户切换后按世界偏好记忆。
+- 卡片密度、默认排序、默认分组、每页数量等列表偏好也在模块配置中。
+- 模块可声明能力开关，例如是否支持画布、是否支持数值叠加；不支持时界面给出降级提示。
+
+## 五、配置界面与交互
+
+### 5.1 世界设置面板
+
+- 顶部为分页：基础、外观、术语、历法、模块、备份。
+- 右侧常驻预览区，实时显示模块标签、卡片与关联在术语和基调变化后的效果。
+- 所有字段即时校验；未保存离开时提示保存或放弃。
+
+### 5.2 模块配置面板
+
+- 左侧为分页导航：类型、字段、等级、状态、关联类型、展示、术语。
+- 类型页为列表加拖拽排序；点击类型进入详情，编辑图标、颜色、说明与默认字段。
+- 字段页为按 kind 分组的字段列表，支持添加、编辑、排序、归档与恢复。
+- 关联类型页展示核心关联与自定义关联，可改名、改色，可新增自定义关联。
+- 所有配置修改先在本地草稿中生效，点击保存后一次性提交；提供重置本页。
+
+### 5.3 校验与冲突
+
+- 校验项：id 唯一、术语非空、source 与 target 非空、关联方向合法、字段默认值符合类型。
+- 删除类型或字段时提示影响范围：实体数、字段值数、关联数。
+- 配置冲突以字段级差异展示，支持保留本地、保留远端、合并。
+
+### 5.4 快捷配置
+
+- 首次进入某个模块时，可一键创建该模块的最小推荐骨架（仅结构，不含具体内容）。
+- 例如政治模块可一键创建政权、组织、人物、条约四个 kind，但不填任何示例实体。
+- 骨架可以整体忽略或删除；它不是世界观模板，不携带任何设定数据。
+
+## 六、模块适配
+
+### 6.1 七个模块的可配置范围
+
+| 模块 | 可自定义 | 系统保留的模块语法 |
+|------|----------|--------------------|
+| 历史 | 时代主题、事件类型、事件级别、时间显示、术语 | era 与 event 的层级语义 |
+| 政治 | 政权/组织/人物的类型、等级、状态、字段、关系类型、术语 | 政权主干、组织卫星、人物引用、条约与关系为边的权重结构 |
+| 经济 | 经济实体类型、字段、关系类型、指标、展示形态、术语 | 三档复杂度与 resource 到 industry 到 market 的流转能力 |
+| 种族 | 种族类型、字段、纹章色、术语 | race 与 subrace 两层语义 |
+| 体系 | 体系类型、等级、能力/规则/代价字段、术语 | system 到 tier 的进阶结构 |
+| 地图 | 本轮保持现状 | 地区与地点作为可选关联目标 |
+| 特殊 | 本轮保持现状 | 作为可选关联目标 |
+
+### 6.2 模块语法与用户内容的边界
+
+- 模块语法是让关联、视图与推导成立的稳定骨架，例如历史必须有时代与事件的层级、政治必须有政权与组织的区分。
+- 用户内容是可自由命名的部分，例如 政权 改名为 宗门、条约 改名为 盟约、事件 改为 纪事。
+- 模块语法不携带任何世界观预设；它只回答这个模块如何组织内容，不回答世界里有什么。
+- 当用户试图删除模块语法节点时，界面说明影响并提供隐藏或改名选项，而不是直接删除。
+
+### 6.3 跨模块术语一致性
+
+- 术语替换在世界级统一维护，模块可覆盖；同名术语在不同模块有不同含义时给出冲突提示。
+- 术语只影响显示，关联类型注册表、导出 JSON 与搜索索引仍使用稳定 id。
+
+## 七、存储、备份与版本
+
+- World.settings 与 WorldModule.config 以 JSON 存储；实体级 meta 与 item.content 同样为 JSON。
+- 配置变更记录最近一次保存的快照，支持撤销上一步；本轮不做完整版本历史。
+- 世界备份包含全部配置、实体、关联与自定义类型；恢复时按 id 映射重建。
+- 配置文件带 schema_version；升级时先迁移再加载，未知字段保留不丢弃。
+- 不提供系统级配置市场、公开配置、跨世界共享配置。
+
+## 八、最小配置路径
+
+- 零配置：不打开任何配置页面，直接创建实体，系统使用空配置与默认术语。
+- 三分钟：只改世界名称与一个术语，例如把 政治 改成 朝堂，其余保持默认。
+- 十分钟：为一个模块建立两三个 kind 与三四个字段，开始区分实体结构。
+- 深度配置：建立等级、状态、自定义关联与展示模式，构建完整关系网络。
+- 配置面板随时可从世界设置或模块工具栏进入，不强制引导、不阻塞创作。
+
+## 九、与旧版配置系统的关系
+
+- 旧版世界观类型枚举（xianxia、historical、western、modern、scifi、apocalypse、custom）全部删除。
+- 旧的每种世界观下的预置事件类型、势力类型、经济类型、图标与颜色全部删除。
+- 旧版自定义世界观配置接口升级为本系统的 WorldSettings 与 ModuleConfig，能力保留、结构统一。
+- 旧版适配器与动态内容适配逻辑取消；模块视图直接读取世界自己的配置。
+- 用户已有数据中的自定义字段迁移为 CustomFieldDef；预置配置不迁移、不保留。
+
+## 十、本轮不做的事
+
+- 不实现配置市场、配置分享、社区推荐配置。
+- 不实现跨世界同步配置或项目级配置模板。
+- 不实现 AI 自动生成世界观类型、事件、政权、经济结构等预置内容。
+- 不做配置的完整版本历史与回滚（仅保留最近一次保存快照）。
+- 地图与特殊界面保持现状，本轮不纳入配置系统改造。
 
 ---
 
-## 四、模块适配机制
-
-### 4.1 动态内容适配
-
-```typescript
-// 世界观适配器
-export class WorldviewAdapter {
-  private config: WorldviewConfig;
-  
-  constructor(worldviewType: WorldviewType) {
-    this.config = this.loadConfig(worldviewType);
-  }
-  
-  // 适配历史事件类型
-  adaptEventTypes(baseTypes: EventType[]): WorldviewEventType[] {
-    return baseTypes.map(type => {
-      const adaptedType = this.config.moduleConfigs.history.eventTypes
-        .find(t => t.originalType === type.type);
-      return adaptedType || this.createDefaultAdaptation(type);
-    });
-  }
-  
-  // 适配政治实体类型
-  adaptPoliticalEntities(baseEntities: PoliticalEntityType[]): WorldviewPoliticalEntityType[] {
-    return baseEntities.map(entity => {
-      const adaptedEntity = this.config.moduleConfigs.politics.entityTypes
-        .find(e => e.originalType === entity.type);
-      return adaptedEntity || this.createDefaultAdaptation(entity);
-    });
-  }
-  
-  // 适配经济实体类型
-  adaptEconomicEntities(baseEntities: EconomicEntityType[]): WorldviewEconomicEntityType[] {
-    return baseEntities.map(entity => {
-      const adaptedEntity = this.config.moduleConfigs.economy.entityTypes
-        .find(e => e.originalType === entity.type);
-      return adaptedEntity || this.createDefaultAdaptation(entity);
-    });
-  }
-  
-  // 获取世界观特定图标
-  getIcon(entityType: string, defaultIcon: string): string {
-    const moduleConfig = this.getModuleConfig(entityType);
-    const adaptedType = moduleConfig?.entityTypes.find(t => t.type === entityType);
-    return adaptedType?.icon || defaultIcon;
-  }
-  
-  // 获取世界观特定颜色
-  getColor(entityType: string, defaultColor: string): string {
-    const moduleConfig = this.getModuleConfig(entityType);
-    const adaptedType = moduleConfig?.entityTypes.find(t => t.type === entityType);
-    return adaptedType?.color || defaultColor;
-  }
-}
-```
-
-### 4.2 关联规则适配
-
-```typescript
-// 世界观特定关联规则
-export interface WorldviewRelationRule {
-  worldview: WorldviewType;
-  sourceModule: ModuleType;
-  targetModule: ModuleType;
-  relationPatterns: RelationPattern[];
-  strengthMultiplier: number;
-  autoDiscovery: boolean;
-}
-
-// 关联模式
-export interface RelationPattern {
-  name: string;
-  description: string;
-  sourceConditions: Condition[];
-  targetConditions: Condition[];
-  relationType: RelationType;
-  confidence: number;
-}
-
-// 示例：仙侠世界的关联规则
-const xianxiaRelationRules: WorldviewRelationRule[] = [
-  {
-    worldview: 'xianxia',
-    sourceModule: 'history',
-    targetModule: 'politics',
-    relationPatterns: [
-      {
-        name: '门派创立事件',
-        description: '历史事件中的门派创立与政治实体中的门派关联',
-        sourceConditions: [{ field: 'eventType', operator: 'equals', value: 'sect_foundation' }],
-        targetConditions: [{ field: 'entityType', operator: 'equals', value: 'sect' }],
-        relationType: 'causal',
-        confidence: 0.9
-      }
-    ],
-    strengthMultiplier: 1.2,
-    autoDiscovery: true
-  }
-];
-```
-
----
-
-## 五、前端集成方案
-
-### 5.1 世界观选择器组件
-
-```typescript
-// 世界观选择器组件
-const WorldviewSelector: React.FC<{
-  selectedWorldview: WorldviewType;
-  onWorldviewChange: (worldview: WorldviewType) => void;
-}> = ({ selectedWorldview, onWorldviewChange }) => {
-  const worldviews: WorldviewOption[] = [
-    { type: 'xianxia', name: '仙侠', icon: '🧘', color: '#7c3aed' },
-    { type: 'historical', name: '历史', icon: '📜', color: '#c9a227' },
-    { type: 'western', name: '西幻', icon: '⚔️', color: '#b91c1c' },
-    { type: 'modern', name: '现代', icon: '🏢', color: '#64748b' },
-    { type: 'scifi', name: '科幻', icon: '🚀', color: '#0ea5e9' },
-    { type: 'apocalypse', name: '末世', icon: '💀', color: '#57534e' }
-  ];
-  
-  return (
-    <div className="worldview-selector">
-      {worldviews.map(worldview => (
-        <WorldviewCard
-          key={worldview.type}
-          worldview={worldview}
-          selected={selectedWorldview === worldview.type}
-          onClick={() => onWorldviewChange(worldview.type)}
-        />
-      ))}
-    </div>
-  );
-};
-```
-
-### 5.2 世界观上下文提供者
-
-```typescript
-// 世界观上下文
-const WorldviewContext = createContext<WorldviewContextType>({
-  worldview: 'historical',
-  config: historicalConfig,
-  adapter: new WorldviewAdapter('historical'),
-  setWorldview: () => {}
-});
-
-// 世界观提供者组件
-export const WorldviewProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [worldview, setWorldview] = useState<WorldviewType>('historical');
-  const [config, setConfig] = useState<WorldviewConfig>(historicalConfig);
-  const [adapter, setAdapter] = useState<WorldviewAdapter>(new WorldviewAdapter('historical'));
-  
-  useEffect(() => {
-    const newConfig = loadWorldviewConfig(worldview);
-    const newAdapter = new WorldviewAdapter(worldview);
-    setConfig(newConfig);
-    setAdapter(newAdapter);
-  }, [worldview]);
-  
-  return (
-    <WorldviewContext.Provider value={{ worldview, config, adapter, setWorldview }}>
-      {children}
-    </WorldviewContext.Provider>
-  );
-};
-```
-
----
-
-## 六、自定义世界观支持
-
-### 6.1 自定义世界观配置接口
-
-```typescript
-// 自定义世界观配置接口
-export interface CustomWorldviewConfig extends WorldviewConfig {
-  type: 'custom';
-  isSystem: false;
-  createdBy: string;                    // 创建者ID
-  createdAt: string;                   // 创建时间
-  lastModified: string;                 // 最后修改时间
-  isPublic: boolean;                   // 是否公开
-  tags: string[];                      // 标签
-  basedOn?: WorldviewType;             // 基于哪个系统世界观
-  
-  // 自定义配置扩展
-  customAttributes: Record<string, any>;  // 自定义属性
-  validationRules: ValidationRule[];       // 验证规则
-  templateVariables: TemplateVariable[];   // 模板变量
-}
-
-// 自定义世界观创建请求
-export interface CustomWorldviewCreateRequest {
-  name: string;
-  description?: string;
-  basedOn?: WorldviewType;             // 基于现有世界观创建
-  baseConfig?: Partial<WorldviewConfig>; // 基础配置
-  customAttributes?: Record<string, any>;
-  isPublic?: boolean;
-  tags?: string[];
-}
-
-// 自定义世界观更新请求
-export interface CustomWorldviewUpdateRequest {
-  name?: string;
-  description?: string;
-  moduleConfigs?: Partial<ModuleConfigs>;
-  theme?: Partial<WorldviewTheme>;
-  customAttributes?: Record<string, any>;
-  isPublic?: boolean;
-  tags?: string[];
-}
-
-// 验证规则
-export interface ValidationRule {
-  field: string;
-  validator: 'required' | 'minLength' | 'maxLength' | 'pattern' | 'custom';
-  value?: any;
-  message: string;
-}
-
-// 模板变量
-export interface TemplateVariable {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'color';
-  defaultValue: any;
-  options?: string[];                   // 选择类型的选项
-  description: string;
-}
-```
-
-### 6.2 自定义世界观管理器
-
-```typescript
-// 自定义世界观管理器
-export class CustomWorldviewManager {
-  private customConfigs: Map<string, CustomWorldviewConfig> = new Map();
-  
-  // 创建自定义世界观
-  async createCustomWorldview(
-    request: CustomWorldviewCreateRequest,
-    creatorId: string
-  ): Promise<CustomWorldviewConfig> {
-    // 验证名称唯一性
-    await this.validateNameUniqueness(request.name);
-    
-    // 基于系统世界观创建基础配置
-    const baseConfig = request.basedOn 
-      ? await this.getSystemWorldviewConfig(request.basedOn)
-      : this.getDefaultConfig();
-    
-    const customConfig: CustomWorldviewConfig = {
-      ...baseConfig,
-      ...request.baseConfig,
-      id: this.generateCustomId(),
-      type: 'custom',
-      name: request.name,
-      description: request.description || '',
-      isSystem: false,
-      createdBy: creatorId,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      isPublic: request.isPublic || false,
-      tags: request.tags || [],
-      basedOn: request.basedOn,
-      customAttributes: request.customAttributes || {},
-      validationRules: [],
-      templateVariables: []
-    };
-    
-    // 保存配置
-    await this.saveCustomConfig(customConfig);
-    return customConfig;
-  }
-  
-  // 更新自定义世界观
-  async updateCustomWorldview(
-    configId: string,
-    request: CustomWorldviewUpdateRequest
-  ): Promise<CustomWorldviewConfig> {
-    const existingConfig = await this.getCustomConfig(configId);
-    if (!existingConfig) {
-      throw new Error(`自定义世界观配置不存在: ${configId}`);
-    }
-    
-    const updatedConfig: CustomWorldviewConfig = {
-      ...existingConfig,
-      ...request,
-      lastModified: new Date().toISOString()
-    };
-    
-    await this.saveCustomConfig(updatedConfig);
-    return updatedConfig;
-  }
-  
-  // 获取用户的自定义世界观
-  async getUserCustomWorldviews(userId: string): Promise<CustomWorldviewConfig[]> {
-    const configs = await this.loadAllCustomConfigs();
-    return configs.filter(config => 
-      config.createdBy === userId || config.isPublic
-    );
-  }
-  
-  // 基于系统世界观创建模板
-  async createFromSystemTemplate(
-    systemWorldview: WorldviewType,
-    customName: string,
-    creatorId: string
-  ): Promise<CustomWorldviewConfig> {
-    const systemConfig = await this.getSystemWorldviewConfig(systemWorldview);
-    
-    return this.createCustomWorldview({
-      name: customName,
-      basedOn: systemWorldview,
-      baseConfig: {
-        ...systemConfig,
-        name: customName,
-        description: `基于${systemConfig.name}的自定义世界观`
-      }
-    }, creatorId);
-  }
-}
-```
-
-### 6.3 自定义世界观适配器
-
-```typescript
-// 自定义世界观适配器
-export class CustomWorldviewAdapter extends WorldviewAdapter {
-  private customConfig: CustomWorldviewConfig;
-  
-  constructor(customConfig: CustomWorldviewConfig) {
-    super('custom');
-    this.customConfig = customConfig;
-  }
-  
-  // 重写适配方法以支持自定义配置
-  override adaptEventTypes(baseTypes: EventType[]): WorldviewEventType[] {
-    // 优先使用自定义配置
-    if (this.customConfig.moduleConfigs.history.eventTypes.length > 0) {
-      return this.customConfig.moduleConfigs.history.eventTypes;
-    }
-    
-    // 回退到基于系统世界观的适配
-    if (this.customConfig.basedOn) {
-      const systemAdapter = new WorldviewAdapter(this.customConfig.basedOn);
-      return systemAdapter.adaptEventTypes(baseTypes);
-    }
-    
-    // 最后使用默认适配
-    return super.adaptEventTypes(baseTypes);
-  }
-  
-  // 获取自定义图标
-  override getIcon(entityType: string, defaultIcon: string): string {
-    // 检查自定义配置中是否有特定图标
-    const customIcon = this.findCustomIcon(entityType);
-    if (customIcon) return customIcon;
-    
-    // 回退到系统适配
-    return super.getIcon(entityType, defaultIcon);
-  }
-  
-  // 支持自定义模板变量替换
-  processTemplateVariables(content: string): string {
-    let processed = content;
-    this.customConfig.templateVariables.forEach(variable => {
-      const pattern = new RegExp(`{{${variable.name}}}`, 'g');
-      processed = processed.replace(pattern, variable.defaultValue);
-    });
-    return processed;
-  }
-}
-```
-
-### 6.4 自定义世界观前端组件
-
-```tsx
-// 自定义世界观创建向导
-const CustomWorldviewWizard: React.FC<{
-  onComplete: (config: CustomWorldviewConfig) => void;
-  onCancel: () => void;
-}> = ({ onComplete, onCancel }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [config, setConfig] = useState<Partial<CustomWorldviewCreateRequest>>({});
-  
-  const steps = [
-    {
-      title: '基础信息',
-      component: <BasicInfoStep config={config} onChange={setConfig} />
-    },
-    {
-      title: '选择模板',
-      component: <TemplateSelectionStep config={config} onChange={setConfig} />
-    },
-    {
-      title: '模块配置',
-      component: <ModuleConfigurationStep config={config} onChange={setConfig} />
-    },
-    {
-      title: '视觉主题',
-      component: <ThemeConfigurationStep config={config} onChange={setConfig} />
-    }
-  ];
-  
-  return (
-    <div className="custom-worldview-wizard">
-      <WizardHeader steps={steps} currentStep={currentStep} />
-      
-      <div className="wizard-content">
-        {steps[currentStep].component}
-      </div>
-      
-      <WizardFooter 
-        currentStep={currentStep}
-        totalSteps={steps.length}
-        onNext={() => setCurrentStep(prev => prev + 1)}
-        onBack={() => setCurrentStep(prev => prev - 1)}
-        onComplete={() => onComplete(config as CustomWorldviewConfig)}
-        onCancel={onCancel}
-      />
-    </div>
-  );
-};
-
-// 自定义世界观管理面板
-const CustomWorldviewManagerPanel: React.FC = () => {
-  const [customWorldviews, setCustomWorldviews] = useState<CustomWorldviewConfig[]>([]);
-  const [showWizard, setShowWizard] = useState(false);
-  
-  useEffect(() => {
-    loadCustomWorldviews();
-  }, []);
-  
-  const loadCustomWorldviews = async () => {
-    const worldviews = await customWorldviewManager.getUserCustomWorldviews(currentUserId);
-    setCustomWorldviews(worldviews);
-  };
-  
-  return (
-    <div className="custom-worldview-manager">
-      <div className="manager-header">
-        <h2>自定义世界观管理</h2>
-        <Button onClick={() => setShowWizard(true)}>
-          + 创建自定义世界观
-        </Button>
-      </div>
-      
-      <div className="worldview-grid">
-        {customWorldviews.map(worldview => (
-          <CustomWorldviewCard 
-            key={worldview.id}
-            worldview={worldview}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
-      
-      {showWizard && (
-        <CustomWorldviewWizard
-          onComplete={handleWizardComplete}
-          onCancel={() => setShowWizard(false)}
-        />
-      )}
-    </div>
-  );
-};
-```
-
----
-
-## 七、总结
-
-本世界观配置系统为 LocalScribe 提供了：
-
-1. **全面的世界观支持**：覆盖六种主要世界观类型和自定义世界观
-2. **灵活的配置架构**：支持模块级别的深度定制和自定义扩展
-3. **智能的内容适配**：根据世界观类型动态调整界面内容
-4. **统一的视觉主题**：为不同世界观提供独特的视觉体验
-5. **强大的关联能力**：支持世界观特定的关联规则
-6. **自定义扩展能力**：用户可创建和管理自己的世界观配置
-
-通过此系统，用户可以轻松创建、切换和自定义不同的世界观设定，享受更加个性化和沉浸式的世界观构建体验。
+本文与 cross_module_link_design.md、worldbuilding_ui_design.md 及各模块设计文档配套使用。
