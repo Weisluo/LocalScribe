@@ -55,6 +55,18 @@ export interface LevelDef {
   id: string;
   label: string;
   description?: string;
+  /**
+   * 权重（契约 §2.7）：数值越大权重越高，可选，未设置按 0 处理。
+   * 目前只有政治模块消费它：PoliticsView 的 weightOf / sortLevelsByRank 用它决定版图节点尺寸档、
+   * 布局环与沿革泳道高度；其余模块（races / systems / history / economy）的配置面板会原样读写
+   * 该字段，但渲染不读。因此新建等级时必须给一个递增值，否则各等级同权重、版图被画平。
+   */
+  rank?: number;
+  /**
+   * 等级展示色。当前只有配置面板写入（政治的表单可填），渲染侧尚未取用；
+   * 保留该字段供画布配色演进，删除需先确认没有模块开始读取它。
+   */
+  color?: string;
 }
 
 export interface StatusDef {
@@ -62,6 +74,11 @@ export interface StatusDef {
   label: string;
   color?: string;
   description?: string;
+  /**
+   * 终端状态：政治模块消费（画布降为幽灵节点、沿革与名录保留可读，契约 §2.7）；
+   * 其余模块忽略该字段。省略即视为非终端。
+   */
+  isTerminal?: boolean;
 }
 
 export interface CustomLinkTypeDef {

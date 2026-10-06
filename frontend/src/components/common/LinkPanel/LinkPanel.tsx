@@ -45,10 +45,16 @@ import {
   moduleLabel,
   splitLinks,
 } from '@/components/Worldbuilding/types';
+// §11.3 的折叠阈值（LINKPANEL_FOLD_LIMIT = 200）在共用件类型层定义，
+// 避免 common 反向依赖具体模块视图；政治侧 types.ts 再导出同名符号。
+import { shouldFoldLinkPanel } from './types';
 import type { LinkPanelProps } from './types';
 
 const FIELD_CLASS =
   'w-full bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-[border-color,box-shadow]';
+
+/** §11.3：实体出入链超过阈值时每个模块分组先渲染的行数（可「显示全部」展开） */
+const FOLD_PREVIEW_ROWS = 20;
 
 export const LinkPanel = ({
   worldId,
@@ -68,6 +74,11 @@ export const LinkPanel = ({
   const entityRefs = useEntityRefs(worldId, worldQuery.data?.project_id ?? undefined);
   const registryQuery = useLinkRegistry();
   const registry = useMemo(() => toRegistryMap(registryQuery.data), [registryQuery.data]);
+  /**
+   * 只有注册表确实加载成功且非空时才按 link_type 过滤：查询仍在加载 / 失败 / 返回空表时
+   * 一律不过滤，宁可多显示也不能把有效关联藏起来（注册表是过滤的前提，不是数据源）。
+   */
+  const registryReady = registryQuery.isSuccess && registry.size > 0;
 
   // sketch 档缺省收起：只暴露关联计数，展开仍可查看（冻结 §5.5「只控制披露」）
   const [collapsedOverride, setCollapsedOverride] = useState<boolean | undefined>(
@@ -83,12 +94,30 @@ export const LinkPanel = ({
   // 关联数据取世界级共享列表后本地分流：整个世界一次请求，避免逐卡请求（phase2 §6）
   const linksQuery = useWorldLinks(worldId);
   const worldLinks = useMemo(() => linksQuery.data ?? [], [linksQuery.data]);
+  /**
+   * politics_ui_design §3.8 第 1 条（旧编号 §3.8.1）：politics.treaty_between 已废弃、不在
+   * link_type 注册表内，旧数据只在展示层等价转换为 politics.signatory_of。注册表里没有的
+   * link_type 一律不渲染也不计数，否则用户会看到原始 politics.treaty_between 行与虚高的出入链数。
+   */
+  const visibleLinks = useMemo(
+    () => (registryReady ? worldLinks.filter((link) => registry.has(link.link_type)) : worldLinks),
+    [worldLinks, registry, registryReady]
+  );
   const { outgoing, incoming } = useMemo(
-    () => splitLinks(worldLinks, entity),
-    [worldLinks, entity]
+    () => splitLinks(visibleLinks, entity),
+    [visibleLinks, entity]
   );
   const linksLoading = linksQuery.isLoading;
   const isError = linksQuery.isError;
+
+  /** §11.3：实体出入链超过 LINKPANEL_FOLD_LIMIT（200）时按分组折叠为前 20 行 */
+  const folded = shouldFoldLinkPanel(outgoing.length + incoming.length);
+  /** 被「显示全部」展开的分组键（分区 + 模块）；切换实体时复位 */
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    setExpandedGroups([]);
+  }, [entity.module, entity.kind, entity.id]);
 
   const createLinks = useCreateWorldLinks(worldId);
   const updateLink = useUpdateWorldLink(worldId);
@@ -278,10 +307,16 @@ export const LinkPanel = ({
     );
   };
 
+  const toggleGroup = (key: string) =>
+    setExpandedGroups((prev) =>
+      prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]
+    );
+
   const renderSection = (label: string, sectionLinks: WorldLink[], editable: boolean) => (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 px-2 text-[11px] font-medium text-muted-foreground">
         <span>{label}</span>
+        {/* 折叠只截断渲染行数，计数恒为真实总数（§11.3） */}
         <span className="rounded-full bg-muted/40 px-1.5 text-[10px]">
           {sectionLinks.length}
         </span>
@@ -289,14 +324,29 @@ export const LinkPanel = ({
       {sectionLinks.length === 0 ? (
         <div className="px-2 text-[11px] text-muted-foreground">无</div>
       ) : (
-        groupLinksByModule(sectionLinks, entity).map((group) => (
-          <div key={`${label}-${group.module}`} className="space-y-0.5">
-            <div className="px-2 pt-1 text-[10px] uppercase tracking-wide text-muted-foreground/80">
-              {moduleLabel(group.module)}
+        groupLinksByModule(sectionLinks, entity).map((group) => {
+          const groupKey = `${label}-${group.module}`;
+          const expanded = expandedGroups.includes(groupKey);
+          const rows =
+            folded && !expanded ? group.links.slice(0, FOLD_PREVIEW_ROWS) : group.links;
+          return (
+            <div key={groupKey} className="space-y-0.5">
+              <div className="px-2 pt-1 text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                {moduleLabel(group.module)}
+              </div>
+              {rows.map((link) => renderRow(link, editable))}
+              {folded && group.links.length > FOLD_PREVIEW_ROWS && (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(groupKey)}
+                  className="mx-2 rounded-md px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+                >
+                  {expanded ? '收起' : `显示全部（${group.links.length}）`}
+                </button>
+              )}
             </div>
-            {group.links.map((link) => renderRow(link, editable))}
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );

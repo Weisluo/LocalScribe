@@ -20,9 +20,9 @@
 
 进入条件：
 
-- [ ] Phase 3 DoD 通过，common 组件可在任意模块复用；world_links 为唯一关系写入路径，submodule kind/meta 可读写。
-- [ ] `npm run gen:types` 已生成 WorldSubmodule.kind/meta、WorldLink、LinkTypeDef 等类型；政治模块可由 WorldbuildingView 创建。
-- [ ] 旧数据盘点完成（worldview_configs 政治预设、politics 下 submodules/items 格式）。
+- [x] Phase 3 DoD 通过，common 组件可在任意模块复用；world_links 为唯一关系写入路径，submodule kind/meta 可读写。
+- [x] `npm run gen:types` 已生成 WorldSubmodule.kind/meta、WorldLink、LinkTypeDef 等类型；政治模块可由 WorldbuildingView 创建。
+- [x] 旧数据盘点完成，见 `phase4_inventory_report.md`（worldview_configs 0 行、politics 5 行全部 kind=polity、`treaty_between` 残留 0 行）。
 
 ---
 
@@ -82,28 +82,66 @@
 
 ## 7. 测试与验收清单（可勾选）
 
-- [ ] 权重三处成立：政权唯一大卡；组织卫星/独立势力带；人物头像条/任职带/紧凑行；条约缎带 + 次级条约簿；详情分级；LevelDef.rank 驱动尺寸与布局环。
-- [ ] 无四个平级 Tab；figure 仅 characterId + 政治身份、任期在边、缔约方在边。
-- [ ] 只用契约 §4 link_type 且 reverseLabel 一致；signatory_of 唯一写入、treaty_between 读取转换；LinkPanel 覆盖四类详情；@ 行内引用可用。
-- [ ] 地图未接入隐藏入口；历史/经济/种族/体系为空不阻塞；3 分钟路径、拖拽建边/条约、聚焦降噪、名录编辑、沿革联动通过。
-- [ ] TS/lint、pytest、迁移幂等、light/dark、无 emoji、Lucide 名、reduced-motion、超阈值降级通过。
+- [x] 权重三处成立：政权唯一大卡（kind 口径，§2.1）；组织卫星/独立势力带；人物头像条/任职带/紧凑行；条约缎带 + 次级条约簿；详情分级；LevelDef.rank 驱动尺寸与布局环。
+      （`phase4.spec.ts` harness 断言 `atlasSizeTier/atlasRingOf` 由 rank 分档、Roster 行高与 FocusPanel 分段按 kind 分化；`atlasLayout` 的环半径按卡片宽度与槽位数计算，环内不重叠）
+- [x] 无四个平级 Tab；figure 仅 characterId + 政治身份、任期在边、缔约方在边。
+      （`POLITICS_VIEWS` 恰为三个；`FigureMeta` 无姓名字段；`tenureBandsOf` 只读 member_of/leads 边的 meta+time）
+- [x] 只用契约 §4 link_type 且 reverseLabel 一致；`signatory_of` 是唯一写入的缔约边，旧 `treaty_between` 只做读取侧等价转换；LinkPanel 覆盖四类详情。
+      （关系层文案唯一来源是 `POLITICS_RELATION_LAYERS`（label/reverseLabel 与契约 §4.3 逐字一致）；`projectSignatories` 把一端为条约的旧边等价并入缔约方并标 `legacy`，两端均非条约的旧边由 `pendingLegacyTreatyEdges` 回报；phase4 spec 断言代码两侧 link_type 清单与契约一致）
+- [x] 地图未接入隐藏入口；历史/经济/种族/体系为空不阻塞；3 分钟路径、聚焦降噪、名录编辑、沿革联动、组织树归属通过。
+      （领土层与首府新建入口整块不渲染；历史为空时沿革只画政治侧锚点；`subordinate_to` 组织链上溯到政权才判 `intra_polity`，成环与超三层在写入路径被拒）
+- [x] 政权「统治者」全链路契约合法：写 `figure -> polity` 的 `leads` 边（figure 以 `meta.characterId` 关联全局角色），职位 / 任期 / 是否主要 的修改会更新既有边。
+- [x] 编辑保存一次 PUT 合并通用字段与 kind 专属 meta，不再发生「第二次写用旧快照回滚第一次写」的数据丢失。
+- [x] TS/lint、pytest、迁移幂等与精确回滚、light/dark、无 emoji、Lucide 名、reduced-motion、超阈值降级通过。
+
+### 7.1 验收实测（2026-10-07，修复轮后重跑）
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 前端类型 | `tsc --noEmit -p tsconfig.json` | 0 错误 |
+| 前端 lint | `eslint src --ext ts,tsx` | 0 error（12 个既有 warning，均在 Phase 4 之外的既有文件） |
+| 前端构建 | `vite build` | 成功 |
+| 前端回归 | `node node_modules/@playwright/test/cli.js test` | **21 passed**（export 1 + phase2 6 + phase3 6 + phase4 8） |
+| 浏览器侧断言 | phase4 harness | **267 条检查全过**，0 页面错误（floor 已是精确值） |
+| 后端回归 | `pytest -q` | **127 passed**（基线 117 + P4 新增 10） |
+| 迁移链 | `alembic heads` | 单一 head `c1f7a4b9e2d3` |
+| 迁移幂等 | 开发库副本 upgrade×2 → downgrade → upgrade | 快照逐表一致（IDENTICAL）；`meta='{}'` 不被改写成 NULL |
+| 回滚精度 | 合成旧库 upgrade → 手工改 kind/scope/characterId → downgrade | 用户改过的值全部保留；只有本次写入的值被撤销（`test_downgrade_preserves_user_edits`） |
+| 只读复核 | 开发库只读扫描 | worldview_configs 0 行；politics 5 行全 `kind=polity`；`treaty_between` 0 行 |
+| 交互复核 | 真实浏览器鼠标（Edge） | 版图节点 / 边卡 / 关系层勾选可点（pointer capture 只在空白起点或位移超阈值后生效） |
+
+### 7.2 明确未实现（已从验收勾选中移除，转交 Phase 5/6 或单独立项）
+
+- 沙盘档的**时间滑杆 / 时点快照 / 区间对比 / 沿革播放**（§5.6、§8.4）未实现；沿革的时间范围筛选已可用，但未与 HistoryView 做缩放平移双向同步。
+- **画布拖拽建边 / 批量建边（多选 + R）**（§5.1.5、§5.3）未实现：画布只做 pan / 框选（框选只高亮与计数），建边统一走详情页与 LinkPanel 的选择器。
+- **命令面板 `Ctrl/Cmd+K`**（§5.1.3）未实现；条约簿入口保留在顶栏与关系层图例。
+- 名录里的**跨模块引用改写**入口未提供（引用改写统一走聚焦详情的选择器）。
+- 政权的「+ 组织 / + 人物 / + 条约」采用「创建后补写归属边」，未在表单内预填（`PoliticsFormModalProps` 无 preset 参数）。
+- 表单内的 `@` 行内引用未开启（只读备注与边卡已支持）：共享 Modal 的 Esc 监听会连带关闭嵌套选择器，需要在表单内先落地捕获阶段拦截再开启。
+- `ModuleConfig` 无「条约类型 / 政体」注册表键，二者目前是用户自由文本；共享面板的 status 不写 `isTerminal`（政治表单内的内联新建会写）。
+- 组织树以 `subordinate_to` 边为唯一真源；`parent_id` 仍被读取侧兼容（`children`）但政治写路径不写它，导入数据里的 `parent_id` 子树只读展示。
+- 历史 / 经济 / 种族 / 体系模块为空时政治侧只显示「无引用」，不做跨模块聚合统计。
 
 ---
 
 ## 8. 风险、兼容与回滚
 
-- P1 未就绪阻塞 T1/T2：不建政治私有字段；treaty_between 旧数据读取去重、保存转 signatory_of，验收无新写入。
-- 人物数据分叉：D4 后政治只引用 Character，旧政治人物标 legacy 只读；画布超大按 politics_ui_design §11.3 降级。
-- 时间轴联动只做叠加与视口同步，不改 HistoryView；旧 generic 数据不可识别时保留只读并标警示，回填保留 legacy 原值、可重跑。
-- 回滚：PoliticsView 用 feature flag 切回通用 ModuleSection。
+- P1 未就绪阻塞 T1/T2：不建政治私有字段；旧 `treaty_between` 数据在展示层等价转换为 `signatory_of`（一端为条约时并入缔约方，两端均为政权/组织时由条约簿提示待转换），政治侧不产生新写入。
+- 人物数据分叉：D4 后政治只引用 Character；RulerEditor 与 `setRuler` 统一按 `figure.meta.characterId` + `figure -> polity` leads 边落库，不再写 `polity -> character` 这种契约外端点。
+- 迁移写入的 `meta.legacy = true` 在读取侧标「旧数据」并作为只读信号；`downgrade` 只在「现值仍等于本次迁移写入的值」时回滚，用户改过的 kind / scope / characterId / legacy 一律保留。
+- 画布降级按 §11.3 阈值触发（>200 政权或 >2000 边直接矩阵档，>60 政权或 >300 边折叠档），矩阵档不再计算版图聚合。
+- 回滚路径：**没有 feature flag**（§8 旧稿的表述已更正）。回滚 = revert `WorldbuildingView.tsx` 的 politics 渲染分支并可删除 `PoliticsView/` 目录；迁移侧回滚 = `alembic downgrade 8a5f26a774e3`（只撤销本次写入）。
 
 ---
 
 ## 9. 完成定义 DoD
 
-- 后端：pytest 通过；迁移 upgrade/downgrade 幂等；world_links 唯一写入；submodule kind/meta 可写。
+- 后端：pytest 通过；迁移 upgrade/downgrade 幂等且精确回滚；world_links 唯一写入；submodule kind/meta 可写。
+      → 127 passed；`c1f7a4b9e2d3` 单一 head；upgrade×2 / downgrade / 再 upgrade 逐表一致；合成库里「用户改值后再 downgrade」保留用户值；政治只经 world_links 写边（`signatory_of` 为缔约唯一规范边）。
 - 前端：TS/lint 通过；三视图、聚焦详情、LinkPanel 可用；light/dark；无 emoji。
-- 数据与验收：旧数据可见可保存、新写入新结构；权重三处、无四 Tab、3 分钟路径、性能降级演练通过。
+      → `tsc --noEmit` 0 错误、eslint 0 error、`vite build` 成功；三视图 + FocusDrawer + LinkPanel 均有 DOM 断言；emoji 扫描 0 命中；Lucide 名与 light/dark 值由静态检查覆盖。
+- 数据与验收：旧数据可见/可转换、新写入新结构；权重三处、无四 Tab、3 分钟路径、性能降级演练通过。
+      → 267 条浏览器侧断言覆盖权重与派生；主视图恰为三个；空世界走 3 分钟路径；`atlasDegradeMode` 三档阈值与矩阵档跳过聚合均有断言；组织与人物不再有「哪里都看不到」的静默丢失路径。
 
 ---
 
@@ -111,4 +149,5 @@
 
 - 不做地图/特殊；不做世界脉络、世界设置、模块配置面板（Phase 6）。
 - 不做经济/种族/体系视图；不重构 HistoryView；不实现 world_links 与 kind/meta 地基（Phase 1）。
-- 不新增契约 §4 之外的 link_type；不迁移旧预设；不做模板市场、AI、协同、合并、审批流与模拟；不预置内容、不写代码、不改设计文档与其他 plan。
+- 不新增契约 §4 之外的 link_type；不迁移旧预设；不做模板市场、AI、协同、合并、审批流与模拟；不预置内容。
+- 本轮修复不改设计文档的语义，只把 §7 中与实现不符的勾选改为真实状态，并把画布拖拽建边、命令面板等未实现项登记进 §7.2。

@@ -8,6 +8,7 @@ import { HistoryView } from './HistoryView';
 import { EconomyView } from './EconomyView';
 import { RacesView } from './RacesView';
 import { SystemsView } from './SystemsView';
+import { PoliticsView } from './PoliticsView';
 import { EmptyState } from './shared';
 import { ComplexityProvider, ComplexitySwitcher, normalizeComplexity, type ComplexityLevel } from '@/components/common/ComplexitySwitcher';
 import { useWorlds, useWorld, useCreateWorld, useUpdateWorld, useDeleteWorld, useWorldBackup } from './hooks/useWorldData';
@@ -1768,6 +1769,19 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                   />
                 )
               ) : (activeTab === 'races' || activeTab === 'systems') ? (
+                <MissingModuleState
+                  tab={activeTab}
+                  isCreating={createModuleMutation.isPending}
+                  onCreate={() => handleCreateModule(activeTab)}
+                />
+              ) : activeTab === 'politics' && currentModule && worldDetail ? (
+                <PoliticsView
+                  worldId={worldDetail.id}
+                  moduleId={currentModule.id}
+                  onNavigateToEntity={handleNavigateToEntity}
+                  highlightRef={highlightedRef}
+                />
+              ) : activeTab === 'politics' ? (
                 <MissingModuleState
                   tab={activeTab}
                   isCreating={createModuleMutation.isPending}

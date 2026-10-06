@@ -29,6 +29,8 @@ PHASE1_REVISIONS = (
     "8a5f26a774e3",  # P1-MIG-06 backfill char refs
 )
 
+P4_REVISION = "c1f7a4b9e2d3"  # P4-T12 backfill politics
+
 
 def test_heads_is_single_and_phase1_is_linear(tmp_path: Path):
     """只有一个 head，且六个 Phase 1 迁移按 P1-MIG-01..06 线性串联。"""
@@ -36,12 +38,15 @@ def test_heads_is_single_and_phase1_is_linear(tmp_path: Path):
     config = alembic_config(tmp_path / "unused.db")
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == [PHASE1_REVISIONS[-1]]
+    assert script.get_heads() == [P4_REVISION]
 
     chain = [revision.revision for revision in script.walk_revisions()]
     chain.reverse()
-    assert chain[-6:] == list(PHASE1_REVISIONS)
-    assert chain[-7] == PRE_PHASE1_REVISION
+    assert chain[-7:-1] == list(PHASE1_REVISIONS)
+    assert chain[-8] == PRE_PHASE1_REVISION
+    # P4 回填迁移基于 P1 head 线性串联（不修改已发布迁移）
+    assert chain[-1] == P4_REVISION
+    assert chain[-2] == PHASE1_REVISIONS[-1]
 
 
 def test_empty_db_upgrade_creates_new_schema(empty_head_db: Path):

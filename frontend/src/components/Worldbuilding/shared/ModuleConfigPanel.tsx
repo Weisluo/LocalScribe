@@ -43,6 +43,10 @@ import { lucideIcon } from './lucideIcon';
 const FIELD_CLASS =
   'w-full bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
 
+/** 行内编辑用：FIELD_CLASS 的 w-full 放进 flex 行会互相挤压，这里用固定宽度 */
+const INLINE_FIELD_CLASS =
+  'bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+
 const FIELD_TYPES: CustomFieldType[] = [
   'text',
   'textarea',
@@ -273,7 +277,7 @@ export const ModuleConfigPanel = ({
   // ---- 状态与等级 ----
 
   const [newStatus, setNewStatus] = useState({ label: '', color: '' });
-  const [newLevel, setNewLevel] = useState({ label: '' });
+  const [newLevel, setNewLevel] = useState({ label: '', rank: '' });
 
   const addStatus = () => {
     const label = newStatus.label.trim();
@@ -288,12 +292,43 @@ export const ModuleConfigPanel = ({
     setNewStatus({ label: '', color: '' });
   };
 
+  /**
+   * 新等级的默认 rank：现有最大 rank + 10（都没有 rank 时以 0 起算）。
+   * 政治版图只用 LevelDef.rank 决定节点尺寸档与布局环，缺 rank 会让所有等级同权重画成平版图。
+   */
+  const nextLevelRank = (levels: LevelDef[]): number =>
+    levels.reduce(
+      (max, def) => (typeof def.rank === 'number' && def.rank > max ? def.rank : max),
+      0
+    ) + 10;
+
   const addLevel = () => {
     const label = newLevel.label.trim();
     if (!label) return;
-    const id = toFieldId(label, asDefs<LevelDef>(draft.levels).map((item) => item.id));
-    patchDraft({ levels: [...asDefs<LevelDef>(draft.levels), { id, label }] });
-    setNewLevel({ label: '' });
+    const levels = asDefs<LevelDef>(draft.levels);
+    const id = toFieldId(label, levels.map((item) => item.id));
+    const typed = Number(newLevel.rank.trim());
+    const rank =
+      newLevel.rank.trim() !== '' && Number.isFinite(typed) ? typed : nextLevelRank(levels);
+    patchDraft({ levels: [...levels, { id, label, rank }] });
+    setNewLevel({ label: '', rank: '' });
+  };
+
+  /** 行内改等级：label 与 rank 都可编辑（rank 留空表示不设权重） */
+  const updateLevel = (id: string, patch: { label?: string; rank?: string }) => {
+    patchDraft({
+      levels: asDefs<LevelDef>(draft.levels).map((level) => {
+        if (level.id !== id) return level;
+        const next: LevelDef = { ...level };
+        if (patch.label !== undefined) next.label = patch.label;
+        if (patch.rank !== undefined) {
+          const parsed = Number(patch.rank.trim());
+          next.rank =
+            patch.rank.trim() !== '' && Number.isFinite(parsed) ? parsed : undefined;
+        }
+        return next;
+      }),
+    });
   };
 
   // ---- 术语 ----
@@ -772,8 +807,23 @@ export const ModuleConfigPanel = ({
                   key={level.id}
                   className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
                 >
-                  <span className="text-[11px]">{level.label}</span>
+                  <input
+                    type="text"
+                    value={level.label}
+                    onChange={(event) => updateLevel(level.id, { label: event.target.value })}
+                    aria-label={`等级名 ${level.label}`}
+                    className={`${INLINE_FIELD_CLASS} w-36`}
+                  />
                   <span className="font-mono text-[10px] text-muted-foreground">{level.id}</span>
+                  <input
+                    type="number"
+                    value={typeof level.rank === 'number' ? level.rank : ''}
+                    onChange={(event) => updateLevel(level.id, { rank: event.target.value })}
+                    placeholder="rank"
+                    aria-label={`等级 rank ${level.label}`}
+                    title="rank 越大权重越高（政治版图按它决定节点尺寸与布局环）"
+                    className={`${INLINE_FIELD_CLASS} w-20`}
+                  />
                   <button
                     type="button"
                     aria-label={`删除等级 ${level.label}`}
@@ -799,6 +849,16 @@ export const ModuleConfigPanel = ({
                   }
                   placeholder="等级名（含义由用户定义）"
                   aria-label="等级名"
+                  className={FIELD_CLASS}
+                />
+                <input
+                  type="number"
+                  value={newLevel.rank}
+                  onChange={(event) =>
+                    setNewLevel((prev) => ({ ...prev, rank: event.target.value }))
+                  }
+                  placeholder={`rank（默认 ${nextLevelRank(asDefs<LevelDef>(draft.levels))}）`}
+                  aria-label="等级 rank"
                   className={FIELD_CLASS}
                 />
                 <button

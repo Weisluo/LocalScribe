@@ -1,4 +1,4 @@
-// 把浏览器侧的 Phase 2 / Phase 3 用例（harness.tsx、harness3.tsx）打成单文件 IIFE，供 Playwright 注入。
+// 把浏览器侧的 Phase 2 / Phase 3 / Phase 4 用例（harness.tsx、harness3.tsx、harness4.tsx）打成单文件 IIFE，供 Playwright 注入。
 // 与 tests/export/bundle.mjs 同构，区别：本套用例要渲染 React 组件，故启用 @vitejs/plugin-react。
 // vite / plugin-react 走动态 import：spec 在收集阶段就 import 本文件，顶层 import vite
 // 会让 node_modules 缺失时连带既有导出套件一起收集失败。
@@ -15,6 +15,10 @@ export const PHASE3_HARNESS_PATH = path.resolve(
   FRONTEND_ROOT,
   'node_modules/.cache/phase3-harness/harness.js'
 );
+export const PHASE4_HARNESS_PATH = path.resolve(
+  FRONTEND_ROOT,
+  'node_modules/.cache/phase4-harness/harness.js'
+);
 
 const buildHarnessFile = async ({ entry, outFile, name }) => {
   const { build } = await import('vite');
@@ -26,7 +30,12 @@ const buildHarnessFile = async ({ entry, outFile, name }) => {
     logLevel: 'error',
     plugins: [react()],
     publicDir: false,
-    resolve: { alias: { '@': path.resolve(FRONTEND_ROOT, 'src') } },
+    resolve: {
+      alias: { '@': path.resolve(FRONTEND_ROOT, 'src') },
+      // 固定解析顺序：`.ts`/`.tsx` 必须优先于同名 `.js` 影子文件，
+      // 否则误编译出的 CJS `.js` 会静默顶掉真实源码（测试仍全绿但验的是废文件）
+      extensions: ['.ts', '.tsx', '.mjs', '.js', '.json'],
+    },
     define: { 'process.env.NODE_ENV': '"production"' },
     build: {
       outDir: path.dirname(outFile),
@@ -57,4 +66,11 @@ export const buildPhase3Harness = async () =>
     entry: 'tests/worldbuilding/harness3.tsx',
     outFile: PHASE3_HARNESS_PATH,
     name: 'Phase3Harness',
+  });
+
+export const buildPhase4Harness = async () =>
+  buildHarnessFile({
+    entry: 'tests/worldbuilding/harness4.tsx',
+    outFile: PHASE4_HARNESS_PATH,
+    name: 'Phase4Harness',
   });

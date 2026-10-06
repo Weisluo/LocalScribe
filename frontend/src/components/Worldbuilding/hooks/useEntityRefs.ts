@@ -9,7 +9,7 @@
  * 索引未命中即视为失效引用：渲染警示 chip 并提供清理动作（契约 §5.2 口径，勿在写入侧加存在性校验）。
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { characterApi } from '@/services/characterApi';
@@ -119,20 +119,32 @@ export const useEntityRefs = (
     return map;
   }, [entries]);
 
-  const lookup = (ref?: EntityRef | null) =>
-    ref ? byKey.get(refKey(ref)) : undefined;
+  const lookup = useCallback(
+    (ref?: EntityRef | null) => (ref ? byKey.get(refKey(ref)) : undefined),
+    [byKey]
+  );
 
   const isLoading = worldQuery.isLoading || charactersQuery.isLoading;
 
-  return {
-    lookup,
-    resolveName: (ref) => lookup(ref)?.name ?? shortRefId(ref?.id ?? ''),
-    // 索引尚未就绪时不能判失效：否则冷缓存下会把有效对端渲染成「已失效」并给出清理/删除入口
-    isInvalid: (ref) => !!ref && !isLoading && !byKey.has(refKey(ref)),
-    byModule,
-    entries,
-    isLoading,
-  };
+  const resolveName = useCallback(
+    (ref?: EntityRef | null) => lookup(ref)?.name ?? shortRefId(ref?.id ?? ''),
+    [lookup]
+  );
+
+  // 索引尚未就绪时不能判失效：否则冷缓存下会把有效对端渲染成「已失效」并给出清理/删除入口
+  const isInvalid = useCallback(
+    (ref?: EntityRef | null) => !!ref && !isLoading && !byKey.has(refKey(ref)),
+    [byKey, isLoading]
+  );
+
+  /**
+   * 返回值整体必须稳定：消费方把它放进 useMemo 依赖（如政治派生链），
+   * 此前每次渲染都新建对象与三个闭包，导致 200 政权规模下每次渲染都重跑整套派生。
+   */
+  return useMemo(
+    () => ({ lookup, resolveName, isInvalid, byModule, entries, isLoading }),
+    [lookup, resolveName, isInvalid, byModule, entries, isLoading]
+  );
 };
 
 /** 兼容别名：索引视角命名 */

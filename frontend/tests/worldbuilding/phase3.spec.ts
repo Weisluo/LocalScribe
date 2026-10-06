@@ -101,14 +101,30 @@ test.describe('Phase 3 种族与体系轻量模块', () => {
       /['"`]((?:core|history|politics|economy|races|systems|character|custom)\.[a-z_]+)['"`]/g;
     const offenders: string[] = [];
     const scanned = new Set<string>();
+    // Phase 4 明确废弃 politics.treaty_between（politics_ui_design §3.8.1）：唯一允许的落点是
+    // `components/Worldbuilding/PoliticsView/types.ts` 里那一行读取侧常量定义。只放行
+    // 「该文件 + 该行含 `LEGACY_TREATY_LINK_TYPE =`」，其它任何位置（含别的模块的写入路径）照旧拦截。
+    const LEGACY_DEF_FILE = path.resolve(
+      SRC,
+      'components/Worldbuilding/PoliticsView/types.ts'
+    );
     for (const file of codeFiles(SRC)) {
       const content = fs.readFileSync(file, 'utf8');
-      for (const match of content.matchAll(linkTypePattern)) {
-        scanned.add(match[1]);
-        if (!whitelist.has(match[1])) {
-          offenders.push(`${path.relative(REPO_ROOT, file)}: ${match[1]}`);
+      content.split('\n').forEach((line, index) => {
+        for (const match of line.matchAll(linkTypePattern)) {
+          scanned.add(match[1]);
+          if (
+            match[1] === 'politics.treaty_between' &&
+            file === LEGACY_DEF_FILE &&
+            line.includes('LEGACY_TREATY_LINK_TYPE =')
+          ) {
+            continue;
+          }
+          if (!whitelist.has(match[1])) {
+            offenders.push(`${path.relative(REPO_ROOT, file)}:${index + 1}: ${match[1]}`);
+          }
         }
-      }
+      });
     }
     // 防止正则失效导致的「空过」：P3 明确依赖的这些字面量必须被扫到
     expect([...scanned].sort(), 'link_type 字面量扫描结果异常').toEqual(

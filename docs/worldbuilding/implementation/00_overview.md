@@ -185,6 +185,13 @@ Task ID 规则：Phase 0-6 分别用 P0-T1、P1-T3 这类编号；跨阶段依�
 Phase 0 结论（2026-10-06）：D1-D7 全部采纳，无待拍板项；ADR、迁移冻结、兼容窗口与回滚见
 `phase0_decisions_and_migration.md` §5/§6/§8，旧数据盘点见 `phase0_inventory_report.md`。
 
+Phase 4 结论（2026-10-06，修复轮 2026-10-07 复核）：P4-T1..T12 全部落地，DoD 通过；验收实测与明确未实现项见
+`phase4_politics.md` §7.1/§7.2，旧数据盘点见 `phase4_inventory_report.md`。
+政治模块迁移 head 由 `8a5f26a774e3` 前进到 `c1f7a4b9e2d3`（`wbl_p4_01_backfill_politics`）。
+修复轮要点：统治者链路改为 `figure -> polity` 的 leads 边（旧实现写契约外端点，后端必然 400）、编辑保存合并为一次 PUT、
+版图指针捕获不再吞掉节点点击、组织归属沿 `subordinate_to` 链上溯并阻断成环、旧 `treaty_between` 读取侧等价转换接线、
+迁移 downgrade 按「本次写入值」精确回滚；画布拖拽建边与命令面板仍未实现，已登记进 §7.2。
+
 ---
 
 阶段 plan 文件：

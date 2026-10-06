@@ -18,3 +18,15 @@ export interface LinkPanelProps {
   defaultCollapsed?: boolean;
   className?: string;
 }
+
+/**
+ * §11.3（politics_ui_design）：单选实体出入链超过 200 条时分组折叠，
+ * 每组先渲染前 20 条 + 「显示全部（N）」。
+ *
+ * 阈值放在共用件这一侧，避免 common 反向依赖具体模块视图；
+ * PoliticsView/types 仍再导出同名符号（测试与政治侧代码引用不变）。
+ */
+export const LINKPANEL_FOLD_LIMIT = 200;
+
+export const shouldFoldLinkPanel = (linkCount: number): boolean =>
+  linkCount > LINKPANEL_FOLD_LIMIT;
