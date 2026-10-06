@@ -167,13 +167,25 @@ export const isOutgoing = (link: WorldLink, ref: EntityRef): boolean =>
   link.source.kind === ref.kind &&
   link.source.id === ref.id;
 
+/** 该关联是否以 ref 为端点（出链或入链任一方向） */
+export const linkInvolves = (link: WorldLink, ref: EntityRef): boolean =>
+  isOutgoing(link, ref) ||
+  (link.target.module === ref.module &&
+    link.target.kind === ref.kind &&
+    link.target.id === ref.id);
+
+/**
+ * 出链/入链分组（Phase 3 修复）。
+ * 入参可能是整个世界级共享列表，因此**必须**同时判对端：早先只判 source，
+ * 会把与 ref 无关的关联全部误计入入链（计数、chip、删除提示都会串）。
+ */
 export const splitLinks = (links: WorldLink[], ref: EntityRef): GroupedLinks => {
   const outgoing: WorldLink[] = [];
   const incoming: WorldLink[] = [];
   for (const link of links) {
     if (isOutgoing(link, ref)) {
       outgoing.push(link);
-    } else {
+    } else if (linkInvolves(link, ref)) {
       incoming.push(link);
     }
   }

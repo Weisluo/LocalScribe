@@ -19,6 +19,7 @@ import {
   kindLabel,
   linkCounterpart,
   linkDisplayLabel,
+  linkInvolves,
   moduleBadgeClass,
   parseInlineTokens,
   refKey,
@@ -309,6 +310,20 @@ const testTypeHelpers = () => {
   const grouped = splitLinks(all, eventRef);
   eq('splitLinks 出链', grouped.outgoing.map((l) => l.id), ['l1', 'l2']);
   eq('splitLinks 入链', grouped.incoming.map((l) => l.id), ['l3']);
+
+  // v1.1：入参是世界级共享列表，与 ref 无关的关联不得计入出链/入链（否则计数与分组会串）
+  const unrelated = link(
+    'l4',
+    ref('map', 'region', 'r1'),
+    ref('economy', 'resource', 'e1'),
+    'core.related_to'
+  );
+  const mixed = splitLinks([out1, out2, in1, unrelated], eventRef);
+  eq('splitLinks 忽略无关关联（出链）', mixed.outgoing.map((l) => l.id), ['l1', 'l2']);
+  eq('splitLinks 忽略无关关联（入链）', mixed.incoming.map((l) => l.id), ['l3']);
+  eq('linkInvolves 无关关联为 false', linkInvolves(unrelated, eventRef), false);
+  eq('linkInvolves 出链为 true', linkInvolves(out1, eventRef), true);
+  eq('linkInvolves 入链为 true', linkInvolves(in1, eventRef), true);
 
   eq(
     'linkCounterpart 出链取 target',

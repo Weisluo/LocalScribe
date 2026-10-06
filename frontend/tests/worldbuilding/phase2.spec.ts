@@ -89,10 +89,11 @@ test.describe('Phase 2 前端地基与历史纵切', () => {
         .join('\n')}`
     ).toEqual([]);
     // 精确地板：当前用例数（删掉任何一组断言都会被这条守卫发现）
+    // v1.1 起 +5：新增 splitLinks/linkInvolves 的「无关关联不计入出链/入链」用例
     expect(
       (report?.checks ?? []).length,
       '用例数量明显不足，可能有大段断言被跳过'
-    ).toBeGreaterThanOrEqual(143);
+    ).toBeGreaterThanOrEqual(148);
   });
 
   test('link_type 白名单：前端不得出现契约 §4 之外的类型', () => {

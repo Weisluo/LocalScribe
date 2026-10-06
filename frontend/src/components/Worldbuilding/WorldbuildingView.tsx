@@ -6,6 +6,9 @@ import { useProjectStore } from '@/stores/projectStore';
 import { Loader2, Plus, ChevronDown, ChevronRight, ChevronLeft, Edit2, Trash2, X, Save, Globe2, Map as MapIcon, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload, GitBranch, AlertTriangle, Package } from 'lucide-react';
 import { HistoryView } from './HistoryView';
 import { EconomyView } from './EconomyView';
+import { RacesView } from './RacesView';
+import { SystemsView } from './SystemsView';
+import { EmptyState } from './shared';
 import { ComplexityProvider, ComplexitySwitcher, normalizeComplexity, type ComplexityLevel } from '@/components/common/ComplexitySwitcher';
 import { useWorlds, useWorld, useCreateWorld, useUpdateWorld, useDeleteWorld, useWorldBackup } from './hooks/useWorldData';
 import { useLinkCounts } from './hooks/useLinks';
@@ -587,6 +590,44 @@ const TAB_CONFIG: Record<TabType, { label: string; icon: LucideIcon }> = {
 };
 
 const TAB_ORDER: TabType[] = ['map', 'history', 'politics', 'economy', 'races', 'systems', 'special'];
+
+/** 模块图标名（Lucide 名，写入 WorldModule.icon；与后端 DEFAULT_MODULE_SPECS 保持一致） */
+const TAB_ICON_NAMES: Record<TabType, string> = {
+  map: 'map',
+  history: 'scroll-text',
+  politics: 'crown',
+  economy: 'coins',
+  races: 'users',
+  systems: 'sparkles',
+  special: 'star',
+};
+
+/**
+ * 模块缺失兜底（P3-T1）：POST /worlds 会补齐七个模块，但导入/迁移来的旧世界可能缺；
+ * 这里给一个显式创建入口，不静默建模块。
+ */
+interface MissingModuleStateProps {
+  tab: TabType;
+  isCreating: boolean;
+  onCreate: () => void;
+}
+
+const MissingModuleState = ({ tab, isCreating, onCreate }: MissingModuleStateProps) => (
+  <EmptyState
+    icon={TAB_CONFIG[tab].icon}
+    title={`${TAB_CONFIG[tab].label}模块尚未创建`}
+    description="当前世界缺少这个模块，创建后即可开始设定。"
+    actions={[
+      {
+        label: isCreating ? '创建中...' : `创建${TAB_CONFIG[tab].label}模块`,
+        onClick: onCreate,
+        icon: Plus,
+        // 创建中禁用，避免连点触发两次 POST（后端会以 400「该模块类型已存在」回错）
+        disabled: isCreating,
+      },
+    ]}
+  />
+);
 
 interface ModuleItemEditorProps {
   item: WorldModuleItem;
@@ -1202,6 +1243,23 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const deleteWorldMutation = useDeleteWorld();
   const { restoreBackup, isImporting } = useWorldBackup();
 
+  // 模块缺失兜底（P3-T1）：复用 P1 的兼容转发路由，WorldModule.world_id 与 template_id 同列
+  const createModuleMutation = useMutation({
+    mutationFn: ({ worldId, tab }: { worldId: string; tab: TabType }) =>
+      worldbuildingApi.createWorldModule(worldId, {
+        module_type: tab,
+        name: TAB_CONFIG[tab].label,
+        icon: TAB_ICON_NAMES[tab],
+        order_index: TAB_ORDER.indexOf(tab),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'worlds'] });
+      toast.success('模块已创建');
+    },
+    onError: (error: Error) => toast.error(error.message || '创建模块失败'),
+  });
+
   // 检查是否需要显示初始选择弹窗（仅在首次加载且非获取中时检查）
   useEffect(() => {
     if (!worldsLoading && !worldsFetching && worlds.length === 0 && currentProjectId) {
@@ -1365,6 +1423,16 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const handleCreateNewWorld = () => {
     setShowCreateModal(true);
   };
+
+  // 创建缺失模块（P3-T1）：成功后模块详情由 worldRoot 失效后重新拉取
+  const handleCreateModule = useCallback(
+    (tab: TabType) => {
+      const worldId = worldDetail?.id ?? currentWorld?.id;
+      if (!worldId) return;
+      createModuleMutation.mutate({ worldId, tab });
+    },
+    [createModuleMutation, currentWorld?.id, worldDetail?.id]
+  );
 
   // 处理导入世界备份
   const handleImportWorld = () => {
@@ -1681,6 +1749,30 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
+              ) : (activeTab === 'races' || activeTab === 'systems') &&
+                currentModule &&
+                worldDetail ? (
+                activeTab === 'races' ? (
+                  <RacesView
+                    worldId={worldDetail.id}
+                    moduleId={currentModule.id}
+                    onNavigateToEntity={handleNavigateToEntity}
+                    highlightRef={highlightedRef}
+                  />
+                ) : (
+                  <SystemsView
+                    worldId={worldDetail.id}
+                    moduleId={currentModule.id}
+                    onNavigateToEntity={handleNavigateToEntity}
+                    highlightRef={highlightedRef}
+                  />
+                )
+              ) : (activeTab === 'races' || activeTab === 'systems') ? (
+                <MissingModuleState
+                  tab={activeTab}
+                  isCreating={createModuleMutation.isPending}
+                  onCreate={() => handleCreateModule(activeTab)}
+                />
               ) : activeTab === 'history' && currentModule ? (
                 <HistoryView
                   moduleId={currentModule.id}

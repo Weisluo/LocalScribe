@@ -160,8 +160,24 @@ export const worldbuildingApi = {
     description: string;
     icon: string;
     order_index: number;
+    config: Record<string, unknown> | null;
   }>) => {
     return api.put<WorldModule>(`/worldbuilding/modules/${moduleId}`, data);
+  },
+
+  /**
+   * 为世界补齐缺失模块（Phase 3 P3-T1）。
+   * P1 未新增 POST /worlds/{id}/modules，改用兼容转发路由；WorldModule.world_id 与
+   * template_id 是同一列的 synonym，因此传入 world id 即可。
+   */
+  createWorldModule: (worldId: string, data: {
+    module_type: WorldModule['module_type'];
+    name: string;
+    description?: string;
+    icon?: string;
+    order_index?: number;
+  }) => {
+    return api.post<WorldModule>(`/worldbuilding/templates/${worldId}/modules`, data);
   },
 
   deleteModule: (moduleId: string) => {
@@ -179,6 +195,8 @@ export const worldbuildingApi = {
     color?: string;
     icon?: string;
     parent_id?: string;
+    kind?: string;
+    meta?: Record<string, unknown>;
   }) => {
     return api.post<WorldSubmodule>(`/worldbuilding/modules/${moduleId}/submodules`, data);
   },
@@ -190,6 +208,8 @@ export const worldbuildingApi = {
     color?: string | null;
     icon?: string | null;
     parent_id?: string | null;
+    kind?: string;
+    meta?: Record<string, unknown>;
   }>) => {
     return api.put<WorldSubmodule>(`/worldbuilding/submodules/${submoduleId}`, data);
   },
@@ -204,7 +224,7 @@ export const worldbuildingApi = {
 
   createItem: (moduleId: string, data: {
     name: string;
-    content: Record<string, string>;
+    content: Record<string, unknown>;
     order_index?: number;
     is_published?: boolean;
     submodule_id?: string;
@@ -214,7 +234,7 @@ export const worldbuildingApi = {
 
   updateItem: (itemId: string, data: Partial<{
     name: string;
-    content: Record<string, string>;
+    content: Record<string, unknown>;
     order_index: number;
     is_published: boolean;
   }>) => {

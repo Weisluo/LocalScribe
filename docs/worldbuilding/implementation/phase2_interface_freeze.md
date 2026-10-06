@@ -348,7 +348,26 @@ queryKey 固定 `['worldbuilding','migration-container', projectId]`；容器世
 
 ---
 
-## 7. 冻结纪律
+## 7. v1.1 修订（Phase 3 修复轮）
+
+按 §7 纪律，先记录再改码。本文件 v1 冻结的 `splitLinks` 语义有缺陷，Phase 3 修复轮修正如下。
+
+- **`splitLinks(links, ref)` 入链判定（行为修正，签名不变）**
+  v1 实现只判断 `isOutgoing(link, ref)`，`else` 一律归入 `incoming`；而调用方传入的是
+  **世界级共享列表**（冻结 §2 要求「不要逐实体请求」），因此与 `ref` 完全无关的关联
+  也会被算进 `incoming`。后果：LinkPanel 头部「出链 n / 入链 m」在同一行内自相矛盾、
+  入链分组会渲染别的实体的关联行、RaceDetail 的删除确认文案会列出无关关联。
+  v1.1 起 `splitLinks` 同时判断对端（新增导出 `linkInvolves(link, ref)`），只保留与该
+  实体相关的关联。**调用方无需改动**（`LinkPanel`、`useEntityLinkCounts`、
+  `CharacterReference`、`useEntityLinks`、`RaceDetail` 语义一致且更正确）。
+  已同步更新的回归：`tests/worldbuilding/harness.tsx` 的 `splitLinks` 用例（其 fixture
+  三条边均以 event 为端点，v1.1 下出链/入链结果不变，另补无关边用例防回归）。
+
+- 其余 P2 冻结接口（共用件签名、queryKey 形状、`linkDisplayLabel` 等）**不变**。
+
+---
+
+## 8. 冻结纪律
 
 1. 本文件 v1 之后的接口变更，必须先在 phase2_frontend_history.md §6 与本文件同步，再改代码。
 2. 共用件只依赖 `Worldbuilding/hooks/` 与 `Worldbuilding/types.ts`，不反向依赖模块视图。
