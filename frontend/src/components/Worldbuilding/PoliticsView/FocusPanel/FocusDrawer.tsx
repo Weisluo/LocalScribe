@@ -123,7 +123,7 @@ export const FocusDrawer = ({
 
   const containerClass = narrow
     ? 'fixed inset-0 z-40 flex flex-col overflow-hidden bg-card'
-    : `flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border bg-card/60 ${
+    : `flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm ${
         pinned ? 'border-primary/40' : 'border-border/50'
       }`;
 
@@ -139,24 +139,24 @@ export const FocusDrawer = ({
       className={containerClass}
       style={narrow ? undefined : { width }}
     >
-      <header className="shrink-0 space-y-1.5 border-b border-border/50 px-3 py-2">
+      <header className="shrink-0 space-y-2 border-b border-border/30 px-5 py-4">
         <div className="flex items-start gap-2">
           {Icon ? (
             <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
           ) : null}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <h2 className="min-w-0 truncate text-xs font-semibold text-foreground" title={title}>
+              <h2 className="min-w-0 truncate text-sm font-semibold text-foreground" title={title}>
                 {title}
               </h2>
               {levelLabel ? (
-                <span className={`${toneSurfaceClass(tone ?? 'gold')} rounded-full border border-border/50 px-1.5 py-0.5 text-[10px]`}>
+                <span className={`${toneSurfaceClass(tone ?? 'gold')} rounded-full border border-border/50 px-2 py-0.5 text-[10px]`}>
                   {levelLabel}
                 </span>
               ) : null}
               {statusLabel ? (
                 <span
-                  className={`rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] ${
+                  className={`rounded-full border border-border/50 px-2 py-0.5 text-[10px] ${
                     terminal ? 'text-muted-foreground' : 'text-foreground'
                   }`}
                 >
@@ -165,34 +165,34 @@ export const FocusDrawer = ({
                 </span>
               ) : null}
               {pinned ? (
-                <span className="rounded-full border border-primary/40 px-1.5 py-0.5 text-[10px] text-primary">
+                <span className="rounded-full border border-primary/40 px-2 py-0.5 text-[10px] text-primary">
                   已固定
                 </span>
               ) : null}
             </div>
-            <div className="mt-1 flex items-center gap-1.5">
+            <div className="mt-1.5 flex items-center gap-1.5">
               <CountPill value={counts.out} label="出" />
               <CountPill value={counts.in} label="入" />
-              <span className="text-[10px] text-muted-foreground">关联</span>
+              <span className="text-xs text-muted-foreground">关联</span>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={onTogglePin}
               aria-pressed={pinned}
               data-testid="focus-pin"
-              className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] transition-colors ${
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-200 ${
                 pinned
                   ? 'border-primary/40 bg-primary/10 text-primary'
-                  : 'border-border/60 text-muted-foreground hover:text-foreground'
+                  : 'border-border/50 bg-muted/40 text-muted-foreground hover:border-accent/30 hover:bg-accent/10 hover:text-foreground'
               }`}
             >
               {pinned ? (
-                <PinOff className="h-3 w-3" aria-hidden="true" />
+                <PinOff className="h-3.5 w-3.5" aria-hidden="true" />
               ) : (
-                <Pin className="h-3 w-3" aria-hidden="true" />
+                <Pin className="h-3.5 w-3.5" aria-hidden="true" />
               )}
               {pinned ? '取消固定' : '固定'}
             </button>
@@ -203,7 +203,7 @@ export const FocusDrawer = ({
                 aria-label="编辑"
                 title="编辑"
                 data-testid="focus-edit"
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
               >
                 <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -215,7 +215,7 @@ export const FocusDrawer = ({
                 aria-label="删除"
                 title="删除"
                 data-testid="focus-delete"
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -226,7 +226,7 @@ export const FocusDrawer = ({
               aria-label="关闭详情"
               title="关闭"
               data-testid="focus-close"
-              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -237,7 +237,7 @@ export const FocusDrawer = ({
           <nav
             aria-label="详情分段"
             data-testid="focus-anchors"
-            className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground"
+            className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
           >
             {anchors.map((anchor, index) => (
               <span key={anchor.id} className="flex items-center gap-2">
@@ -260,11 +260,11 @@ export const FocusDrawer = ({
       </div>
 
       {narrow ? (
-        <footer className="shrink-0 border-t border-border/50 px-3 py-2">
+        <footer className="shrink-0 border-t border-border/30 px-5 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             关闭详情
           </button>
@@ -272,7 +272,7 @@ export const FocusDrawer = ({
       ) : null}
 
       {terminal ? (
-        <div className={`shrink-0 px-3 pb-2 text-[10px] ${toneTextClass(tone)}`}>
+        <div className={`shrink-0 px-5 pb-4 text-xs ${toneTextClass(tone)}`}>
           终端状态：画布降为幽灵节点，数据保留
         </div>
       ) : null}

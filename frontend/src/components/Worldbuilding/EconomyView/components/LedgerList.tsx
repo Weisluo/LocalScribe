@@ -262,10 +262,10 @@ export const LedgerList = ({
       data-testid="economy-ledger"
       role="table"
       aria-label="经济账册"
-      className="flex h-full min-h-0 flex-col"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm"
     >
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5">
-        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border/30 px-5 py-4">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <ListFilter className="h-3.5 w-3.5" aria-hidden="true" />
           分组
         </span>
@@ -273,7 +273,7 @@ export const LedgerList = ({
           role="group"
           aria-label="分组"
           data-testid="economy-ledger-groupby"
-          className="flex items-center overflow-hidden rounded-md border border-border/50"
+          className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
         >
           {(
             [
@@ -290,10 +290,10 @@ export const LedgerList = ({
                 setGroup(option.id);
                 if (option.id !== 'status') onGroupByChange(option.id);
               }}
-              className={`px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                 group === option.id
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent/30'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
             >
               {option.label}
@@ -301,7 +301,7 @@ export const LedgerList = ({
           ))}
         </div>
 
-        <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
           <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
           排序
           <select
@@ -309,7 +309,7 @@ export const LedgerList = ({
             data-testid="economy-ledger-sort"
             aria-label="排序"
             onChange={(event) => setSort(event.target.value as LedgerSort)}
-            className="rounded-md border border-border/50 bg-background px-1 py-0.5 text-[11px] text-foreground focus:outline-none"
+            className="rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             <option value="default">默认（分组顺序）</option>
             <option value="name">名称</option>
@@ -323,7 +323,7 @@ export const LedgerList = ({
           role="group"
           aria-label="密度"
           data-testid="economy-ledger-density"
-          className="flex items-center overflow-hidden rounded-md border border-border/50"
+          className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
         >
           {(
             [
@@ -336,27 +336,27 @@ export const LedgerList = ({
               type="button"
               aria-pressed={density === option.id}
               onClick={() => setDensity(option.id)}
-              className={`flex items-center gap-1 px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                 density === option.id
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent/30'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
             >
-              <option.Icon className="h-3 w-3" aria-hidden="true" />
+              <option.Icon className="h-3.5 w-3.5" aria-hidden="true" />
               {option.label}
             </button>
           ))}
         </div>
 
-        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
           行 {visibleNodes.length}/{nodes.length}
           {virtualize ? ` · 已虚拟滚动（>${ECONOMY_LEDGER_VIRTUAL_LIMIT}）` : ''}
         </span>
       </div>
 
       {kinds.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 px-2 pb-1.5">
-          <span className="text-[10px] text-muted-foreground">类型筛选</span>
+        <div className="flex flex-wrap items-center gap-2 px-5 pb-3">
+          <span className="text-xs font-medium text-muted-foreground">类型筛选</span>
           {kinds.slice(0, 10).map((bucket) => {
             const active = (filters.kinds ?? []).includes(bucket.id);
             return (
@@ -365,14 +365,14 @@ export const LedgerList = ({
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleKind(bucket.id)}
-                className={`rounded-full border px-1.5 py-0.5 text-[10px] transition-colors motion-reduce:transition-none ${
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
                   active
-                    ? 'border-primary/50 bg-primary/10 text-primary'
-                    : 'border-border/50 text-muted-foreground hover:bg-accent/30'
+                    ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                    : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                 }`}
               >
                 {bucket.label}
-                <span className="ml-1 tabular-nums text-muted-foreground">{bucket.count}</span>
+                <span className="ml-1.5 text-[10px] tabular-nums text-muted-foreground">{bucket.count}</span>
               </button>
             );
           })}
@@ -381,9 +381,9 @@ export const LedgerList = ({
               type="button"
               onClick={onResetFilter}
               data-testid="economy-ledger-reset"
-              className="ml-1 flex items-center gap-1 rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10 motion-reduce:transition-none"
+              className="ml-1 flex items-center gap-1.5 rounded-full border border-border/40 px-3 py-1 text-xs font-medium text-primary transition-all duration-200 hover:bg-primary/10 motion-reduce:transition-none"
             >
-              <FilterX className="h-3 w-3" aria-hidden="true" />
+              <FilterX className="h-3.5 w-3.5" aria-hidden="true" />
               清除筛选
             </button>
           )}
@@ -392,7 +392,7 @@ export const LedgerList = ({
 
       <div
         role="row"
-        className="flex items-center gap-2 border-y border-border/40 px-2 py-1 text-[10px] tracking-[0.08em] text-muted-foreground"
+        className="flex items-center gap-2 border-y border-border/30 bg-muted/20 px-5 py-2 text-xs tracking-[0.08em] text-muted-foreground"
       >
         {COLUMNS.map((column) => (
           <span
@@ -414,7 +414,7 @@ export const LedgerList = ({
                 key={`group-${entry.key}`}
                 role="row"
                 data-testid={`economy-ledger-group-${entry.key}`}
-                className="flex items-center gap-2 border-b border-border/30 bg-muted/20 px-2 text-[10px] text-muted-foreground"
+                className="flex items-center gap-2 border-b border-border/30 bg-muted/20 px-5 text-xs font-medium text-muted-foreground"
                 style={{ height: rowHeight }}
               >
                 <span className="font-medium">{entry.label}</span>
@@ -447,20 +447,20 @@ export const LedgerList = ({
                     onPointerLeave={() =>
                       setHoverId((prev) => (prev === node.id ? null : prev))
                     }
-                    className={`flex cursor-pointer items-center gap-2 border-b border-border/30 px-2 text-[11px] transition-colors motion-reduce:transition-none ${
-                      selected ? 'bg-primary/10' : 'hover:bg-accent/20'
+                    className={`flex cursor-pointer items-center gap-2 border-b border-border/30 px-5 text-sm transition-colors duration-200 motion-reduce:transition-none ${
+                      selected ? 'bg-primary/10' : 'hover:bg-accent/5'
                     }`}
                     style={{ height: rowHeight }}
                   >
                     <span role="cell" className="flex min-w-0 flex-1 items-center gap-1">
-                      <span className="truncate text-foreground">{node.name}</span>
+                      <span className="truncate text-base font-semibold text-foreground">{node.name}</span>
                       {node.stub && (
-                        <span className="shrink-0 rounded-full border border-dashed border-muted-foreground/60 px-1 text-[9px] text-muted-foreground">
+                        <span className="shrink-0 rounded-full border border-dashed border-muted-foreground/60 px-2 text-[10px] text-muted-foreground">
                           待补全
                         </span>
                       )}
                       {node.external && (
-                        <span className="shrink-0 rounded-full border border-border/60 px-1 text-[9px] text-muted-foreground">
+                        <span className="shrink-0 rounded-full border border-border/60 px-2 text-[10px] text-muted-foreground">
                           外站
                         </span>
                       )}
@@ -539,9 +539,9 @@ export const LedgerList = ({
       {previewNode && previewEdges && (
         <div
           data-testid="economy-ledger-preview"
-          className="border-t border-border/40 bg-card/40 px-2 py-1 text-[10px] text-muted-foreground"
+          className="border-t border-border/30 bg-muted/20 px-5 py-2.5 text-xs text-muted-foreground"
         >
-          <div className="font-medium text-foreground">
+          <div className="text-sm font-semibold text-foreground">
             {previewNode.name} · {kindLabelOf(previewNode)} · 目标预览
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">

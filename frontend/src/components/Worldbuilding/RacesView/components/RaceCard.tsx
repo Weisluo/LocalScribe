@@ -7,6 +7,7 @@
  * sketch 档只保留「名称 / 一句话 / 代表色 / 关联计数」（降档只隐藏，不删数据）。
  */
 
+import { motion } from 'framer-motion';
 import { Link2, MapPin } from 'lucide-react';
 
 import {
@@ -15,6 +16,7 @@ import {
   statusLabelOf,
   type ModuleConfig,
 } from '../../shared/moduleConfig';
+import { viewItemVariants, viewSpring } from '../../shared/motion';
 import { cardFieldsOf, emblemColorOf } from '../config';
 import { RACE_KINDS, type RaceNode } from '../types';
 import { Emblem } from './Emblem';
@@ -70,7 +72,7 @@ export const RaceCard = ({
     .join('，');
 
   return (
-    <button
+    <motion.button
       type="button"
       data-testid="race-card"
       data-race-id={node.id}
@@ -79,20 +81,24 @@ export const RaceCard = ({
       aria-current={selected ? 'true' : undefined}
       aria-label={accessibleName}
       onClick={() => onOpen(node.id)}
-      className={`group flex min-w-[260px] flex-col overflow-hidden rounded-xl border bg-card/40 text-left transition-[transform,border-color,box-shadow] duration-200 motion-reduce:transition-none hover:-translate-y-px hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 motion-reduce:hover:translate-y-0 ${
-        selected ? 'border-primary ring-1 ring-primary/40' : 'border-border/60'
+      variants={viewItemVariants}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.99 }}
+      transition={viewSpring}
+      className={`group flex min-w-[260px] flex-col overflow-hidden rounded-xl border bg-card/50 text-left shadow-sm transition-all duration-300 motion-reduce:transition-none hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+        selected ? 'border-teal-500 ring-1 ring-teal-500/40' : 'border-border/50 hover:border-teal-500/30'
       }`}
     >
       <span className="block h-1 w-full" style={{ backgroundColor: color }} aria-hidden="true" />
-      <span className="flex w-full items-start gap-2.5 p-3">
+      <span className="flex w-full items-start gap-3 p-4">
         <Emblem name={node.name} icon={icon} color={color} size={40} />
         <span className="min-w-0 flex-1 space-y-1.5">
           <span className="flex items-start gap-1.5">
-            <span className="min-w-0 flex-1 truncate text-[20px] font-semibold leading-tight text-foreground">
+            <span className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight tracking-tight text-foreground">
               {node.name}
             </span>
             <span
-              className="shrink-0 rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              className="shrink-0 rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-700 dark:text-teal-300"
               data-testid="race-card-kind"
             >
               {kindLabel}
@@ -104,7 +110,7 @@ export const RaceCard = ({
               return tagline ? (
                 <span
                   key={field}
-                  className="line-clamp-2 block text-sm font-normal text-muted-foreground"
+                  className="line-clamp-2 block text-xs font-normal leading-relaxed text-muted-foreground"
                   data-field="tagline"
                 >
                   {tagline}
@@ -130,7 +136,7 @@ export const RaceCard = ({
                     <span
                       // 标签是自由文本，可能重复：key 用「值 + 下标」保持稳定唯一
                       key={`${trait}-${index}`}
-                      className="rounded-full border border-border/50 bg-muted/20 px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+                      className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-700 dark:text-teal-300"
                     >
                       {trait}
                     </span>
@@ -142,7 +148,7 @@ export const RaceCard = ({
           })}
         </span>
       </span>
-      <span className="mt-auto flex w-full items-center gap-2 border-t border-border/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+      <span className="mt-auto flex w-full items-center gap-2 border-t border-border/30 bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
         <span data-testid="race-card-subraces">支系 {subraceCount}</span>
         {has('linkCount') && (
           <span
@@ -156,7 +162,7 @@ export const RaceCard = ({
         )}
         <span className="ml-auto flex shrink-0 items-center gap-1.5">
           {statusLabel && (
-            <span className="flex items-center gap-1 rounded-full border border-border/50 px-1.5 py-0.5">
+            <span className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5">
               <span
                 className="h-1.5 w-1.5 rounded-full"
                 style={{ backgroundColor: toneColor(statusColor) }}
@@ -167,6 +173,6 @@ export const RaceCard = ({
           )}
         </span>
       </span>
-    </button>
+    </motion.button>
   );
 };

@@ -238,8 +238,8 @@ export const Chronicle = ({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2" data-testid="politics-chronicle">
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 px-2">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           等级
           <select
             value={level}
@@ -257,7 +257,7 @@ export const Chronicle = ({
           </select>
         </label>
 
-        <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           状态
           <select
             value={status}
@@ -275,7 +275,7 @@ export const Chronicle = ({
           </select>
         </label>
 
-        <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           时间范围
           <input
             type="date"
@@ -294,7 +294,7 @@ export const Chronicle = ({
           />
         </label>
 
-        <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <input
             type="checkbox"
             checked={showTerminal}
@@ -304,7 +304,7 @@ export const Chronicle = ({
         </label>
 
         {capabilities.historyOverlay && (
-          <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={historyOverlay}
@@ -315,7 +315,7 @@ export const Chronicle = ({
         )}
 
         {capabilities.tenureBands && (
-          <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={tenureOn}
@@ -327,7 +327,7 @@ export const Chronicle = ({
         )}
 
         {capabilities.chronicleTreaties && (
-          <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={treatyBandsOn}
@@ -337,20 +337,20 @@ export const Chronicle = ({
           </label>
         )}
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
             onClick={onOpenTreatyBook}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30"
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
-            <PenLine className="h-3 w-3" aria-hidden="true" />
+            <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
             条约簿
           </button>
           <button
             type="button"
             onClick={onCreateTreaty}
             disabled={!politics.canEdit}
-            className="rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30 disabled:opacity-50"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
           >
             新建条约
           </button>
@@ -358,9 +358,9 @@ export const Chronicle = ({
             <button
               type="button"
               onClick={resetAll}
-              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
             >
-              <SlidersHorizontal className="h-3 w-3" aria-hidden="true" />
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
               清除筛选
             </button>
           )}
@@ -370,15 +370,15 @@ export const Chronicle = ({
       {capabilities.historyOverlay && !historyAnchorsExist && (
         <div
           data-testid="chronicle-history-empty"
-          className="flex flex-wrap items-center gap-2 rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-[10px] text-muted-foreground"
+          className="flex flex-wrap items-center gap-3 border-y border-border/30 bg-muted/20 px-6 py-2.5 text-xs text-muted-foreground"
         >
-          <Flag className="h-3 w-3 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+          <Flag className="h-3.5 w-3.5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden="true" />
           <span>历史模块还没有可关联的事件：只显示政治侧沿革锚点，不报错也不伪造事件。</span>
           {visibleLanes[0] && (
             <button
               type="button"
               onClick={() => onOpen(visibleLanes[0].entity.id)}
-              className="rounded border border-border px-1.5 py-0.5 text-foreground hover:bg-accent/30"
+              className="rounded-lg border border-border/50 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent/10"
             >
               添加政治沿革条目
             </button>
@@ -387,7 +387,7 @@ export const Chronicle = ({
             <button
               type="button"
               onClick={() => onOpenHistory(historyRef)}
-              className="rounded border border-border px-1.5 py-0.5 text-foreground hover:bg-accent/30"
+              className="rounded-lg border border-border/50 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent/10"
             >
               去历史模块
             </button>
@@ -396,7 +396,7 @@ export const Chronicle = ({
       )}
 
       {nothingVisible ? (
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
           <EmptyState
             compact
             icon={SearchX}
@@ -417,7 +417,7 @@ export const Chronicle = ({
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="min-w-[760px]">
             <div className="flex items-center">
-              <div className="w-52 shrink-0 px-2 text-[10px] text-muted-foreground">
+              <div className="w-52 shrink-0 px-2 text-xs text-muted-foreground">
                 时间刻度 · {spans.length} 个可解析端点
               </div>
               <div className="relative h-7 min-w-0 flex-1 border-b border-border/50">
@@ -425,7 +425,7 @@ export const Chronicle = ({
                   spans.map((span) => (
                     <div
                       key={span.key ?? span.label}
-                      className="absolute top-0 -translate-x-1/2 text-[9px] text-muted-foreground"
+                      className="absolute top-0 -translate-x-1/2 text-[10px] text-muted-foreground"
                       style={{ left: `${percentOf(scale, span.key) ?? 0}%` }}
                     >
                       <span className="mx-auto block h-1.5 w-px bg-border" aria-hidden="true" />
@@ -433,7 +433,7 @@ export const Chronicle = ({
                     </div>
                   ))
                 ) : (
-                  <span className="absolute left-2 top-1.5 text-[10px] text-muted-foreground">
+                  <span className="absolute left-2 top-1.5 text-xs text-muted-foreground">
                     未填写时间：端点不可解析时不伪造刻度
                   </span>
                 )}
@@ -460,7 +460,7 @@ export const Chronicle = ({
             {bands.length > 0 && (
               <section data-testid="chronicle-treaty-bands" className="mt-1">
                 <div className="flex items-center">
-                  <div className="w-52 shrink-0 px-2 text-[10px] font-medium text-foreground">
+                  <div className="w-52 shrink-0 px-2 text-xs font-medium text-foreground">
                     条约有效期（{bands.length}）
                   </div>
                   <div className="min-w-0 flex-1 border-b border-border/40" />
@@ -479,13 +479,13 @@ export const Chronicle = ({
                           type="button"
                           onClick={() => onOpenTreaty(band.treaty.id)}
                           title={`${band.treaty.name}（点击打开条约详情）`}
-                          className={`min-w-0 flex-1 truncate text-left text-[11px] hover:text-primary ${toneTextClass(
+                          className={`min-w-0 flex-1 truncate text-left text-xs transition-colors hover:text-primary ${toneTextClass(
                             'green'
                           )}`}
                         >
                           {band.treaty.name}
                         </button>
-                        <span className={`shrink-0 text-[9px] ${treatyStatusTextClass(band.status)}`}>
+                        <span className={`shrink-0 text-[10px] ${treatyStatusTextClass(band.status)}`}>
                           {label}
                         </span>
                       </div>
@@ -502,7 +502,7 @@ export const Chronicle = ({
                             band.status
                           )} ${EDGE_STATUS_CLASS[band.status] ?? ''}`}
                         >
-                          <span className="truncate px-1 text-[9px] text-foreground">{label}</span>
+                          <span className="truncate px-1 text-[10px] text-foreground">{label}</span>
                         </button>
                       </div>
                     </div>

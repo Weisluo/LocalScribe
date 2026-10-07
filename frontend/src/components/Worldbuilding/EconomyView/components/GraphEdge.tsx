@@ -98,7 +98,7 @@ export const GraphEdge = ({
       data-dimmed={dimmed ? 'true' : 'false'}
       data-selected={selected ? 'true' : 'false'}
       opacity={dimmed ? 0.25 : 1}
-      className="transition-opacity duration-200 motion-reduce:transition-none"
+      className="group/edge transition-opacity duration-200 motion-reduce:transition-none"
     >
       <title>{`${text ? `${text}：` : ''}${edge.linkType}`}</title>
 
@@ -134,6 +134,15 @@ export const GraphEdge = ({
           </marker>
         )}
       </defs>
+
+      {/* hover 反馈：一层描边光环，不改线宽 / 线型语义（§5：画布边不加交错入场） */}
+      <path
+        d={pathOf(0)}
+        fill="none"
+        strokeWidth={strokeWidth + 5}
+        pointerEvents="none"
+        className="stroke-primary/15 opacity-0 transition-opacity duration-200 group-hover/edge:opacity-100 motion-reduce:transition-none"
+      />
 
       {selected && (
         <path

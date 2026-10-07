@@ -49,23 +49,23 @@ export const ChipRow = ({
   const mixedTypes = new Set(links.map((link) => link.link_type)).size > 1;
 
   return (
-    <div className={`space-y-1 ${className}`} data-testid={testId}>
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-        {Icon && <Icon className="h-3 w-3" aria-hidden="true" />}
+    <div className={`space-y-1.5 ${className}`} data-testid={testId}>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
         <span>{title}</span>
         {links.length > 0 && (
           <span className="rounded-full bg-muted/40 px-1.5 text-[10px]">{links.length}</span>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1.5">
         {links.map((link) => {
           const target = source ? linkCounterpart(link, source) : link.target;
           const timeText = [link.time?.start, link.time?.end].filter(Boolean).join(' ~ ');
           return (
             <span key={link.id} className="inline-flex items-center gap-1">
               {mixedTypes && (
-                <span className="text-[10px] text-muted-foreground/80">
+                <span className="text-xs text-muted-foreground/80">
                   {linkLabelOf(link, linkTypes)}
                 </span>
               )}
@@ -77,7 +77,7 @@ export const ChipRow = ({
                 title={link.note ?? undefined}
               />
               {timeText && (
-                <span className="text-[10px] text-muted-foreground">{timeText}</span>
+                <span className="text-xs text-muted-foreground">{timeText}</span>
               )}
             </span>
           );
@@ -87,7 +87,7 @@ export const ChipRow = ({
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/70 px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/70 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
           >
             <Plus className="h-3 w-3" aria-hidden="true" />
             {addLabel}

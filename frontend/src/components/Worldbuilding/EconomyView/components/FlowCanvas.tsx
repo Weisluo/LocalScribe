@@ -274,16 +274,16 @@ export const FlowCanvas = ({
       data-sandbox={sandbox ? 'true' : 'false'}
       data-degraded={degraded ? 'true' : 'false'}
       data-simplified={simplified ? 'true' : 'false'}
-      className="relative flex h-full min-h-0 flex-col"
+      className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm"
     >
       {hasToolbar && (
         <div
           role="group"
           aria-label="画布工具条"
           data-testid="economy-canvas-toolbar"
-          className="flex flex-wrap items-center gap-1.5 border-b border-border/40 px-2 py-1.5"
+          className="flex flex-wrap items-center gap-3 border-b border-border/30 px-5 py-3"
         >
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Network className="h-3.5 w-3.5" aria-hidden="true" />
             {groupBy === 'kind' ? '类型泳道' : '阶段泳道'}
           </span>
@@ -292,7 +292,7 @@ export const FlowCanvas = ({
             <div
               role="group"
               aria-label="布局"
-              className="flex items-center overflow-hidden rounded-md border border-border/50"
+              className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
             >
               {(['lanes', 'network'] as EconomyLayoutMode[]).map((item) => {
                 const active = (item === 'network' ? 'network' : 'lanes') === mode;
@@ -303,16 +303,16 @@ export const FlowCanvas = ({
                     aria-pressed={active}
                     onClick={() => onLayoutChange(item)}
                     data-testid={`economy-canvas-layout-${item}`}
-                    className={`flex items-center gap-1 px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                       active
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-accent/30'
+                        ? 'bg-background text-primary shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
                     }`}
                   >
                     {item === 'network' ? (
-                      <Network className="h-3 w-3" aria-hidden="true" />
+                      <Network className="h-3.5 w-3.5" aria-hidden="true" />
                     ) : (
-                      <Route className="h-3 w-3" aria-hidden="true" />
+                      <Route className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
                     {ECONOMY_LAYOUT_LABELS[item]}
                   </button>
@@ -326,15 +326,15 @@ export const FlowCanvas = ({
               type="button"
               onClick={() => onGroupByChange(groupBy === 'kind' ? 'stage' : 'kind')}
               data-testid="economy-canvas-groupby"
-              className="rounded-md border border-border/50 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+              className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
             >
               按{groupBy === 'kind' ? '阶段' : '类型'}
             </button>
           )}
 
           {onSearchChange && (
-            <label className="flex items-center gap-1 rounded-md border border-border/50 px-1.5 py-0.5">
-              <Search className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+            <label className="flex items-center gap-1.5 rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 transition-all duration-200 focus-within:border-primary/40 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/15">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
               <input
                 type="search"
                 value={filters.search ?? ''}
@@ -342,7 +342,7 @@ export const FlowCanvas = ({
                 placeholder="搜索 名称 / kind:market"
                 data-testid="economy-canvas-search"
                 onChange={(event) => onSearchChange(event.target.value)}
-                className="w-40 bg-transparent text-[11px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+                className="w-44 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               />
             </label>
           )}
@@ -352,7 +352,7 @@ export const FlowCanvas = ({
               type="button"
               onClick={onResetFilter}
               data-testid="economy-canvas-reset"
-              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-primary transition-colors hover:bg-primary/10 motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-primary transition-all duration-200 hover:bg-primary/10 motion-reduce:transition-none"
             >
               <X className="h-3 w-3" aria-hidden="true" />
               清除筛选
@@ -361,7 +361,7 @@ export const FlowCanvas = ({
 
           {invalidExternalCount > 0 && (
             <span
-              className="flex items-center gap-1 rounded-full border border-dashed border-destructive/40 px-1.5 py-0.5 text-[10px] text-destructive"
+              className="flex items-center gap-1.5 rounded-full border border-dashed border-destructive/40 px-2.5 py-0.5 text-xs text-destructive"
               data-testid="economy-canvas-invalid-refs"
             >
               <TriangleAlert className="h-3 w-3" aria-hidden="true" />
@@ -369,7 +369,7 @@ export const FlowCanvas = ({
             </span>
           )}
 
-          <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
             {hiddenLayers.length > 0 && <span>已隐藏图层：{hiddenLayers.join(' / ')}</span>}
             <span data-testid="economy-canvas-counts">
               节点 {visibleNodes.length}/{nodes.length}
@@ -384,17 +384,17 @@ export const FlowCanvas = ({
         {degraded ? (
           <div
             data-testid="economy-canvas-degraded"
-            className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center"
+            className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
           >
-            <Table className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-            <p className="text-xs text-muted-foreground">
+            <Table className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">
               实体数超过画布上限，线路图不再铺开：已降级为账册矩阵（不做真实渲染优化）。
             </p>
             <button
               type="button"
               onClick={onOpenLedger}
               data-testid="economy-canvas-open-matrix"
-              className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 motion-reduce:transition-none"
             >
               <Table className="h-3.5 w-3.5" aria-hidden="true" />
               打开账册矩阵
@@ -545,11 +545,11 @@ export const FlowCanvas = ({
             {empty && (
               <div
                 data-testid="economy-canvas-empty"
-                className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
               >
                 {filteredOut ? (
                   <>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       当前筛选下没有实体：放宽条件或清除筛选。
                     </p>
                     {onResetFilter && (
@@ -557,7 +557,7 @@ export const FlowCanvas = ({
                         type="button"
                         onClick={onResetFilter}
                         data-testid="economy-canvas-empty-reset"
-                        className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                        className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
                       >
                         <X className="h-3.5 w-3.5" aria-hidden="true" />
                         清除筛选
@@ -566,13 +566,13 @@ export const FlowCanvas = ({
                   </>
                 ) : (
                   <>
-                    <p className="text-xs text-muted-foreground">还没有经济实体：先建一个，或先写速写卡。</p>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
+                    <p className="text-sm text-muted-foreground">还没有经济实体：先建一个，或先写速写卡。</p>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                       <button
                         type="button"
                         onClick={onAddEntity}
                         data-testid="economy-canvas-add"
-                        className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 motion-reduce:transition-none"
+                        className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 motion-reduce:transition-none"
                       >
                         <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                         添加第一个实体
@@ -581,7 +581,7 @@ export const FlowCanvas = ({
                         type="button"
                         onClick={onOpenLedger}
                         data-testid="economy-canvas-sketch"
-                        className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                        className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
                       >
                         <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
                         先写速写卡
@@ -597,22 +597,22 @@ export const FlowCanvas = ({
 
       <div
         data-testid="economy-legend"
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/40 px-2 py-1 text-[10px] text-muted-foreground"
+        className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/30 bg-muted/20 px-5 py-2 text-xs text-muted-foreground"
       >
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1.5">
           <span className="inline-flex h-3 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/70">
             <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" />
           </span>
           [外站] 跨模块只读，点击跳转对方模块
         </span>
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-full border border-dashed border-muted-foreground/70" />
           虚线光环 = stub 待补全
         </span>
         <span className="flex items-center gap-2">
           线型遵循契约注册表：
           {LINE_STYLE_SAMPLES.map((sample) => (
-            <span key={sample.id} className="flex items-center gap-1">
+            <span key={sample.id} className="flex items-center gap-1.5">
               <svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true">
                 <path
                   d="M0 4 H24"

@@ -151,13 +151,13 @@ export const EdgeCard = ({
 
   return (
     <div
-      className="space-y-2 rounded-md border border-border/60 bg-muted/20 p-2"
+      className="space-y-3 rounded-xl border border-border/50 bg-muted/20 p-3 shadow-sm"
       data-testid="politics-edge-card"
     >
       <div className="flex items-center gap-1.5">
         <span className={`${chipClass} border-border/60 text-foreground`}>{typeLabel}</span>
-        <span className="text-[10px] text-muted-foreground">{moduleLabel(other.module)}</span>
-        <span className="ml-auto text-[10px] text-muted-foreground">{link.link_type}</span>
+        <span className="text-xs text-muted-foreground">{moduleLabel(other.module)}</span>
+        <span className="ml-auto text-xs text-muted-foreground">{link.link_type}</span>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
@@ -167,7 +167,7 @@ export const EdgeCard = ({
           invalid={politics.refs.isInvalid(link.source)}
           onClick={onNavigateToEntity}
         />
-        <ArrowRight className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
         <EntityBadge
           entityRef={link.target}
           name={politics.refs.resolveName(link.target)}
@@ -228,12 +228,12 @@ export const EdgeCard = ({
       </div>
 
       {confirming ? (
-        <div className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2">
-          <div className="flex items-start gap-1.5 text-[11px] text-destructive">
+        <div className="space-y-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3">
+          <div className="flex items-start gap-1.5 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             删除会同时从两端详情与画布移除该关联；若为最后一条缔约边，条约将退化为单缔约方旌旗。
           </div>
-          <div className="space-y-0.5 text-[10px] text-muted-foreground">
+          <div className="space-y-1 text-xs text-muted-foreground">
             <InfoRow label="关联">{typeLabel}</InfoRow>
             <InfoRow label="范围">
               {politics.refs.resolveName(link.source)}
@@ -248,7 +248,7 @@ export const EdgeCard = ({
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+              className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
             >
               取消
             </button>
@@ -256,12 +256,12 @@ export const EdgeCard = ({
               type="button"
               onClick={() => void handleDelete()}
               disabled={busy}
-              className="flex items-center gap-1 rounded-md bg-destructive px-2.5 py-1 text-[11px] text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50 motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-sm text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50 motion-reduce:transition-none"
             >
               {busy ? (
-                <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3.5 w-3.5" />
               )}
               确认删除
             </button>
@@ -272,23 +272,23 @@ export const EdgeCard = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
           >
             收起
           </button>
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive"
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
           >
-            <Trash2 className="h-3 w-3" aria-hidden="true" />
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             删除
           </button>
           <button
             type="button"
             onClick={() => void handleSave()}
             disabled={busy}
-            className="rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             保存
           </button>

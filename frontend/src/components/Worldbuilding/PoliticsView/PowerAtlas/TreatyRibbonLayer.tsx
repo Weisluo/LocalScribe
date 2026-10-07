@@ -176,7 +176,7 @@ const TreatyRibbon = ({
         <text x={poleX + 6} y={baseY + 12} className="fill-foreground text-[10px]">
           {ribbon.treaty.name}
         </text>
-        <text x={poleX + 6} y={baseY + 24} className="fill-muted-foreground text-[9px]">
+        <text x={poleX + 6} y={baseY + 24} className="fill-muted-foreground text-[10px]">
           单缔约方 · {TREATY_STATUS_LABELS[ribbon.status]}
         </text>
         {/* 命中区：SVG 根节点 pointer-events-none，这里显式打开 */}
@@ -280,14 +280,14 @@ const TreatyRibbon = ({
         <text x={8} y={18} className="fill-foreground text-[10px]">
           {ribbon.treaty.name} · {ribbon.parties.length} 方
         </text>
-        <text x={8} y={30} className="fill-muted-foreground text-[9px]">
+        <text x={8} y={30} className="fill-muted-foreground text-[10px]">
           {TREATY_STATUS_LABELS[ribbon.status]}
           {ribbon.status === 'expired' && ribbon.treaty.meta.expiresAt
             ? ` · ${ribbon.treaty.meta.expiresAt}`
             : ''}
         </text>
         {breach && (
-          <text x={8} y={40} className="fill-destructive text-[9px]">
+          <text x={8} y={40} className="fill-destructive text-[10px]">
             违约：{breach}
           </text>
         )}
@@ -371,45 +371,45 @@ export const TreatyTermFloat = ({
       role="dialog"
       aria-label={`条约条款 ${ribbon.treaty.name}`}
       data-testid="atlas-treaty-float"
-      className="absolute z-40 flex max-h-60 min-h-40 w-80 flex-col gap-1 overflow-y-auto rounded-lg border border-emerald-600/40 bg-popover/95 p-2 shadow-xl"
+      className="absolute z-40 flex max-h-60 min-h-40 w-80 flex-col gap-2 overflow-y-auto rounded-2xl border border-emerald-600/40 bg-popover/95 p-3 shadow-lg backdrop-blur-sm"
       style={{ left: anchor.x, top: anchor.y }}
     >
       <div className="flex items-center gap-1.5">
         <span className={sectionTitleClass}>{ribbon.treaty.name}</span>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {TREATY_STATUS_LABELS[ribbon.status]} · {ribbon.parties.length} 个缔约方
         </span>
         <button
           type="button"
           aria-label="关闭条款浮层"
           onClick={onClose}
-          className="ml-auto rounded px-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+          className="ml-auto rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
           关闭
         </button>
       </div>
 
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         缔约方：{ribbon.parties.map((party) => party.label).join('、') || '未标注'}
       </div>
       {(meta.effectiveAt || meta.expiresAt) && (
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           生效 {meta.effectiveAt || '未标注'} - 失效 {meta.expiresAt || '未标注'}
         </div>
       )}
-      {meta.summary && <div className="text-[11px] text-foreground">{meta.summary}</div>}
+      {meta.summary && <div className="text-sm leading-relaxed text-foreground">{meta.summary}</div>}
       {meta.breachState && (
-        <div className="rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] text-destructive">
+        <div className="rounded-lg border border-destructive/40 px-2 py-1 text-xs text-destructive">
           违约状态：{meta.breachState}
         </div>
       )}
 
-      <div className="space-y-1 border-t border-border/40 pt-1">
+      <div className="space-y-1.5 border-t border-border/30 pt-2">
         {shown.length === 0 ? (
-          <div className="text-[10px] text-muted-foreground/70">还没有条款</div>
+          <div className="text-xs text-muted-foreground/70">还没有条款</div>
         ) : (
           shown.map((term) => (
-            <div key={term.id} className="text-[11px] text-foreground">
+            <div key={term.id} className="text-xs leading-relaxed text-foreground">
               <span className="font-medium">{term.title}</span>
               {term.content && (
                 <span className="ml-1 text-muted-foreground">{term.content}</span>
@@ -419,22 +419,22 @@ export const TreatyTermFloat = ({
           ))
         )}
         {overflow > 0 && (
-          <div className="text-[10px] text-muted-foreground">等 {terms.length} 条条款</div>
+          <div className="text-xs text-muted-foreground">等 {terms.length} 条条款</div>
         )}
       </div>
 
-      <div className="mt-auto flex items-center gap-1.5 border-t border-border/40 pt-1">
+      <div className="mt-auto flex items-center gap-2 border-t border-border/30 pt-2">
         <button
           type="button"
           onClick={onOpenTreatyBook}
-          className="rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+          className="rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
           在条约簿中编辑
         </button>
         <button
           type="button"
           onClick={() => onFocusTreaty(ribbon.treaty.id)}
-          className="rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+          className="rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
           打开条约详情
         </button>

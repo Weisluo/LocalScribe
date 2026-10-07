@@ -23,7 +23,7 @@ import { emblemPaletteOf } from '../config';
 import type { RaceFormState } from './raceFormState';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-[border-color,box-shadow]';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 export interface RaceFormFieldsProps {
   state: RaceFormState;
@@ -69,7 +69,7 @@ export const RaceFormFields = ({
   return (
     <div className="space-y-3" onKeyDown={handleKeys}>
       <label className="block space-y-0.5">
-        <span className="text-[11px] font-medium text-foreground">名称</span>
+        <span className="text-xs font-medium text-foreground">名称</span>
         <input
           type="text"
           value={state.name}
@@ -78,17 +78,17 @@ export const RaceFormFields = ({
           aria-label="名称"
           className={FIELD_CLASS}
         />
-        {nameMissing && <span className="text-[10px] text-muted-foreground">名称必填</span>}
+        {nameMissing && <span className="text-xs text-muted-foreground">名称必填</span>}
       </label>
 
       {parentName && (
-        <div className="text-[11px] text-muted-foreground" data-testid="subrace-parent">
+        <div className="text-xs text-muted-foreground" data-testid="subrace-parent">
           所属主条目：{parentName}
         </div>
       )}
 
       <label className="block space-y-0.5">
-        <span className="text-[11px] font-medium text-foreground">一句话特征</span>
+        <span className="text-xs font-medium text-foreground">一句话特征</span>
         <input
           type="text"
           value={state.tagline}
@@ -100,7 +100,7 @@ export const RaceFormFields = ({
       </label>
 
       <div className="space-y-1">
-        <span className="text-[11px] font-medium text-foreground">代表色</span>
+        <span className="text-xs font-medium text-foreground">代表色</span>
         <div className="flex flex-wrap items-center gap-1.5" data-testid="emblem-palette">
           {palette.map((color, index) => (
             <button
@@ -111,7 +111,7 @@ export const RaceFormFields = ({
               aria-pressed={state.emblemColor === color}
               onClick={() => onChange({ emblemColor: color })}
               style={{ backgroundColor: color }}
-              className={`h-6 w-6 rounded-md border-2 transition-[border-color,transform] motion-reduce:transition-none ${
+              className={`h-7 w-7 rounded-lg border-2 transition-[border-color,transform] motion-reduce:transition-none ${
                 state.emblemColor === color
                   ? 'border-foreground'
                   : 'border-transparent hover:border-border'
@@ -130,7 +130,7 @@ export const RaceFormFields = ({
       </div>
 
       <label className="block space-y-0.5">
-        <span className="text-[11px] font-medium text-foreground">Lucide 图标名</span>
+        <span className="text-xs font-medium text-foreground">Lucide 图标名</span>
         <input
           type="text"
           value={state.emblemIcon}
@@ -145,7 +145,7 @@ export const RaceFormFields = ({
         type="button"
         onClick={() => setMoreOpen((value) => !value)}
         aria-expanded={moreOpen}
-        className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+        className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         {moreOpen ? (
           <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -156,10 +156,10 @@ export const RaceFormFields = ({
       </button>
 
       {moreOpen && (
-        <div className="space-y-2 rounded-md border border-border/50 p-2" data-testid="race-form-more">
+        <div className="space-y-3 rounded-xl border border-border/40 bg-muted/20 p-3" data-testid="race-form-more">
           {kindOptions.length > 1 && (
             <label className="block space-y-0.5">
-              <span className="text-[11px] font-medium text-foreground">类型</span>
+              <span className="text-xs font-medium text-foreground">类型</span>
               <select
                 value={state.kind}
                 onChange={(event) => onChange({ kind: event.target.value })}
@@ -176,7 +176,7 @@ export const RaceFormFields = ({
           )}
 
           <label className="block space-y-0.5">
-            <span className="text-[11px] font-medium text-foreground">特征标签（逗号分隔）</span>
+            <span className="text-xs font-medium text-foreground">特征标签（逗号分隔）</span>
             <input
               type="text"
               value={state.traits}
@@ -188,7 +188,7 @@ export const RaceFormFields = ({
           </label>
 
           <label className="block space-y-0.5">
-            <span className="text-[11px] font-medium text-foreground">
+            <span className="text-xs font-medium text-foreground">
               居住地文本（地图未接入时回退展示）
             </span>
             <input
@@ -201,7 +201,7 @@ export const RaceFormFields = ({
           </label>
 
           <label className="block space-y-0.5">
-            <span className="text-[11px] font-medium text-foreground">起源文本</span>
+            <span className="text-xs font-medium text-foreground">起源文本</span>
             <input
               type="text"
               value={state.originText}
@@ -213,7 +213,7 @@ export const RaceFormFields = ({
 
           {statuses.length > 0 && (
             <label className="block space-y-0.5">
-              <span className="text-[11px] font-medium text-foreground">状态</span>
+              <span className="text-xs font-medium text-foreground">状态</span>
               <select
                 value={state.status}
                 onChange={(event) => onChange({ status: event.target.value })}
@@ -232,7 +232,7 @@ export const RaceFormFields = ({
 
           {customFields.length > 0 && (
             <div className="space-y-1">
-              <span className="text-[11px] font-medium text-foreground">自定义字段</span>
+              <span className="text-xs font-medium text-foreground">自定义字段</span>
               <CustomFieldRenderer
                 fields={customFields}
                 values={state.customFields}
@@ -248,11 +248,11 @@ export const RaceFormFields = ({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
+      <div className="flex items-center justify-end gap-2 border-t border-border/30 pt-3">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+          className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
         >
           取消
         </button>
@@ -260,7 +260,7 @@ export const RaceFormFields = ({
           type="button"
           onClick={onSubmit}
           disabled={submitting || disabled}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
         >
           {submitLabel}
         </button>

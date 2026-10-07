@@ -16,7 +16,7 @@ import { raceRelationKinds, relationKindOfEdge } from '../types';
 import { toneColor } from '../components/toneColor';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 export interface EdgeMetaModalProps {
   open: boolean;
@@ -79,13 +79,13 @@ export const EdgeMetaModal = ({
 
   return (
     <Modal isOpen={open} onClose={onClose} title="编辑跨族关系" size="md">
-      <div className="space-y-3" data-testid="edge-meta-form">
-        <div className="rounded-md border border-border/50 bg-muted/20 px-2 py-1.5 text-[11px] text-muted-foreground">
+      <div className="space-y-4" data-testid="edge-meta-form">
+        <div className="rounded-xl border border-border/40 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           {link ? `${resolveName(link.source)} — ${resolveName(link.target)}` : '未选择关联'}
         </div>
 
         <label className="block space-y-0.5">
-          <span className="text-[11px] font-medium text-foreground">关系语义</span>
+          <span className="text-xs font-medium text-foreground">关系语义</span>
           <select
             value={relationKind}
             onChange={(event) => setRelationKind(event.target.value)}
@@ -100,11 +100,11 @@ export const EdgeMetaModal = ({
           </select>
         </label>
 
-        <div className="flex flex-wrap gap-1" data-testid="edge-style-preview">
+        <div className="flex flex-wrap gap-1.5" data-testid="edge-style-preview">
           {relationKinds.map((def) => (
             <span
               key={def.id}
-              className="flex items-center gap-1 rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-xs text-muted-foreground"
             >
               <span
                 className="h-1.5 w-1.5 rounded-full"
@@ -118,7 +118,7 @@ export const EdgeMetaModal = ({
         </div>
 
         <label className="block space-y-0.5">
-          <span className="text-[11px] font-medium text-foreground">备注</span>
+          <span className="text-xs font-medium text-foreground">备注</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -130,7 +130,7 @@ export const EdgeMetaModal = ({
 
         <div className="flex gap-2">
           <label className="flex-1 space-y-0.5">
-            <span className="text-[11px] font-medium text-foreground">起始</span>
+            <span className="text-xs font-medium text-foreground">起始</span>
             <input
               type="text"
               value={start}
@@ -140,7 +140,7 @@ export const EdgeMetaModal = ({
             />
           </label>
           <label className="flex-1 space-y-0.5">
-            <span className="text-[11px] font-medium text-foreground">结束</span>
+            <span className="text-xs font-medium text-foreground">结束</span>
             <input
               type="text"
               value={end}
@@ -151,13 +151,13 @@ export const EdgeMetaModal = ({
           </label>
         </div>
 
-        {error && <div className="text-[11px] text-destructive">{error}</div>}
+        {error && <div className="text-sm text-destructive">{error}</div>}
 
-        <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
+        <div className="flex items-center justify-end gap-2 border-t border-border/30 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
           </button>
@@ -165,7 +165,7 @@ export const EdgeMetaModal = ({
             type="button"
             onClick={() => void handleSave()}
             disabled={updateLink.isPending || !link}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             保存
           </button>

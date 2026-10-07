@@ -90,10 +90,10 @@ export const SubraceFormModal = ({
       title={node ? '编辑支系' : '添加支系'}
       size="md"
     >
-      <div className="space-y-2" data-testid="subrace-form">
+      <div className="space-y-3" data-testid="subrace-form">
         {error && (
           <div
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+            className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             data-testid="subrace-form-error"
           >
             {error}

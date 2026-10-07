@@ -4,9 +4,13 @@
  * 左栏体系列表：名称、阶位数量、可选体系色点、关联计数徽章；
  * 顶部搜索框（查询由 index 统一 200ms 防抖，覆盖体系名 / 一句话 / 阶位名 / 节点名），
  * `+ 新建体系` 固定在底部。数据由 index 过滤后传入（含「筛选无结果」分支）。
+ *
+ * 视觉对齐 ui_style_alignment：搜索框 §4.5、列表行 §4.8（实体层 violet）、入口按钮 §4.2。
+ * 列表行不做交错入场（§5：列表行只保留 hover 反馈）。
  */
 
 import type { Ref } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Layers, Plus, Search, SearchX, X } from 'lucide-react';
 
 import { EmptyState } from '../../shared/EmptyState';
@@ -47,12 +51,12 @@ export const SystemList = ({
   className = '',
 }: SystemListProps) => (
   <div
-    className={`flex min-h-0 flex-col gap-2 p-2 ${className}`}
+    className={`flex min-h-0 flex-col gap-3 p-3 ${className}`}
     data-testid="system-list"
   >
-    <div className="relative shrink-0">
+    <div className="relative group shrink-0">
       <Search
-        className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
         aria-hidden="true"
       />
       <input
@@ -62,21 +66,26 @@ export const SystemList = ({
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder="搜索体系 / 一句话 / 阶位 / 节点"
         aria-label="搜索体系"
-        className="w-full rounded-md border border-border/50 bg-background py-1.5 pl-7 pr-7 text-xs text-foreground transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+        className="w-full rounded-xl border border-border/40 bg-muted/30 py-2 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
       />
-      {query && (
-        <button
-          type="button"
-          aria-label="清空搜索"
-          onClick={() => onQueryChange('')}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <X className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      )}
+      <AnimatePresence>
+        {query && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            aria-label="清空搜索"
+            onClick={() => onQueryChange('')}
+            className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition-colors hover:bg-muted"
+          >
+            <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
 
-    <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+    <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
       {systems.length === 0 ? (
         query ? (
           <EmptyState
@@ -108,10 +117,10 @@ export const SystemList = ({
               data-system-id={system.id}
               aria-current={selected ? 'true' : undefined}
               onClick={() => onSelect(system.id)}
-              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors motion-reduce:transition-none ${
+              className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-all duration-200 motion-reduce:transition-none ${
                 selected
-                  ? 'border-violet-500/60 bg-violet-500/10'
-                  : 'border-transparent hover:bg-accent/30'
+                  ? 'border-violet-500/40 bg-violet-500/10 shadow-sm'
+                  : 'border-transparent hover:border-border/50 hover:bg-accent/10'
               }`}
             >
               {dot && (
@@ -121,14 +130,14 @@ export const SystemList = ({
                   aria-hidden="true"
                 />
               )}
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                 {system.name}
               </span>
               <span className="shrink-0 text-[10px] text-muted-foreground">
                 {system.tiers.length} {tierTerm}
               </span>
               <span
-                className="shrink-0 rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground"
+                className="shrink-0 rounded-full border border-border/50 bg-background/60 px-1.5 text-[10px] text-muted-foreground"
                 title="关联计数"
               >
                 {counts.countOf(system.ref)}
@@ -139,13 +148,15 @@ export const SystemList = ({
       )}
     </div>
 
-    <button
+    <motion.button
       type="button"
       onClick={onCreate}
       disabled={!canEdit}
-      className="mt-auto flex shrink-0 items-center justify-center gap-1 rounded-lg border border-dashed border-border/70 px-2 py-1.5 text-xs text-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      className="mt-auto flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
     >
-      <Plus className="h-3.5 w-3.5" aria-hidden="true" />+ 新建体系
-    </button>
+      <Plus className="h-4 w-4" aria-hidden="true" />+ 新建体系
+    </motion.button>
   </div>
 );

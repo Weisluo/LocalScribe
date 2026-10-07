@@ -47,18 +47,18 @@ export const LineageFallback = ({
       data-kind={kind}
       aria-pressed={id === selectedId}
       onClick={() => onSelect(id)}
-      className={`flex w-full items-center gap-2 rounded-md border px-2 py-1 text-left text-[11px] transition-colors motion-reduce:transition-none ${
+      className={`flex w-full items-center gap-2 rounded-xl border px-3.5 py-2 text-left text-xs shadow-sm transition-all duration-200 motion-reduce:transition-none ${
         id === selectedId
-          ? 'border-primary bg-primary/10'
-          : 'border-border/40 hover:bg-accent/30'
+          ? 'border-teal-500 bg-teal-500/10 ring-1 ring-teal-500/40'
+          : 'border-border/50 hover:border-teal-500/30 hover:bg-accent/10'
       }`}
     >
       <span className="min-w-0 flex-1 truncate text-foreground">{name}</span>
-      <span className="shrink-0 rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+      <span className="shrink-0 rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs text-teal-700 dark:text-teal-300">
         {kindLabelOf(config, kind, RACE_KINDS)}
       </span>
-      <span className="shrink-0 text-[10px] text-muted-foreground">支系 {subraceCount}</span>
-      <span className="flex shrink-0 items-center gap-0.5 text-[10px] text-muted-foreground">
+      <span className="shrink-0 text-xs text-muted-foreground">支系 {subraceCount}</span>
+      <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
         <Link2 className="h-3 w-3" aria-hidden="true" />
         {relationCounts.get(id) ?? 0}
       </span>
@@ -66,16 +66,16 @@ export const LineageFallback = ({
   );
 
   return (
-    <div className="space-y-3" data-testid="lineage-fallback">
-      <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/20 px-2 py-1.5 text-[11px] text-muted-foreground">
+    <div className="space-y-4" data-testid="lineage-fallback">
+      <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">
         <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         节点 {lineage.nodeCount} 个，超过 {RACE_LINEAGE_LIMIT} 个不再画树，改为按主条目分组的列表。
       </div>
       {lineage.roots.map((root) => (
-        <div key={root.id} className="space-y-1">
+        <div key={root.id} className="space-y-1.5">
           {row(root.id, root.name, root.kind, root.children.length, false)}
           {root.children.length > 0 && (
-            <div className="ml-3 space-y-1 border-l border-border/40 pl-2">
+            <div className="ml-3 space-y-1.5 border-l border-border/40 pl-3">
               {root.children.map((child) =>
                 row(child.id, child.name, child.kind, child.children.length, true)
               )}
@@ -88,7 +88,7 @@ export const LineageFallback = ({
               <button
                 type="button"
                 onClick={() => onAddSubrace(root.id)}
-                className="ml-3 text-[10px] text-muted-foreground transition-colors hover:text-primary"
+                className="ml-3 text-xs text-muted-foreground transition-colors hover:text-primary"
               >
                 还没有支系，添加支系
               </button>

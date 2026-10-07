@@ -10,10 +10,12 @@
  * - 布局只在 structure / sandbox 加载（sketch 档父级不渲染本组件）。
  */
 
+import { motion } from 'framer-motion';
 import { GitMerge, Plus } from 'lucide-react';
 
 import type { EntityRef, WorldLink } from '@/services/worldbuildingApi';
 import { kindLabelOf, type ModuleConfig } from '../../shared/moduleConfig';
+import { viewSpring } from '../../shared/motion';
 import {
   RACE_KINDS,
   canOwnSubrace,
@@ -59,30 +61,33 @@ const LineageNode = ({
   onSelect: (nodeId: string) => void;
   onAddSubrace?: (parentId: string) => void;
 }) => (
-  <div className="flex flex-col items-center gap-1">
-    <button
+  <div className="flex flex-col items-center gap-1.5">
+    <motion.button
       type="button"
       data-testid="lineage-node"
       data-node-id={node.id}
       data-kind={node.kind}
       aria-pressed={selected}
       onClick={() => onSelect(node.id)}
-      className={`min-w-[160px] max-w-[220px] truncate rounded-lg border px-3 py-1.5 text-sm transition-colors motion-reduce:transition-none ${
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      transition={viewSpring}
+      className={`min-w-[160px] max-w-[220px] truncate rounded-xl border px-3.5 py-2 text-sm font-medium shadow-sm transition-all duration-300 motion-reduce:transition-none ${
         selected
-          ? 'border-primary bg-primary/10 text-foreground'
-          : 'border-border/60 bg-card/40 text-foreground hover:border-primary/50'
+          ? 'border-teal-500 bg-teal-500/10 text-foreground ring-1 ring-teal-500/40'
+          : 'border-border/50 bg-card/50 text-foreground hover:border-teal-500/30 hover:shadow-lg'
       }`}
     >
       {node.name}
-      <span className="ml-1.5 text-[10px] text-muted-foreground">
+      <span className="ml-1.5 text-xs font-normal text-muted-foreground">
         {kindLabelOf(config, node.kind, RACE_KINDS)}
       </span>
-    </button>
+    </motion.button>
     {onAddSubrace && canOwnSubrace(config, node.kind, RACE_KINDS) && (
       <button
         type="button"
         onClick={() => onAddSubrace(node.id)}
-        className="flex items-center gap-0.5 rounded px-1 text-[10px] text-muted-foreground transition-colors hover:text-primary"
+        className="flex items-center gap-0.5 rounded-lg px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-primary"
       >
         <Plus className="h-3 w-3" aria-hidden="true" />
         支系
@@ -145,22 +150,25 @@ export const LineageTree = ({
                 </div>
               </>
             ) : (
-              <span className="pt-1 text-[10px] text-muted-foreground/60">还没有支系</span>
+              <span className="pt-1.5 text-xs text-muted-foreground/60">还没有支系</span>
             )}
           </div>
         ))}
       </div>
 
-      <div className="space-y-1.5 border-t border-border/40 pt-2" data-testid="lineage-edges">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+      <div
+        className="space-y-3 rounded-xl border border-border/40 bg-card/30 p-4"
+        data-testid="lineage-edges"
+      >
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <GitMerge className="h-3.5 w-3.5" aria-hidden="true" />
           跨族关系
-          <span className="rounded-full bg-muted/40 px-1.5 text-[10px]">{edges.length}</span>
+          <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px]">{edges.length}</span>
           {onAddRelation && (
             <button
               type="button"
               onClick={onAddRelation}
-              className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+              className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
             >
               <Plus className="h-3 w-3" aria-hidden="true" />
               建立关系
@@ -168,9 +176,11 @@ export const LineageTree = ({
           )}
         </div>
         {edges.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground/60">还没有跨族关系</div>
+          <div className="rounded-xl border-2 border-dashed border-border/40 px-3 py-4 text-center text-xs text-muted-foreground">
+            还没有跨族关系
+          </div>
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-1.5">
             {edges.map((edge) => {
               const def = relationKindDef(edge.relationKind, relationKinds);
               return (
@@ -182,7 +192,7 @@ export const LineageTree = ({
                   data-relation-kind={edge.relationKind}
                   onClick={() => onEditEdge(edge.link)}
                   aria-label={`编辑关系 ${def.label}`}
-                  className="flex w-full items-center gap-2 rounded-md border border-border/40 px-2 py-1 text-left text-[11px] transition-colors hover:bg-accent/30"
+                  className="flex w-full items-center gap-2 rounded-lg border border-border/40 px-3 py-2 text-left text-xs transition-all duration-200 hover:border-border/70 hover:bg-accent/10"
                 >
                   <span className="min-w-0 max-w-[35%] truncate text-foreground">
                     {refs.resolveName(edge.link.source)}
@@ -205,7 +215,7 @@ export const LineageTree = ({
             })}
           </div>
         )}
-        <div className="pt-1 text-[10px] text-muted-foreground/70">
+        <div className="pt-0.5 text-xs text-muted-foreground/70">
           图例：实线 = 父子层级；双线 = 血缘 / 渊源；虚线 = 敌对 / 其他关系语义
         </div>
       </div>

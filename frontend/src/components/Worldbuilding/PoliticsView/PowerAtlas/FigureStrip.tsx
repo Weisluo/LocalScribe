@@ -94,7 +94,7 @@ export const FigureStrip = ({
         })}
         {overflow > 0 && (
           <span
-            className="text-[10px] text-muted-foreground"
+            className="text-xs leading-tight text-muted-foreground"
             title={rest
               .slice(max)
               .map((figure) => resolveFigureName(figure, refs))
@@ -104,7 +104,7 @@ export const FigureStrip = ({
           </span>
         )}
         {rest.length === 0 && (
-          <span className="text-[10px] text-muted-foreground/70">暂无关联人物</span>
+          <span className="text-xs leading-tight text-muted-foreground/70">暂无关联人物</span>
         )}
       </div>
 
@@ -125,7 +125,7 @@ export const FigureStrip = ({
             </span>
           ))}
           {bandOverflow > 0 && (
-            <span className="text-[10px] text-muted-foreground">等 {tenureBands.length} 项</span>
+            <span className="text-xs leading-tight text-muted-foreground">等 {tenureBands.length} 项</span>
           )}
         </div>
       )}

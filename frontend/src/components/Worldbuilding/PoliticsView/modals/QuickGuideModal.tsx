@@ -48,7 +48,7 @@ export const QuickGuideModal = ({ open, onClose, onCreatePolity }: QuickGuideMod
   return (
     <Modal isOpen={open} onClose={onClose} title="三步得到一张会生长的版图" size="md">
       <div className="space-y-3" data-testid="politics-guide">
-        <div role="tablist" aria-label="引导步骤" className="flex items-center gap-1">
+        <div role="tablist" aria-label="引导步骤" className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1">
           {STEPS.map((item, index) => (
             <button
               key={item.title}
@@ -56,25 +56,25 @@ export const QuickGuideModal = ({ open, onClose, onCreatePolity }: QuickGuideMod
               role="tab"
               aria-selected={index === step}
               onClick={() => setStep(index)}
-              className={`rounded-md px-2 py-0.5 text-[11px] transition-colors ${
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                 index === step
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
             >
               {index + 1}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground">
+          <span className="ml-auto text-xs text-muted-foreground">
             示例只是文案，不会预填任何内容
           </span>
         </div>
 
-        <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/20 p-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm">
           <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div className="min-w-0 space-y-1">
-            <div className="text-xs font-medium text-foreground">{current.title}</div>
-            <p className="text-[11px] text-muted-foreground">{current.description}</p>
+            <div className="text-sm font-semibold text-foreground">{current.title}</div>
+            <p className="text-sm leading-relaxed text-muted-foreground">{current.description}</p>
           </div>
         </div>
 
@@ -82,7 +82,7 @@ export const QuickGuideModal = ({ open, onClose, onCreatePolity }: QuickGuideMod
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
           >
             跳过引导
           </button>
@@ -90,7 +90,7 @@ export const QuickGuideModal = ({ open, onClose, onCreatePolity }: QuickGuideMod
             type="button"
             onClick={() => setStep((prev) => Math.max(prev - 1, 0))}
             disabled={step === 0}
-            className="rounded-md border border-border px-2.5 py-1.5 text-[11px] text-foreground transition-colors hover:bg-accent/30 disabled:opacity-40"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-40"
           >
             上一步
           </button>
@@ -98,7 +98,7 @@ export const QuickGuideModal = ({ open, onClose, onCreatePolity }: QuickGuideMod
             <button
               type="button"
               onClick={() => setStep((prev) => Math.min(prev + 1, STEPS.length - 1))}
-              className="rounded-md border border-border px-2.5 py-1.5 text-[11px] text-foreground transition-colors hover:bg-accent/30"
+              className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
               下一步
             </button>
@@ -108,7 +108,7 @@ export const QuickGuideModal = ({ open, onClose, onCreatePolity }: QuickGuideMod
               type="button"
               onClick={onCreatePolity}
               data-testid="politics-guide-create"
-              className="ml-auto rounded-md bg-primary px-3 py-1.5 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+              className="ml-auto rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
             >
               创建第一个政权
             </button>

@@ -25,8 +25,12 @@ import {
 
 export type { CustomFieldValues };
 
+/** 输入框配方（ui_style_alignment §3.1 / §4.5）：rounded-xl + muted 底 + primary 焦点环 */
 const FIELD_CLASS =
-  'w-full bg-background border border-border/50 px-2 py-1 rounded-md text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 transition-[border-color,box-shadow]';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
+
+/** 字段名标签：面板正文用 text-xs（§3.2） */
+const FIELD_LABEL_CLASS = 'text-xs font-medium text-muted-foreground';
 
 /** 字段名（必填带 * 标记）：只读与可编辑两条分支共用 */
 const FieldLabel = ({ field }: { field: CustomFieldDef }) => (
@@ -106,7 +110,7 @@ export const CustomFieldRenderer = ({
       if (selected.length === 0 && !showEmpty) return null;
       return (
         <div key={field.id} className="space-y-0.5" data-field-id={field.id}>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+          <div className={FIELD_LABEL_CLASS}>
             <FieldLabel field={field} />
           </div>
           {selected.length === 0 ? (
@@ -130,7 +134,7 @@ export const CustomFieldRenderer = ({
     if (empty && !showEmpty) return null;
     return (
       <div key={field.id} className="space-y-0.5" data-field-id={field.id}>
-        <div className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+        <div className={FIELD_LABEL_CLASS}>
           <FieldLabel field={field} />
         </div>
         {empty ? (
@@ -153,7 +157,7 @@ export const CustomFieldRenderer = ({
             src={toText(value)}
             alt={field.label}
             loading="lazy"
-            className="max-h-40 rounded-md border border-border/50 object-cover"
+            className="max-h-40 rounded-xl border border-border/50 object-cover"
           />
         ) : (
           <div className="whitespace-pre-wrap text-xs text-foreground">{toText(value)}</div>
@@ -170,7 +174,7 @@ export const CustomFieldRenderer = ({
       const options = field.options ?? [];
       return (
         <div key={field.id} className="block space-y-0.5" data-field-id={field.id}>
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+          <span className={FIELD_LABEL_CLASS}>
             <FieldLabel field={field} />
           </span>
           <div className="flex flex-wrap gap-2" data-testid="custom-field-multiselect">
@@ -203,7 +207,7 @@ export const CustomFieldRenderer = ({
     }
     return (
       <label key={field.id} className="block space-y-0.5" data-field-id={field.id}>
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+        <span className={FIELD_LABEL_CLASS}>
           <FieldLabel field={field} />
         </span>
         {field.type === 'textarea' ? (
@@ -259,7 +263,7 @@ export const CustomFieldRenderer = ({
       {groupCustomFields(visibleFields).map((group, index) => (
         <div key={group.group ?? `group-${index}`} className="space-y-2">
           {group.group && (
-            <div className="text-[11px] font-medium text-foreground">{group.group}</div>
+            <div className="text-sm font-semibold text-foreground">{group.group}</div>
           )}
           {group.fields.map((field) =>
             readOnly ? renderReadOnly(field) : renderEditable(field)
@@ -267,7 +271,7 @@ export const CustomFieldRenderer = ({
         </div>
       ))}
       {missingRequired.length > 0 && (
-        <p className="text-[10px] text-destructive" data-testid="custom-field-required-hint">
+        <p className="text-xs text-destructive" data-testid="custom-field-required-hint">
           必填未填写：{missingRequired.join('、')}
         </p>
       )}

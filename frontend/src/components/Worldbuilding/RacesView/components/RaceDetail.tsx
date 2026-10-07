@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -47,6 +48,7 @@ import {
   type CustomFieldValue,
   type ModuleConfig,
 } from '../../shared/moduleConfig';
+import { viewSpring } from '../../shared/motion';
 import { useInView } from '../../shared/useVirtualList';
 import { emblemColorOf, raceAtlasItems } from '../config';
 import {
@@ -91,21 +93,24 @@ const CHIP_GROUPS: {
 const NotableFigureRow = ({ name, onOpen }: { name: string; onOpen: () => void }) => {
   const { ref, inView } = useInView<HTMLButtonElement>();
   return (
-    <button
+    <motion.button
       ref={ref}
       type="button"
       data-testid="notable-figure-row"
       onClick={onOpen}
       title={name}
-      className="flex w-16 flex-col items-center gap-1 rounded-md p-1 transition-colors hover:bg-accent/30"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      transition={viewSpring}
+      className="flex w-16 flex-col items-center gap-1 rounded-xl p-1.5 transition-colors hover:bg-accent/10"
     >
       {inView ? (
         <Emblem name={name} color={toneColor('slate')} size={32} />
       ) : (
         <span className="h-8 w-8 rounded-lg bg-muted/30" aria-hidden="true" />
       )}
-      <span className="w-full truncate text-center text-[11px] text-foreground">{name}</span>
-    </button>
+      <span className="w-full truncate text-center text-xs text-foreground">{name}</span>
+    </motion.button>
   );
 };
 
@@ -275,24 +280,24 @@ export const RaceDetail = ({
         data-testid="atlas-group"
         data-group={item.name}
       >
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-foreground">{item.label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-foreground">{item.label}</span>
           {races.canEdit && !isDraft && (
             <button
               type="button"
               aria-label={`编辑${item.label}`}
               onClick={() => setDraft({ name: item.name, values: { ...(values ?? {}) } })}
-              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
             >
               <Pencil className="h-3 w-3" aria-hidden="true" />
             </button>
           )}
           {isDraft && (
-            <span className="ml-auto flex items-center gap-1">
+            <span className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setDraft(null)}
-                className="rounded-md px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+                className="rounded-lg px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
               >
                 取消
               </button>
@@ -300,7 +305,7 @@ export const RaceDetail = ({
                 type="button"
                 onClick={() => void commitDraft()}
                 disabled={races.isSaving}
-                className="rounded-md bg-primary px-2 py-0.5 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 保存
               </button>
@@ -317,7 +322,7 @@ export const RaceDetail = ({
               type="button"
               data-testid="atlas-ghost"
               onClick={() => setDraft({ name: item.name, values: {} })}
-              className="rounded-md border border-dashed border-border/60 px-2 py-1 text-[11px] text-muted-foreground/70 transition-colors hover:border-primary/50 hover:text-primary"
+              className="rounded-lg border-2 border-dashed border-border/40 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/5 hover:text-primary"
             >
               {ghostLabel}
             </button>
@@ -349,25 +354,25 @@ export const RaceDetail = ({
       title="删除种族条目"
       size="md"
     >
-      <div className="space-y-3" data-testid="race-delete-confirm">
-        <p className="text-xs text-foreground">确认删除「{node.name}」？此操作不可撤销。</p>
+      <div className="space-y-4" data-testid="race-delete-confirm">
+        <p className="text-sm text-foreground">确认删除「{node.name}」？此操作不可撤销。</p>
         {subraces.length > 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {subraces.length} 个支系将随主条目一并删除：
             {subraces.map((child) => child.name).join('、')}
           </p>
         )}
-        <div className="space-y-1 rounded-md border border-border/50 bg-muted/20 p-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-foreground">
+        <div className="space-y-1.5 rounded-xl border border-border/40 bg-muted/20 p-3">
+          <div className="flex items-center gap-1.5 text-xs text-foreground">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden="true" />
             以下 {races.linksOfNode(node.id)} 条关联将失效或被级联删除
           </div>
           {relatedRows.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground">当前没有关联</div>
+            <div className="text-xs text-muted-foreground">当前没有关联</div>
           ) : (
-            <ul className="space-y-0.5">
+            <ul className="space-y-1">
               {relatedRows.map(({ key, link, counterpart }) => (
-                <li key={key} className="flex items-center gap-1.5 text-[11px]">
+                <li key={key} className="flex items-center gap-1.5 text-xs">
                   <span className="shrink-0 text-muted-foreground">
                     {linkDisplayLabel(link, entityRef, registry)}
                   </span>
@@ -383,7 +388,7 @@ export const RaceDetail = ({
           <button
             type="button"
             onClick={() => setConfirmDelete(false)}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
           </button>
@@ -397,7 +402,7 @@ export const RaceDetail = ({
                 // 不重复提示，也不让异常逃逸成 unhandledrejection
               });
             }}
-            className="rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+            className="rounded-lg bg-destructive px-3.5 py-1.5 text-sm font-medium text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90 disabled:opacity-50"
           >
             确认删除
           </button>
@@ -411,27 +416,29 @@ export const RaceDetail = ({
       data-testid="race-detail"
       data-race-id={node.id}
       data-kind={node.kind}
-      className="flex h-full min-h-0 flex-col overflow-y-auto rounded-lg border border-border/50 bg-card/20 p-3"
+      className="flex h-full min-h-0 flex-col overflow-y-auto rounded-2xl border border-border/50 bg-card/40 p-5 shadow-sm backdrop-blur-sm"
     >
-      <header className="space-y-2">
-        <div className="flex items-start gap-2">
+      <header className="space-y-3 border-b border-border/30 pb-4">
+        <div className="flex items-start gap-3">
           <button
             type="button"
             onClick={onBack}
             aria-label="返回图鉴"
-            className="mt-0.5 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <Emblem name={node.name} icon={icon} color={color} size={40} />
           <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <h2 className="truncate text-xl font-semibold text-foreground">{node.name}</h2>
-              <span className="rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
+                {node.name}
+              </h2>
+              <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-700 dark:text-teal-300">
                 {kindLabelOf(config, node.kind, RACE_KINDS)}
               </span>
               {statusLabel && (
-                <span className="flex items-center gap-1 rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-xs text-muted-foreground">
                   <span
                     className="h-1.5 w-1.5 rounded-full"
                     style={{ backgroundColor: toneColor(statusColor) }}
@@ -441,14 +448,16 @@ export const RaceDetail = ({
                 </span>
               )}
             </div>
-            {tagline && <p className="text-sm font-normal text-muted-foreground">{tagline}</p>}
+            {tagline && (
+              <p className="text-xs leading-relaxed text-muted-foreground">{tagline}</p>
+            )}
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => onEdit(node)}
               aria-label="编辑条目"
-              className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
               <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -456,7 +465,7 @@ export const RaceDetail = ({
               type="button"
               onClick={() => setConfirmDelete(true)}
               aria-label="删除条目"
-              className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
+              className="rounded-lg border border-destructive/40 bg-destructive/10 p-2 text-destructive transition-all duration-200 hover:border-destructive/60 hover:bg-destructive/20"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -464,12 +473,12 @@ export const RaceDetail = ({
         </div>
 
         {node.meta.traits.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {node.meta.traits.map((trait, index) => (
               <span
                 // 标签是自由文本，可能重复：key 用「值 + 下标」保持稳定唯一
                 key={`${trait}-${index}`}
-                className="rounded-full border border-border/50 bg-muted/20 px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+                className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-700 dark:text-teal-300"
               >
                 {trait}
               </span>
@@ -477,7 +486,7 @@ export const RaceDetail = ({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
           <span>居住地：{habitat}</span>
           <span>起源：{origin}</span>
           <span className="flex items-center gap-1">
@@ -487,27 +496,27 @@ export const RaceDetail = ({
         </div>
       </header>
 
-      <div className="mt-3 grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-4 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           <div
-            className="space-y-3 rounded-lg border border-border/50 p-2.5"
+            className="space-y-4 rounded-xl border border-border/40 bg-card/30 p-4"
             data-testid="atlas-panel"
           >
-            <div className="text-xs font-medium text-muted-foreground">档案</div>
+            <div className="text-xs font-semibold text-muted-foreground">档案</div>
             {raceAtlasItems().map(renderAtlasGroup)}
           </div>
 
           {customFields.length > 0 && (
-            <div className="space-y-2 rounded-lg border border-border/50 p-2.5">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-muted-foreground">自定义字段</span>
+            <div className="space-y-3 rounded-xl border border-border/40 bg-card/30 p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-muted-foreground">自定义字段</span>
                 {/* 有未保存修改才出现取消 / 保存，与档案字段组的草稿态一致 */}
                 {races.canEdit && customDirty && (
-                  <span className="ml-auto flex items-center gap-1">
+                  <span className="ml-auto flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setCustomDraft(serverCustomFields)}
-                      className="rounded-md px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+                      className="rounded-lg px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
                     >
                       取消
                     </button>
@@ -515,7 +524,7 @@ export const RaceDetail = ({
                       type="button"
                       onClick={() => void commitCustomDraft()}
                       disabled={races.isSaving}
-                      className="rounded-md bg-primary px-2 py-0.5 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                      className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                     >
                       保存
                     </button>
@@ -538,25 +547,27 @@ export const RaceDetail = ({
           )}
 
           <div
-            className="space-y-2 rounded-lg border border-border/50 p-2.5"
+            className="space-y-3 rounded-xl border border-border/40 bg-card/30 p-4"
             data-testid="notable-figures"
           >
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
               代表人物
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-primary transition-colors hover:bg-primary/10"
+                className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
               >
                 <Plus className="h-3 w-3" aria-hidden="true" />
                 从角色中选择
               </button>
             </div>
             {notableLinks.length === 0 ? (
-              <div className="text-[11px] text-muted-foreground/60">未关联代表人物</div>
+              <div className="rounded-xl border-2 border-dashed border-border/40 px-3 py-4 text-center text-xs text-muted-foreground">
+                未关联代表人物
+              </div>
             ) : (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {notableLinks.map((link) => (
                   <NotableFigureRow
                     key={link.id}
@@ -569,17 +580,19 @@ export const RaceDetail = ({
           </div>
 
           <div
-            className="space-y-2 rounded-lg border border-border/50 p-2.5"
+            className="space-y-3 rounded-xl border border-border/40 bg-card/30 p-4"
             data-testid="subrace-area"
           >
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               支系
-              <span className="rounded-full bg-muted/40 px-1.5 text-[10px]">{subraces.length}</span>
+              <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+                {subraces.length}
+              </span>
               {canAddSubrace && (
                 <button
                   type="button"
                   onClick={() => onAddSubrace(node)}
-                  className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-primary transition-colors hover:bg-primary/10"
+                  className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
                 >
                   <Plus className="h-3 w-3" aria-hidden="true" />
                   添加支系
@@ -587,11 +600,11 @@ export const RaceDetail = ({
               )}
             </div>
             {subraces.length === 0 ? (
-              <div className="text-[11px] text-muted-foreground/60">
+              <div className="rounded-xl border-2 border-dashed border-border/40 px-3 py-4 text-center text-xs text-muted-foreground">
                 还没有支系{canAddSubrace ? '，点击「添加支系」补一个' : ''}
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {/* 只渲染直接子级：第三层入口不出现（§4.2 / §12.3） */}
                 {subraces.map((child) => (
                   <button
@@ -600,13 +613,13 @@ export const RaceDetail = ({
                     data-testid="subrace-row"
                     data-race-id={child.id}
                     onClick={() => onSelectNode(child.id)}
-                    className="flex w-full items-center gap-2 rounded-md border border-border/40 px-2 py-1 text-left text-[11px] transition-colors hover:bg-accent/30"
+                    className="flex w-full items-center gap-2 rounded-lg border border-border/40 px-3 py-2 text-left text-xs transition-colors hover:border-teal-500/30 hover:bg-accent/10"
                   >
                     <span className="min-w-0 flex-1 truncate text-foreground">{child.name}</span>
-                    <span className="shrink-0 rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs text-teal-700 dark:text-teal-300">
                       {kindLabelOf(config, child.kind, RACE_KINDS)}
                     </span>
-                    <span className="flex shrink-0 items-center gap-0.5 text-[10px] text-muted-foreground">
+                    <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
                       <Link2 className="h-3 w-3" aria-hidden="true" />
                       {races.linksOfNode(child.id)}
                     </span>
@@ -617,7 +630,7 @@ export const RaceDetail = ({
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           <LinkPanel worldId={worldId} entity={entityRef} onNavigate={onNavigateToEntity} />
           {CHIP_GROUPS.map((group) => {
             const pool = group.direction === 'in' ? incoming : outgoing;

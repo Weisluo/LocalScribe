@@ -133,16 +133,16 @@ export const TreatyBook = ({
       aria-modal="true"
       aria-label="条约簿"
       data-testid="treaty-book"
-      className="absolute inset-y-0 right-0 z-30 flex w-[560px] max-w-[95vw] flex-col border-l border-border bg-card shadow-lg"
+      className="absolute inset-y-0 right-0 z-30 flex w-[560px] max-w-[95vw] flex-col border-l border-border/50 bg-card/95 shadow-lg backdrop-blur-sm"
     >
-      <div className="flex items-center gap-2 border-b border-border/60 p-3">
+      <div className="flex items-center gap-2 border-b border-border/30 px-5 py-4">
         <PenLine className={`h-4 w-4 shrink-0 ${toneTextClass('green')}`} aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold text-foreground">
+          <div className="text-sm font-semibold text-foreground">
             条约簿（{rows.length}
             {filterActive ? ` / ${politics.rosterTreaties.length}` : ''}）
           </div>
-          <div className="truncate text-[10px] text-muted-foreground">
+          <div className="truncate text-xs text-muted-foreground">
             {sketchOnly
               ? '速写档：只做计数，升级到结构档后可检索与维护'
               : '次级抽屉 · 缔约方来自 politics.signatory_of 投影 · 打开不改变画布状态'}
@@ -153,9 +153,9 @@ export const TreatyBook = ({
           onClick={onCreate}
           disabled={!politics.canWriteEntities}
           title={politics.canWriteEntities ? '新建条约' : '当前档位不可写实体'}
-          className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
         >
-          <Plus className="h-3 w-3" aria-hidden="true" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
           新建条约
         </button>
         <button
@@ -163,7 +163,7 @@ export const TreatyBook = ({
           onClick={onClose}
           aria-label="关闭条约簿"
           data-testid="treaty-book-close"
-          className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+          className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -172,40 +172,40 @@ export const TreatyBook = ({
       {legacyPending.length > 0 ? (
         <div
           data-testid="treaty-book-legacy-warning"
-          className="border-b border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[10px] text-amber-700 dark:text-amber-300"
+          className="border-b border-amber-500/40 bg-amber-500/10 px-5 py-2 text-xs text-amber-700 dark:text-amber-300"
         >
           {legacyPending.length} 条旧条约边待转换（politics.treaty_between 无法投影为缎带，需要按缔约方改写成 politics.signatory_of）
         </div>
       ) : null}
 
       {sketchOnly ? (
-        <div className="min-h-0 flex-1 space-y-2 overflow-auto p-3" data-testid="treaty-book-summary">
-          <div className="rounded-md border border-border/50 bg-muted/10 p-2.5">
-            <div className="text-[11px] font-medium text-foreground">
+        <div className="min-h-0 flex-1 space-y-3 overflow-auto px-5 py-4" data-testid="treaty-book-summary">
+          <div className="rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm">
+            <div className="text-sm font-semibold text-foreground">
               条约 {politics.rosterTreaties.length}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               {(Object.keys(TREATY_STATUS_LABELS) as TreatyStatus[]).map((key) => (
-                <span key={key} className="rounded-full border border-border/60 px-1.5 py-0.5">
+                <span key={key} className="rounded-full border border-border/50 px-2 py-0.5">
                   {TREATY_STATUS_LABELS[key]} {statusCounts.get(key) ?? 0}
                 </span>
               ))}
             </div>
           </div>
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             速写档只显示条约计数与状态分布：类型 / 条款 / 修订的检索与维护在结构档及以上开放。
           </div>
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             需要检索与批量维护？把复杂度切到「结构」或「沙盘」档（升级到结构档）。
           </div>
           {politics.rosterTreaties.length > 0 ? (
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {politics.rosterTreaties.map((row) => (
                 <button
                   key={row.treaty.id}
                   type="button"
                   onClick={() => onOpenTreaty(row.treaty.id)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px] text-foreground hover:bg-accent/20"
+                  className="flex w-full items-center gap-2 rounded-xl border border-border/50 bg-card/50 px-3 py-2 text-left text-xs text-foreground transition-all duration-200 hover:border-primary/25 hover:shadow-lg"
                 >
                   <span className="min-w-0 flex-1 truncate">{row.treaty.name}</span>
                   <span className="shrink-0 text-[10px] text-muted-foreground">
@@ -230,7 +230,7 @@ export const TreatyBook = ({
         </div>
       ) : (
         <>
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border/40 p-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border/30 px-5 py-3">
         <select
           value={typeFilter}
           onChange={(event) => setTypeFilter(event.target.value)}
@@ -288,7 +288,7 @@ export const TreatyBook = ({
           <button
             type="button"
             onClick={clearFilters}
-            className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+            className="rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
           >
             清除筛选
           </button>
@@ -314,7 +314,7 @@ export const TreatyBook = ({
           />
         ) : (
           <div className="min-w-[720px]">
-            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/40 bg-card/95 px-2 py-1.5 text-[10px] font-medium text-muted-foreground backdrop-blur">
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/40 bg-card/95 px-4 py-2 text-xs font-medium text-muted-foreground backdrop-blur">
               <span className="min-w-0 flex-1">名称</span>
               <span className="w-20 shrink-0">类型</span>
               <span className="w-40 shrink-0">缔约方</span>
@@ -338,21 +338,21 @@ export const TreatyBook = ({
                   key={row.treaty.id}
                   data-testid="treaty-book-row"
                   data-entity-id={row.treaty.id}
-                  className="flex items-center gap-2 border-b border-border/20 px-2 py-1.5 hover:bg-accent/20"
+                  className="flex items-center gap-2 border-b border-border/20 px-4 py-2 transition-colors hover:bg-accent/20"
                 >
                   <button
                     type="button"
                     onClick={() => onOpenTreaty(row.treaty.id)}
-                    className="min-w-0 flex-1 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
+                    className="min-w-0 flex-1 truncate text-left text-xs font-medium text-foreground transition-colors hover:text-primary"
                   >
                     {row.treaty.name}
                   </button>
-                  <span className="w-20 shrink-0 truncate text-[10px] text-muted-foreground" title={typeLabel}>
+                  <span className="w-20 shrink-0 truncate text-xs text-muted-foreground" title={typeLabel}>
                     {typeLabel}
                   </span>
-                  <span className="flex w-40 shrink-0 flex-wrap items-center gap-0.5">
+                  <span className="flex w-40 shrink-0 flex-wrap items-center gap-1">
                     {row.parties.length === 0 ? (
-                      <span className="text-[10px] text-muted-foreground">还没有缔约方</span>
+                      <span className="text-xs text-muted-foreground">还没有缔约方</span>
                     ) : (
                       row.parties.map((party) => (
                         <button
@@ -360,33 +360,33 @@ export const TreatyBook = ({
                           type="button"
                           onClick={() => onNavigateToEntity(party.ref)}
                           title={`${party.label}${party.role ? ` · ${party.role}` : ''}`}
-                          className="max-w-full truncate rounded-full border border-border/60 px-1 text-[10px] text-foreground hover:border-primary/50 hover:text-primary"
+                          className="max-w-full truncate rounded-full border border-border/50 px-2 py-0.5 text-[10px] text-foreground transition-colors hover:border-primary/50 hover:text-primary"
                         >
                           {party.label}
                         </button>
                       ))
                     )}
                   </span>
-                  <span className="w-24 shrink-0 truncate text-[10px] text-muted-foreground">
+                  <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">
                     {effective}
                   </span>
-                  <span className={`w-20 shrink-0 truncate text-[10px] ${statusTextClass(row.status)}`}>
+                  <span className={`w-20 shrink-0 truncate text-xs ${statusTextClass(row.status)}`}>
                     {TREATY_STATUS_LABELS[row.status]}
                   </span>
-                  <span className="w-10 shrink-0 text-right text-[10px] text-muted-foreground">
+                  <span className="w-10 shrink-0 text-right text-xs text-muted-foreground">
                     {row.termCount}
                   </span>
-                  <span className="w-10 shrink-0 text-right text-[10px] text-muted-foreground">
+                  <span className="w-10 shrink-0 text-right text-xs text-muted-foreground">
                     {row.amendmentCount}
                   </span>
-                  <span className="w-16 shrink-0 text-right text-[10px] text-muted-foreground">
+                  <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
                     出{row.counts.out}/入{row.counts.in}
                   </span>
                   <span className="flex w-14 shrink-0 justify-end">
                     <button
                       type="button"
                       onClick={() => onOpenTreaty(row.treaty.id)}
-                      className="rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground hover:bg-accent/30"
+                      className="rounded-lg border border-border/50 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent/10"
                     >
                       打开
                     </button>

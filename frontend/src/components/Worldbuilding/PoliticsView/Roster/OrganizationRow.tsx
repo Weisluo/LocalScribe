@@ -59,7 +59,7 @@ const RowActions = ({
       onClick={onOpen}
       aria-label={`打开 ${name}`}
       title="打开聚焦详情"
-      className="rounded p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+      className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
     >
       <SquareArrowOutUpRight className="h-3.5 w-3.5" aria-hidden="true" />
     </button>
@@ -69,7 +69,7 @@ const RowActions = ({
       disabled={!canEdit}
       aria-label={`编辑 ${name}`}
       title="编辑归属与字段"
-      className="rounded p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+      className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground disabled:opacity-40"
     >
       <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
     </button>
@@ -159,32 +159,32 @@ export const OrganizationRow = ({
         type="button"
         onClick={onOpen}
         title={`${org.name}（点击打开详情）`}
-        className="min-w-0 flex-1 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
+        className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground transition-colors hover:text-primary"
       >
         {org.name}
       </button>
       <span
-        className="hidden w-20 shrink-0 truncate text-[10px] text-muted-foreground sm:block"
+        className="hidden w-20 shrink-0 truncate text-xs text-muted-foreground sm:block"
         title={`子类型：${subtype}`}
       >
         {subtype}
       </span>
-      <span className="w-20 shrink-0 truncate text-[10px] text-foreground">
+      <span className="w-20 shrink-0 truncate text-xs text-foreground">
         {meta.level ? levelLabelOf(politics.levels, meta.level) : UNSET_LABEL}
       </span>
-      <span className="w-20 shrink-0 truncate text-[10px] text-muted-foreground">
+      <span className="w-20 shrink-0 truncate text-xs text-muted-foreground">
         {meta.status ? statusLabelOf(politics.statuses, meta.status) : UNSET_LABEL}
       </span>
-      <span className="hidden w-32 shrink-0 truncate text-[10px] text-muted-foreground md:block">
+      <span className="hidden w-32 shrink-0 truncate text-xs text-muted-foreground md:block">
         {formatTimeSpan(meta.time)}
       </span>
-      <span className="hidden w-20 shrink-0 truncate text-[10px] text-muted-foreground lg:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs text-muted-foreground lg:block">
         {leaderName ?? '未指定负责人'}
       </span>
-      <span className="hidden w-20 shrink-0 truncate text-[10px] text-muted-foreground xl:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs text-muted-foreground xl:block">
         下辖 {childCount}
       </span>
-      <span className="w-16 shrink-0 text-right text-[10px] text-muted-foreground">
+      <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
         出{counts.out}/入{counts.in}
       </span>
       <RowActions name={org.name} canEdit={canEdit} onOpen={onOpen} onEditForm={onEditForm} entity={org} />
@@ -251,39 +251,39 @@ export const IndependentRow = ({
         type="button"
         onClick={onOpen}
         title={`${row.entity.name}（点击打开详情）`}
-        className="min-w-0 flex-1 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
+        className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground transition-colors hover:text-primary"
       >
         {row.entity.name}
       </button>
-      <span className="hidden w-20 shrink-0 truncate text-[10px] font-medium text-foreground sm:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs font-medium text-foreground sm:block">
         {SCOPE_LABELS[normalizeScope(row.scope)]}
       </span>
       {row.unattached ? (
-        <span className="shrink-0 rounded-full border border-amber-500/50 px-1 text-[9px] text-amber-700 dark:text-amber-300">
+        <span className="shrink-0 rounded-full border border-amber-500/50 px-1 text-xs text-amber-700 dark:text-amber-300">
           未归属
         </span>
       ) : null}
       {legacy ? (
-        <span className="shrink-0 rounded-full border border-border/60 px-1 text-[9px] text-muted-foreground">
+        <span className="shrink-0 rounded-full border border-border/60 px-1 text-xs text-muted-foreground">
           旧数据
         </span>
       ) : null}
-      <span className="w-20 shrink-0 truncate text-[10px] text-foreground">
+      <span className="w-20 shrink-0 truncate text-xs text-foreground">
         {meta.level ? levelLabelOf(politics.levels, meta.level) : UNSET_LABEL}
       </span>
-      <span className="w-20 shrink-0 truncate text-[10px] text-muted-foreground">
+      <span className="w-20 shrink-0 truncate text-xs text-muted-foreground">
         {meta.status ? statusLabelOf(politics.statuses, meta.status) : UNSET_LABEL}
       </span>
-      <span className="hidden w-32 shrink-0 truncate text-[10px] text-muted-foreground md:block">
+      <span className="hidden w-32 shrink-0 truncate text-xs text-muted-foreground md:block">
         {formatTimeSpan(meta.time)}
       </span>
-      <span className="hidden w-20 shrink-0 truncate text-[10px] text-muted-foreground lg:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs text-muted-foreground lg:block">
         成员 {row.memberCount}
       </span>
-      <span className="hidden w-20 shrink-0 truncate text-[10px] text-muted-foreground xl:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs text-muted-foreground xl:block">
         {row.scope === 'cross_polity' ? `吸附 ${anchorCount}` : ORPHAN_LABEL}
       </span>
-      <span className="w-16 shrink-0 text-right text-[10px] text-muted-foreground">
+      <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
         出{counts.out}/入{counts.in}
       </span>
       <RowActions

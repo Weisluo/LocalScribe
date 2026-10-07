@@ -109,22 +109,22 @@ export const RulerEditor = ({
   return (
     <div
       data-testid="polity-ruler-editor"
-      className="space-y-1.5 rounded-md border border-border/60 bg-muted/20 p-2"
+      className="space-y-2.5 rounded-xl border border-border/50 bg-muted/20 p-3"
     >
       <div className="flex items-center gap-1.5">
         <UserRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <span className="text-[11px] font-medium text-foreground">统治者 / 任职</span>
-        <span className="ml-auto text-[10px] text-muted-foreground">
+        <span className="text-sm font-semibold text-foreground">统治者 / 任职</span>
+        <span className="ml-auto text-xs text-muted-foreground">
           职位与任期保存在 leads 边上
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] text-muted-foreground">全局角色</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">全局角色</span>
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="rounded-md border border-border px-2 py-0.5 text-[11px] text-foreground hover:bg-accent/30"
+          className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
         >
           {selectedName || '选择角色'}
         </button>
@@ -132,7 +132,7 @@ export const RulerEditor = ({
           <button
             type="button"
             onClick={() => setCharacterRef(null)}
-            className="text-[10px] text-muted-foreground hover:text-foreground"
+            className="rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
           >
             清除
           </button>
@@ -176,7 +176,7 @@ export const RulerEditor = ({
         </label>
       </div>
 
-      <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <input
           type="checkbox"
           checked={primary}
@@ -195,16 +195,16 @@ export const RulerEditor = ({
             disabled={busy}
             aria-label="移除统治者"
             title="移除统治者（删除 leads 边，人物与政权都保留）"
-            className="mr-auto flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:text-destructive disabled:opacity-50"
+            className="mr-auto flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive disabled:opacity-50"
           >
-            <Trash2 className="h-3 w-3" aria-hidden="true" />
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             移除统治者
           </button>
         ) : null}
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-accent/10 hover:text-foreground"
+          className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
         >
           取消
         </button>
@@ -212,9 +212,9 @@ export const RulerEditor = ({
           type="button"
           onClick={() => void handleSave()}
           disabled={busy}
-          className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[10px] text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           保存任职
         </button>
       </div>

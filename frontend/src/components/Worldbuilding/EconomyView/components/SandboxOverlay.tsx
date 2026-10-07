@@ -212,10 +212,10 @@ export const SandboxOverlay = ({
   return (
     <div
       data-testid="economy-sandbox"
-      className="flex h-full min-h-0 flex-col gap-1.5"
+      className="flex h-full min-h-0 flex-col gap-3"
     >
-      <div className="flex flex-wrap items-start gap-2 px-0.5">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-start gap-3 px-0.5">
+        <div className="min-w-0 flex-1 rounded-2xl border border-border/50 bg-card/40 px-4 py-3.5 shadow-sm backdrop-blur-sm">
           <LayerRail
             layers={layers}
             value={layerState}
@@ -223,7 +223,7 @@ export const SandboxOverlay = ({
             onChange={onLayerChange}
           />
           {visual.unanchored.size > 0 && (
-            <p className="mt-0.5 text-[10px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               时间未锚定 {visual.unanchored.size} 项：排在同段末尾并标注，不猜时间
             </p>
           )}

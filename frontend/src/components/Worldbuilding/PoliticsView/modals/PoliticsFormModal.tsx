@@ -89,7 +89,7 @@ const Field = ({
       {required ? <span className="text-destructive"> *</span> : null}
     </span>
     {children}
-    {hint ? <span className="block text-[10px] text-muted-foreground">{hint}</span> : null}
+    {hint ? <span className="block text-xs text-muted-foreground">{hint}</span> : null}
   </label>
 );
 
@@ -536,7 +536,7 @@ export const PoliticsFormModal = ({
               <button
                 type="button"
                 onClick={() => setShowLevelCreate((prev) => !prev)}
-                className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
                 <Plus className="h-3 w-3" aria-hidden="true" />
                 新建等级
@@ -544,10 +544,10 @@ export const PoliticsFormModal = ({
             </div>
           </Field>
           {politics.levels.length === 0 && !showLevelCreate ? (
-            <p className="text-[10px] text-muted-foreground">还没有等级定义，先内联新建一个</p>
+            <p className="text-xs text-muted-foreground">还没有等级定义，先内联新建一个</p>
           ) : null}
           {showLevelCreate ? (
-            <div className="space-y-1 rounded-md border border-border/50 bg-muted/20 p-2">
+            <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 p-3">
               <input
                 type="text"
                 value={levelDraft.label}
@@ -582,7 +582,7 @@ export const PoliticsFormModal = ({
                 <button
                   type="button"
                   onClick={() => void handleAddLevel()}
-                  className="shrink-0 rounded-md bg-primary px-2 py-1 text-[10px] text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="shrink-0 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
                 >
                   保存等级
                 </button>
@@ -613,7 +613,7 @@ export const PoliticsFormModal = ({
               <button
                 type="button"
                 onClick={() => setShowStatusCreate((prev) => !prev)}
-                className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
                 <Plus className="h-3 w-3" aria-hidden="true" />
                 新建状态
@@ -621,7 +621,7 @@ export const PoliticsFormModal = ({
             </div>
           </Field>
           {showStatusCreate ? (
-            <div className="space-y-1 rounded-md border border-border/50 bg-muted/20 p-2">
+            <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 p-3">
               <input
                 type="text"
                 value={statusDraft.label}
@@ -643,7 +643,7 @@ export const PoliticsFormModal = ({
                   aria-label="新状态颜色"
                   className={fieldClass}
                 />
-                <label className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+                <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={statusDraft.isTerminal}
@@ -656,7 +656,7 @@ export const PoliticsFormModal = ({
                 <button
                   type="button"
                   onClick={() => void handleAddStatus()}
-                  className="shrink-0 rounded-md bg-primary px-2 py-1 text-[10px] text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="shrink-0 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
                 >
                   保存状态
                 </button>
@@ -682,25 +682,25 @@ export const PoliticsFormModal = ({
       </Field>
       {levelStatusFields(true, true)}
 
-      <div className="space-y-1 rounded-md border border-border/50 p-2">
-        <div className="text-[10px] font-medium text-foreground">统治者（可跳过）</div>
+      <div className="space-y-2 rounded-xl border border-border/50 p-3">
+        <div className="text-xs font-medium text-foreground">统治者（可跳过）</div>
         <div className="flex items-center gap-1.5">
           {form.rulerCharacterId ? (
-            <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">{rulerLabel}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground">{rulerLabel}</span>
           ) : (
-            <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">未选择全局角色</span>
+            <span className="min-w-0 flex-1 text-xs text-muted-foreground">未选择全局角色</span>
           )}
           <button
             type="button"
             onClick={() => setPicker('ruler')}
-            className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             选择角色
           </button>
           <button
             type="button"
             onClick={() => setQuickCharacterOpen((prev) => !prev)}
-            className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             快速新建角色
           </button>
@@ -719,7 +719,7 @@ export const PoliticsFormModal = ({
               type="button"
               onClick={() => void handleQuickCreateCharacter()}
               disabled={creatingCharacter}
-              className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[10px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
             >
               {creatingCharacter ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
               创建
@@ -752,7 +752,7 @@ export const PoliticsFormModal = ({
               aria-label="统治者结束"
               className={fieldClass}
             />
-            <label className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+            <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
               <input
                 type="checkbox"
                 checked={form.rulerIsPrimary}
@@ -826,18 +826,18 @@ export const PoliticsFormModal = ({
       <Field label="上级" hint="保存时写 politics.subordinate_to，仅 organization 建树">
         <div className="flex items-center gap-1.5">
           {form.parentRef ? (
-            <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground">
               {politics.refs.resolveName(form.parentRef)}
             </span>
           ) : (
-            <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+            <span className="min-w-0 flex-1 text-xs text-muted-foreground">
               未选择政权或上级组织
             </span>
           )}
           <button
             type="button"
             onClick={() => setPicker('parent')}
-            className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             选择上级
           </button>
@@ -845,7 +845,7 @@ export const PoliticsFormModal = ({
             <button
               type="button"
               onClick={() => patch({ parentRef: null })}
-              className="shrink-0 rounded-md px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+              className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
             >
               清除
             </button>
@@ -903,23 +903,23 @@ export const PoliticsFormModal = ({
       <Field label="全局角色" required hint="政治侧只存 characterId，姓名 / 头像 / 种族实时解析">
         <div className="flex items-center gap-1.5">
           {form.characterId ? (
-            <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground">
               {selectedCharacter?.name ?? '已选角色'}
             </span>
           ) : (
-            <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">未选择角色</span>
+            <span className="min-w-0 flex-1 text-xs text-muted-foreground">未选择角色</span>
           )}
           <button
             type="button"
             onClick={() => setPicker('character')}
-            className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             选择角色
           </button>
           <button
             type="button"
             onClick={() => setQuickCharacterOpen((prev) => !prev)}
-            className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             快速新建角色
           </button>
@@ -939,7 +939,7 @@ export const PoliticsFormModal = ({
             type="button"
             onClick={() => void handleQuickCreateCharacter()}
             disabled={creatingCharacter}
-            className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[10px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {creatingCharacter ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
             创建
@@ -992,22 +992,22 @@ export const PoliticsFormModal = ({
         />
       </Field>
 
-      <div className="space-y-1 rounded-md border border-border/50 p-2">
-        <div className="text-[10px] font-medium text-foreground">任职（保存时写任职边）</div>
+      <div className="space-y-2 rounded-xl border border-border/50 p-3">
+        <div className="text-xs font-medium text-foreground">任职（保存时写任职边）</div>
         <div className="flex items-center gap-1.5">
           {form.officeRef ? (
-            <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground">
               {politics.refs.resolveName(form.officeRef)}
             </span>
           ) : (
-            <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+            <span className="min-w-0 flex-1 text-xs text-muted-foreground">
               {editing ? '不选则不新增任职边（在详情里改现有任职）' : '未选择政权 / 组织'}
             </span>
           )}
           <button
             type="button"
             onClick={() => setPicker('office')}
-            className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             选择任职目标
           </button>
@@ -1050,7 +1050,7 @@ export const PoliticsFormModal = ({
                 aria-label="任职结束"
                 className={fieldClass}
               />
-              <label className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+              <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={form.officeIsPrimary}
@@ -1071,12 +1071,12 @@ export const PoliticsFormModal = ({
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-1">
             {form.parties.length === 0 ? (
-              <span className="text-[11px] text-muted-foreground">未选择缔约方</span>
+              <span className="text-xs text-muted-foreground">未选择缔约方</span>
             ) : (
               form.parties.map((party) => (
                 <span
                   key={refKey(party)}
-                  className="inline-flex items-center gap-1 rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] text-foreground"
+                  className="inline-flex items-center gap-1 rounded-full border border-border/50 px-2.5 py-1 text-xs text-foreground"
                 >
                   {politics.refs.resolveName(party)}
                   <button
@@ -1098,7 +1098,7 @@ export const PoliticsFormModal = ({
           <button
             type="button"
             onClick={() => setPicker('parties')}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+            className="flex items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             <Plus className="h-3 w-3" aria-hidden="true" />
             添加缔约方
@@ -1171,14 +1171,14 @@ export const PoliticsFormModal = ({
       <div className="space-y-2.5" data-testid="politics-form-modal" data-kind={kind}>
         {error ? (
           <div
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
             data-testid="politics-form-error"
           >
             {error}
           </div>
         ) : null}
         {warning ? (
-          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
             {warning}
           </div>
         ) : null}
@@ -1220,7 +1220,7 @@ export const PoliticsFormModal = ({
                 />
               </div>
             </Field>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               自定义 kind 继承其附着层的形态，不复制新的分段（§7.1.5）
             </p>
           </>
@@ -1230,7 +1230,7 @@ export const PoliticsFormModal = ({
           <button
             type="button"
             onClick={() => setShowMore((prev) => !prev)}
-            className="text-left text-[10px] text-primary transition-colors hover:underline"
+            className="text-left text-xs font-medium text-primary transition-colors hover:underline"
           >
             {showMore ? '收起更多字段' : '更多字段：描述 / 备注 / 自定义字段（创建后补充）'}
           </button>
@@ -1260,9 +1260,9 @@ export const PoliticsFormModal = ({
             </Field>
 
             {customFields.length > 0 ? (
-              <div className="rounded-md border border-border/50 p-2">
-                <div className="mb-1 flex items-center gap-1 text-[10px] font-medium text-foreground">
-                  <Sparkles className="h-3 w-3" aria-hidden="true" />
+              <div className="rounded-xl border border-border/50 p-3">
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-foreground">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                   自定义字段（来自模块配置）
                 </div>
                 <CustomFieldRenderer
@@ -1277,11 +1277,11 @@ export const PoliticsFormModal = ({
           </>
         ) : null}
 
-        <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
+        <div className="flex items-center justify-end gap-2 border-t border-border/30 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
           >
             取消
           </button>
@@ -1290,7 +1290,7 @@ export const PoliticsFormModal = ({
             onClick={() => void handleSubmit()}
             disabled={submitting}
             data-testid="politics-form-submit"
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {editing ? '保存' : kind === POLITY_KIND ? '创建并聚焦' : '创建'}

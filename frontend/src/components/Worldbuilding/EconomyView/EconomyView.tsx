@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -179,13 +180,13 @@ const SketchComplexitySwitch = ({
   <div
     role="radiogroup"
     aria-label="深浅"
-    className="inline-flex items-center gap-0.5 rounded-lg border border-border/60 bg-card/40 p-0.5"
+    className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
   >
     {COMPLEXITY_LEVELS.map((item) => {
       const Icon = SKETCH_LEVEL_ICONS[item];
       const active = item === value;
       return (
-        <button
+        <motion.button
           key={item}
           type="button"
           role="radio"
@@ -193,13 +194,17 @@ const SketchComplexitySwitch = ({
           tabIndex={active ? 0 : -1}
           title={SKETCH_LEVEL_TITLES[item]}
           onClick={() => onChange(item)}
-          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors motion-reduce:transition-none ${
-            active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
+            active
+              ? 'bg-background text-primary shadow-sm'
+              : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
           }`}
         >
           <Icon className="h-3.5 w-3.5" aria-hidden="true" />
           <span className="font-medium">{COMPLEXITY_LABELS[item]}</span>
-        </button>
+        </motion.button>
       );
     })}
   </div>
@@ -960,15 +965,15 @@ export const EconomyView = ({
   const renderBody = () => {
     if (data.isError) {
       return (
-        <div className="flex flex-col items-start gap-2 p-4 text-xs text-destructive" data-testid="economy-error">
-          <span className="inline-flex items-center gap-1">
-            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+        <div className="flex flex-col items-start gap-3 p-5 text-sm text-destructive" data-testid="economy-error">
+          <span className="inline-flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             经济数据加载失败
           </span>
           <button
             type="button"
             onClick={() => data.refetch()}
-            className="rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             重试
           </button>
@@ -978,11 +983,11 @@ export const EconomyView = ({
 
     if (anyLoading) {
       return (
-        <div className="space-y-2 p-3" data-testid="economy-loading">
+        <div className="space-y-3 p-5" data-testid="economy-loading">
           {[0, 1, 2].map((index) => (
             <div
               key={index}
-              className="h-16 animate-pulse rounded-lg border border-border/50 bg-muted/30 motion-reduce:animate-none"
+              className="h-16 animate-pulse rounded-xl border border-border/50 bg-muted/30 motion-reduce:animate-none"
             />
           ))}
         </div>
@@ -1051,7 +1056,7 @@ export const EconomyView = ({
       return (
         <div
           data-testid="economy-empty"
-          className="flex h-full items-center justify-center p-4"
+          className="flex h-full items-center justify-center p-6"
         >
           <EconomyEmptyState
             scene={emptyScene}
@@ -1073,9 +1078,9 @@ export const EconomyView = ({
 
     const canvas = <div className="h-full min-h-0">{renderCanvas()}</div>;
     const split = (
-      <div className="flex h-full min-h-0 gap-2">
+      <div className="flex h-full min-h-0 gap-4">
         <div className="min-h-0 flex-1">{renderCanvas()}</div>
-        <div className="min-h-0 flex-1 border-l border-border/40 pl-2">{renderLedger()}</div>
+        <div className="min-h-0 flex-1 border-l border-border/30 pl-4">{renderLedger()}</div>
       </div>
     );
     const body = layout === 'split' ? split : canvas;
@@ -1102,24 +1107,31 @@ export const EconomyView = ({
     );
   };
 
-  return (    <div
+  return (
+    <MotionConfig reducedMotion="user">
+    <div
       data-testid="economy-view"
       data-complexity={level}
       data-layout={layout}
-      className="relative flex h-full min-h-0 flex-col gap-2"
+      className="relative flex h-full min-h-0 flex-col"
     >
-      <header data-testid="economy-header" className="flex flex-wrap items-center gap-2">
-        <Coins className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden="true" />
-        <h1 className="text-sm font-semibold text-foreground">{title}</h1>
+      <header
+        data-testid="economy-header"
+        className="flex flex-wrap items-center gap-3 bg-gradient-to-b from-background via-background/95 to-background/90 px-6 py-4 border-b border-border/20 backdrop-blur-md"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <Coins className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <h1 className="truncate text-base font-semibold tracking-tight text-foreground">{title}</h1>
+        </div>
         {level === 'sketch' ? (
           <SketchComplexitySwitch value={level} onChange={changeComplexity} />
         ) : (
           <ComplexitySwitcher value={level} onChange={changeComplexity} />
         )}
 
-        <div className="relative">
+        <div className="relative group w-96 max-w-full">
           <Search
-            className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
             aria-hidden="true"
           />
           <input
@@ -1133,11 +1145,26 @@ export const EconomyView = ({
             }
             aria-label="搜索经济内容"
             data-testid="economy-search"
-            className="w-52 rounded-md border border-border/60 bg-background py-1 pl-7 pr-1.5 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600/60"
+            className="w-full rounded-xl border border-border/40 bg-muted/30 py-2 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
+          <AnimatePresence>
+            {search ? (
+              <motion.button
+                type="button"
+                aria-label="清除搜索"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition-colors hover:bg-muted"
+              >
+                <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              </motion.button>
+            ) : null}
+          </AnimatePresence>
         </div>
 
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {COMPLEXITY_LABELS[level]}档
           {summary && fold.links + fold.metrics + fold.fields > 0
             ? ` · 已折叠 ${fold.links} 条${term('flowWord', '往来')}与 ${fold.metrics} 个数值（数据未删除）`
@@ -1146,79 +1173,91 @@ export const EconomyView = ({
 
         {level !== 'sketch' ? (
           <>
-            <div role="tablist" aria-label="布局" className="flex items-center gap-0.5 rounded-md border border-border/50 p-0.5">
+            <div
+              role="tablist"
+              aria-label="布局"
+              className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
+            >
               {ECONOMY_LAYOUTS.map((id) => {
                 const Icon = LAYOUT_ICONS[id];
                 return (
-                  <button
+                  <motion.button
                     key={id}
                     type="button"
                     role="tab"
                     aria-selected={layout === id}
                     data-testid={`economy-layout-tab-${id}`}
                     onClick={() => setLayout(id)}
-                    className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                       layout === id
-                        ? 'bg-green-500/15 text-green-700 dark:text-green-300'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-background text-primary shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                     {ECONOMY_LAYOUT_LABELS[id]}
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
 
-            <div className="ml-auto flex flex-wrap items-center gap-1.5">
-              <button
+            <div className="ml-auto flex flex-wrap items-center gap-3">
+              <motion.button
                 type="button"
                 data-testid="economy-new-entity"
                 onClick={() => setCreateOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1 text-[11px] text-white transition-colors hover:bg-green-700 motion-reduce:transition-none"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 {term('newEntity', '添加实体')}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 disabled
                 title="世界脉络在 P6 接入（契约 §5.4）"
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground opacity-60"
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground opacity-60 transition-all duration-200"
               >
                 <Compass className="h-3.5 w-3.5" aria-hidden="true" />
                 世界脉络
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 disabled
                 title="模块配置面板在 P6 接入（契约 §2.7）"
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground opacity-60"
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground opacity-60 transition-all duration-200"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
                 配置
-              </button>
+              </motion.button>
             </div>
           </>
         ) : (
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
+          <div className="ml-auto flex items-center gap-3">
+            <motion.button
               type="button"
               onClick={() => void data.refetch()}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
               刷新
-            </button>
+            </motion.button>
           </div>
         )}
 
-        <button
+        <motion.button
           type="button"
           data-testid="economy-inspector-toggle"
           aria-pressed={inspectorOpen}
           onClick={toggleInspector}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
         >
           {inspectorOpen ? (
             <PanelRightClose className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1226,13 +1265,13 @@ export const EconomyView = ({
             <PanelRightOpen className="h-3.5 w-3.5" aria-hidden="true" />
           )}
           {level === 'sketch' ? '批注栏' : '检查器'}
-        </button>
+        </motion.button>
       </header>
 
       {createOpen ? (
         <form
           data-testid="economy-new-entity-form"
-          className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/50 bg-muted/20 p-1.5"
+          className="mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm"
           onSubmit={(event) => {
             event.preventDefault();
             void submitCreate();
@@ -1245,13 +1284,13 @@ export const EconomyView = ({
             onChange={(event) => setCreateName(event.target.value)}
             placeholder="名称（只强制名称，其余可后补）"
             aria-label="新实体名称"
-            className="w-56 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px]"
+            className="w-64 rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <select
             value={createKind || config.entityTypes[0]?.id || ECONOMY_RECOMMENDED_KINDS[0].id}
             onChange={(event) => setCreateKind(event.target.value)}
             aria-label="类型"
-            className="rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px]"
+            className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             {(config.entityTypes.length > 0 ? config.entityTypes : ECONOMY_RECOMMENDED_KINDS).map(
               (def) => (
@@ -1261,25 +1300,29 @@ export const EconomyView = ({
               )
             )}
           </select>
-          <button
+          <motion.button
             type="submit"
-            className="rounded-md bg-green-600 px-2.5 py-0.5 text-[11px] text-white transition-colors hover:bg-green-700 motion-reduce:transition-none"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
           >
             添加
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             onClick={() => setCreateOpen(false)}
-            className="rounded-md border border-border px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
-          </button>
+          </motion.button>
         </form>
       ) : null}
 
       {expandedNotice ? (
         <div
-          className="rounded-md border border-green-500/40 bg-green-500/10 px-2 py-1 text-[11px] text-green-800 dark:text-green-200"
+          className="mx-6 mt-4 rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-2.5 text-sm text-green-800 dark:text-green-200"
           data-testid="economy-expand-notice"
           role="status"
         >
@@ -1289,7 +1332,7 @@ export const EconomyView = ({
 
       {foldedNotice ? (
         <div
-          className="flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-800 dark:text-amber-200"
+          className="mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-800 dark:text-amber-200"
           data-testid="economy-fold-notice"
           role="status"
         >
@@ -1297,7 +1340,7 @@ export const EconomyView = ({
           <button
             type="button"
             onClick={bumpComplexity}
-            className="rounded-md border border-border/60 px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10"
           >
             {term('promoChip', '展开为脉络')}
           </button>
@@ -1305,25 +1348,25 @@ export const EconomyView = ({
             type="button"
             onClick={dismissFoldedNotice}
             aria-label="关闭折叠提示"
-            className="ml-auto rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+            className="ml-auto rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
-            <X className="h-3 w-3" aria-hidden="true" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 gap-2">
+      <div className="flex min-h-0 flex-1 gap-4 px-6 py-6">
         {level !== 'sketch' ? (
           <aside
-            className="w-40 shrink-0 space-y-2 overflow-y-auto border-r border-border/40 pr-2"
+            className="w-44 shrink-0 space-y-4 overflow-y-auto border-r border-border/30 pr-4"
             aria-label="阶段轨道与筛选"
           >
-            <div data-testid="economy-stage-filter" className="space-y-0.5">
-              <p className="text-[10px] tracking-wide text-muted-foreground">阶段轨道</p>
+            <div data-testid="economy-stage-filter" className="space-y-1.5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">阶段轨道</p>
               {stageBuckets.map((stage) => {
                 const active = filters.stages.includes(stage.id);
                 return (
-                  <button
+                  <motion.button
                     key={stage.id}
                     type="button"
                     aria-pressed={active}
@@ -1335,30 +1378,32 @@ export const EconomyView = ({
                           : [...filters.stages, stage.id],
                       })
                     }
-                    className={`flex w-full items-center justify-between rounded-sm px-1.5 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className={`flex w-full items-center justify-between rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
                       active
-                        ? 'bg-green-500/15 text-green-700 dark:text-green-300'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                        : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                     }`}
                   >
                     <span>{stage.label}</span>
-                    <span className="text-[9px] text-muted-foreground">{stage.count}</span>
-                  </button>
+                    <span className="text-[10px] text-muted-foreground">{stage.count}</span>
+                  </motion.button>
                 );
               })}
             </div>
 
-            <div data-testid="economy-kind-filter" className="space-y-0.5">
-              <p className="text-[10px] tracking-wide text-muted-foreground">
+            <div data-testid="economy-kind-filter" className="space-y-1.5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">
                 {term('kindWord', '类型')}
               </p>
               {kindBuckets.length === 0 ? (
-                <p className="text-[10px] text-muted-foreground">还没有类型</p>
+                <p className="text-xs text-muted-foreground">还没有类型</p>
               ) : (
                 kindBuckets.map((kind) => {
                   const active = filters.kinds.includes(kind.id);
                   return (
-                    <button
+                    <motion.button
                       key={kind.id}
                       type="button"
                       aria-pressed={active}
@@ -1370,29 +1415,31 @@ export const EconomyView = ({
                             : [...filters.kinds, kind.id],
                         })
                       }
-                      className={`flex w-full items-center justify-between rounded-sm px-1.5 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`flex w-full items-center justify-between rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
                         active
-                          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300'
-                          : 'text-muted-foreground hover:text-foreground'
+                          ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                          : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                       }`}
                     >
                       <span>{kind.label}</span>
-                      <span className="text-[9px] text-muted-foreground">{kind.count}</span>
-                    </button>
+                      <span className="text-[10px] text-muted-foreground">{kind.count}</span>
+                    </motion.button>
                   );
                 })
               )}
             </div>
 
             {config.levels.length > 0 ? (
-              <label className="block text-[10px] text-muted-foreground">
+              <label className="block text-xs text-muted-foreground">
                 等级
                 <select
                   value={filters.levels[0] ?? ''}
                   onChange={(event) =>
                     setFilters({ ...filters, levels: event.target.value ? [event.target.value] : [] })
                   }
-                  className="mt-0.5 w-full rounded-md border border-border/60 bg-background px-1 py-0.5 text-[11px] text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                 >
                   <option value="">全部</option>
                   {config.levels.map((def) => (
@@ -1405,7 +1452,7 @@ export const EconomyView = ({
             ) : null}
 
             {config.statuses.length > 0 ? (
-              <label className="block text-[10px] text-muted-foreground">
+              <label className="block text-xs text-muted-foreground">
                 状态
                 <select
                   value={filters.statuses[0] ?? ''}
@@ -1415,7 +1462,7 @@ export const EconomyView = ({
                       statuses: event.target.value ? [event.target.value] : [],
                     })
                   }
-                  className="mt-0.5 w-full rounded-md border border-border/60 bg-background px-1 py-0.5 text-[11px] text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                 >
                   <option value="">全部</option>
                   {config.statuses.map((def) => (
@@ -1428,7 +1475,7 @@ export const EconomyView = ({
             ) : null}
 
             {level === 'sandbox' ? (
-              <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={filters.hasMetrics === true}
@@ -1447,7 +1494,7 @@ export const EconomyView = ({
               <button
                 type="button"
                 onClick={() => setSurplusFilter(null)}
-                className="w-full rounded-sm border border-border/50 px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                className="w-full rounded-full border border-border/40 px-3 py-1 text-xs font-medium text-foreground transition-all duration-200 hover:border-border/70 hover:bg-accent/5 motion-reduce:transition-none"
               >
                 只看{surplusFilter === 'surplus' ? '盈余' : surplusFilter === 'deficit' ? '赤字' : '平衡'}：清除
               </button>
@@ -1457,26 +1504,26 @@ export const EconomyView = ({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="flex w-full items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+                className="flex w-full items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/5 hover:text-foreground motion-reduce:transition-none"
               >
-                <X className="h-3 w-3" aria-hidden="true" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
                 清除筛选
               </button>
             ) : null}
           </aside>
         ) : null}
 
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
           {hint ? (
             <div
-              className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 bg-muted/20 px-2 py-1 text-[10px] text-muted-foreground"
+              className="flex flex-wrap items-center gap-3 rounded-xl border border-border/40 bg-muted/30 px-4 py-2 text-xs text-muted-foreground"
               data-testid="economy-hint"
             >
               <span>{hint.text}</span>
               <button
                 type="button"
                 onClick={hint.onClick}
-                className="rounded-md border border-border/60 px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10"
               >
                 {hint.action}
               </button>
@@ -1486,7 +1533,7 @@ export const EconomyView = ({
         </div>
 
         {inspectorOpen ? (
-          <aside className="w-72 shrink-0 overflow-y-auto border-l border-border/40 pl-2">
+          <aside className="w-80 shrink-0 overflow-y-auto">
             {selectedNode ? (
               <InspectorPanel
                 worldId={worldId}
@@ -1520,7 +1567,7 @@ export const EconomyView = ({
                 onNavigateToHistory={onNavigateToEntity}
               />
             ) : (
-              <p className="p-2 text-[11px] text-muted-foreground">
+              <p className="p-5 text-sm leading-relaxed text-muted-foreground">
                 选中一个{level === 'sketch' ? '关键词' : term('entityWord', '实体')}后，这里显示它的概览、字段与
                 {level === 'sketch' ? '往来' : term('linkWord', '关联')}。
               </p>
@@ -1537,28 +1584,32 @@ export const EconomyView = ({
           aria-label="删除确认"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
         >
-          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-3 shadow-lg">
-            <h2 className="text-xs font-semibold text-foreground">
+          <div className="w-full max-w-sm rounded-2xl border border-border/50 bg-card/40 p-5 shadow-lg backdrop-blur-sm">
+            <h2 className="text-sm font-semibold text-foreground">
               删除「{pendingNode?.name ?? '这一项'}」？
             </h2>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               它参与的{term('linkWord', '关联')}会一并删除（级联）；其余数据不受影响。
             </p>
-            <div className="mt-3 flex items-center justify-end gap-1.5">
-              <button
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <motion.button
                 type="button"
                 onClick={() => setDeletePending(null)}
-                className="rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
                 取消
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 onClick={() => void confirmDelete()}
-                className="rounded-md bg-destructive px-2.5 py-1 text-[11px] text-destructive-foreground transition-colors hover:bg-destructive/90 motion-reduce:transition-none"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 rounded-lg bg-destructive px-3.5 py-1.5 text-sm font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90"
               >
                 删除
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -1582,6 +1633,7 @@ export const EconomyView = ({
         {expandedNotice ?? foldedNotice?.text ?? ''}
       </span>
     </div>
+    </MotionConfig>
   );
 };
 

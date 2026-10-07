@@ -36,7 +36,7 @@ const Row = ({ row }: { row: StatRow }): ReactNode => {
   );
   if (!row.onClick) {
     return (
-      <div data-testid={row.testid} className="flex items-baseline justify-between gap-2 text-[11px]">
+      <div data-testid={row.testid} className="flex items-baseline justify-between gap-2 text-sm">
         {body}
       </div>
     );
@@ -48,7 +48,7 @@ const Row = ({ row }: { row: StatRow }): ReactNode => {
       title={row.title ?? row.onClickLabel}
       aria-label={`${row.label} ${row.value}`}
       onClick={row.onClick}
-      className="flex w-full items-baseline justify-between gap-2 rounded px-0.5 text-left text-[11px] transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+      className="flex w-full items-baseline justify-between gap-2 rounded-lg px-1.5 py-0.5 text-left text-sm transition-colors duration-200 hover:bg-accent/5 motion-reduce:transition-none"
     >
       {body}
     </button>
@@ -139,11 +139,11 @@ export const StatsPanel = ({
   return (
     <div
       data-testid="economy-stats"
-      className="min-w-[200px] rounded-lg border border-border/60 bg-card/50 px-2 py-1.5"
+      className="min-w-[220px] rounded-2xl border border-border/50 bg-card/40 px-4 py-3.5 shadow-sm backdrop-blur-sm"
     >
-      <div className="flex items-center gap-1">
-        <Sigma className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" aria-hidden="true" />
-        <span className="text-[11px] font-medium text-foreground">统计</span>
+      <div className="flex items-center gap-2">
+        <Sigma className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+        <span className="text-sm font-semibold text-foreground">统计</span>
         {stats.hiddenLayersPresent && (
           <span
             data-testid="economy-stat-hidden-layers"
@@ -155,17 +155,17 @@ export const StatsPanel = ({
         )}
       </div>
 
-      <div className="mt-1 space-y-0.5">
+      <div className="mt-2.5 space-y-1">
         {rows.map((row) => (
           <Row key={row.testid} row={row} />
         ))}
       </div>
 
-      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         {showMultiUnit && (
           <span
             data-testid="economy-stat-multiunit"
-            className="rounded border border-border/60 px-1 py-0.5 text-[10px] text-muted-foreground"
+            className="rounded-full border border-border/40 px-2.5 py-0.5 text-[10px] text-muted-foreground"
             title="多单位不换算，各单位分别标注"
           >
             存在多单位
@@ -187,9 +187,9 @@ export const StatsPanel = ({
         type="button"
         data-testid="economy-export-window"
         onClick={onExportWindow}
-        className="mt-1.5 flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+        className="mt-3 flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 motion-reduce:transition-none"
       >
-        <Download className="h-3 w-3" aria-hidden="true" />
+        <Download className="h-3.5 w-3.5" aria-hidden="true" />
         导出当前窗口 CSV
       </button>
     </div>

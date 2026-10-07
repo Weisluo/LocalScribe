@@ -48,15 +48,15 @@ export const RelationChipRow = ({
   if (matched.length === 0 && !onAdd) return null;
 
   return (
-    <div className="space-y-1" data-testid="relation-chip-row" data-row-label={label}>
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+    <div className="space-y-1.5" data-testid="relation-chip-row" data-row-label={label}>
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <span>{label}</span>
-        <span className="rounded-full bg-muted/40 px-1.5 text-[10px]">{matched.length}</span>
+        <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px]">{matched.length}</span>
         {onAdd && (
           <button
             type="button"
             onClick={onAdd}
-            className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+            className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
           >
             <Plus className="h-3 w-3" aria-hidden="true" />
             {addLabel ?? '添加'}
@@ -65,10 +65,12 @@ export const RelationChipRow = ({
       </div>
       {matched.length === 0 ? (
         onAdd ? (
-          <div className="text-[11px] text-muted-foreground/60">未记录{label}</div>
+          <div className="rounded-xl border-2 border-dashed border-border/40 px-3 py-3 text-center text-xs text-muted-foreground">
+            未记录{label}
+          </div>
         ) : null
       ) : (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {matched.map((link) => {
             const counterpart = sourceRef ? linkCounterpart(link, sourceRef) : link.target;
             return (
@@ -76,6 +78,7 @@ export const RelationChipRow = ({
                 key={link.id}
                 entityRef={counterpart}
                 name={refs.resolveName(counterpart)}
+                size="md"
                 invalid={!refs.isLoading && refs.isInvalid(counterpart)}
                 onClick={onNavigate}
               />

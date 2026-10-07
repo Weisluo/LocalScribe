@@ -592,7 +592,7 @@ export const AtlasCanvas = ({
       data-atlas-mode={politics.atlasMode}
       data-atlas-folded={layout.folded ? 'true' : 'false'}
       data-atlas-oversize={contentBounds.width > ATLAS_WORLD_LIMIT || contentBounds.height > ATLAS_WORLD_LIMIT ? 'true' : 'false'}
-      className="relative h-full min-h-0 w-full touch-none select-none overflow-hidden rounded-lg border border-border/40 bg-[#fdf6ec] dark:bg-[#2a1c0d]/40"
+      className="relative h-full min-h-0 w-full touch-none select-none overflow-hidden rounded-2xl border border-border/40 bg-[#fdf6ec] dark:bg-[#2a1c0d]/40"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -652,7 +652,7 @@ export const AtlasCanvas = ({
               width: block.box.width,
               height: block.box.height,
             }}
-            className="absolute flex flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-amber-600/50 bg-card/85 text-[11px] text-foreground transition-colors hover:border-primary/60 motion-reduce:transition-none"
+            className="absolute flex flex-col items-center justify-center gap-0.5 rounded-xl border border-dashed border-amber-600/50 bg-card/85 text-xs text-foreground transition-all duration-200 hover:border-primary/25 hover:shadow-lg motion-reduce:transition-none"
           >
             <Layers className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden="true" />
             低等级政权 {block.count} 个
@@ -707,42 +707,42 @@ export const AtlasCanvas = ({
         className="absolute left-2 top-2 z-30 flex max-w-[62%] flex-col items-start gap-1"
         data-atlas-overlay="true"
       >
-        <div className="flex flex-wrap items-center gap-1 rounded-md border border-border/60 bg-card/90 px-1 py-0.5">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/50 bg-card/90 px-1.5 py-1 shadow-sm backdrop-blur-sm">
           <button
             type="button"
             aria-label="缩小"
             onClick={() => zoomBy(1 / 1.2)}
-            className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
           >
-            <Minus className="h-3 w-3" aria-hidden="true" />
+            <Minus className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
-          <span className="text-[10px] text-muted-foreground">{Math.round(view.k * 100)}%</span>
+          <span className="text-xs text-muted-foreground">{Math.round(view.k * 100)}%</span>
           <button
             type="button"
             aria-label="放大"
             onClick={() => zoomBy(1.2)}
-            className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
           >
-            <Plus className="h-3 w-3" aria-hidden="true" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
             aria-label="适应视图"
             onClick={() => setView(fitView(contentBounds, size.width, size.height))}
-            className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
           >
-            <Maximize2 className="h-3 w-3" aria-hidden="true" />
+            <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
             aria-pressed={relationLayerOpen}
             aria-label="关系层开关"
             onClick={() => onToggleRelationLayer(!relationLayerOpen)}
-            className={`flex items-center gap-1 rounded px-1 py-0.5 text-[10px] transition-colors motion-reduce:transition-none ${
-              relationLayerOpen ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+            className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors motion-reduce:transition-none ${
+              relationLayerOpen ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent/10 hover:text-foreground'
             }`}
           >
-            <Network className="h-3 w-3" aria-hidden="true" />
+            <Network className="h-3.5 w-3.5" aria-hidden="true" />
             关系层
           </button>
           {layout.folded && (
@@ -750,9 +750,9 @@ export const AtlasCanvas = ({
               type="button"
               aria-label="展开低等级聚合块"
               onClick={() => setExpandedFolded(true)}
-              className="flex items-center gap-1 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
             >
-              <Layers className="h-3 w-3" aria-hidden="true" />
+              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
               展开聚合块
             </button>
           )}
@@ -761,7 +761,7 @@ export const AtlasCanvas = ({
               type="button"
               aria-label="折叠低等级政权"
               onClick={() => setExpandedFolded(false)}
-              className="rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+              className="rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
             >
               折叠低等级
             </button>
@@ -770,7 +770,7 @@ export const AtlasCanvas = ({
             <button
               type="button"
               onClick={() => setMarkedIds(new Set())}
-              className="rounded px-1 py-0.5 text-[10px] text-primary"
+              className="rounded-lg px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
             >
               已选 {markedIds.size} 个政权 · 清除
             </button>
@@ -780,18 +780,18 @@ export const AtlasCanvas = ({
               type="button"
               aria-label="退出聚焦"
               onClick={onClearFocus}
-              className="flex items-center gap-1 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
             >
-              <X className="h-3 w-3" aria-hidden="true" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               退出聚焦
             </button>
           )}
         </div>
-        <div className="rounded-md border border-border/40 bg-card/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+        <div className="rounded-xl border border-border/40 bg-card/80 px-2.5 py-1 text-xs text-muted-foreground">
           {hint}
         </div>
         {marquee && (
-          <div className="text-[10px] text-primary">框选：松开后高亮命中的政权</div>
+          <div className="text-xs text-primary">框选：松开后高亮命中的政权</div>
         )}
       </div>
 
@@ -834,7 +834,7 @@ export const AtlasCanvas = ({
 
       {visibleNodes.length > 0 && layout.nodes.length === 0 && layout.foldedBlocks.length > 0 && (
         <div
-          className="pointer-events-none absolute bottom-2 left-2 z-30 rounded-md border border-dashed border-amber-600/50 bg-card/90 px-2 py-0.5 text-[10px] text-foreground"
+          className="pointer-events-none absolute bottom-2 left-2 z-30 rounded-xl border border-dashed border-amber-600/50 bg-card/90 px-3 py-1.5 text-xs text-foreground shadow-sm"
           data-atlas-overlay="true"
           data-testid="atlas-all-folded"
         >
@@ -844,7 +844,7 @@ export const AtlasCanvas = ({
 
       {visibleNodes.length === 0 && (
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 space-y-1 text-center text-[11px] text-muted-foreground"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 space-y-2 text-center text-sm text-muted-foreground"
           data-atlas-overlay="true"
         >
           {/* 同画布上还有独立势力时不能只说「没有政权节点」，否则用户以为整块画布是空的 */}
@@ -856,7 +856,7 @@ export const AtlasCanvas = ({
           <button
             type="button"
             onClick={() => onCreateKind(POLITY_KIND)}
-            className="rounded bg-primary px-2 py-0.5 text-[10px] text-primary-foreground"
+            className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
           >
             新建政权
           </button>

@@ -50,7 +50,7 @@ export const TreatyPanel = ({
             <button
               type="button"
               onClick={onEdit}
-              className="text-[10px] text-primary transition-colors hover:underline"
+              className="text-xs font-medium text-primary transition-colors hover:underline"
             >
               编辑
             </button>
@@ -82,7 +82,7 @@ export const TreatyPanel = ({
           ) : null}
         </div>
 
-        <div className="mt-1 space-y-0.5 border-t border-border/40 pt-1.5">
+        <div className="mt-1 space-y-0.5 border-t border-border/30 pt-2">
           {detail.parties.length === 0 ? (
             <EmptyHint
               text="条约没有缔约方（≥ 2 才画缎带）"
@@ -105,17 +105,17 @@ export const TreatyPanel = ({
                   onClick={() => onNavigateToEntity(party.ref)}
                 />
                 {party.role ? (
-                  <span className="text-[10px] text-muted-foreground">{party.role}</span>
+                  <span className="text-xs text-muted-foreground">{party.role}</span>
                 ) : null}
                 {party.signedAt ? (
-                  <span className="text-[10px] text-muted-foreground">{party.signedAt} 签署</span>
+                  <span className="text-xs text-muted-foreground">{party.signedAt} 签署</span>
                 ) : null}
               </div>
             ))
           )}
           {detail.singleParty ? (
-            <div className="flex items-center gap-1.5 pt-1 text-[10px] text-muted-foreground">
-              <Flag className="h-3 w-3" aria-hidden="true" />
+            <div className="flex items-center gap-1.5 pt-1.5 text-xs text-muted-foreground">
+              <Flag className="h-3.5 w-3.5" aria-hidden="true" />
               单缔约方：画布上以该节点旌旗呈现，不画缎带（§4.6.1）
             </div>
           ) : null}
@@ -137,7 +137,7 @@ export const TreatyPanel = ({
             <button
               type="button"
               onClick={onEdit}
-              className="text-[10px] text-primary transition-colors hover:underline"
+              className="text-xs font-medium text-primary transition-colors hover:underline"
             >
               编辑
             </button>
@@ -145,18 +145,18 @@ export const TreatyPanel = ({
         }
       >
         {!full ? (
-          <div className="space-y-0.5 text-[11px] text-muted-foreground">
+          <div className="space-y-1 text-sm text-muted-foreground">
             <div>条款 {detail.terms.length} 条</div>
             <div>速写档只显示条款计数：条款明细在结构档及以上开放（升级到结构档）。</div>
           </div>
         ) : detail.terms.length === 0 ? (
           <EmptyHint text="还没有条款，创建后在缎带中点补充" icon={ScrollText} />
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {detail.terms.map((term) => {
               const expanded = expandedTermId === term.id;
               return (
-                <div key={term.id} className="rounded-md px-1 py-0.5 hover:bg-accent/30">
+                <div key={term.id} className="rounded-lg px-2 py-1 hover:bg-accent/20">
                   <button
                     type="button"
                     onClick={() => setExpandedTermId(expanded ? null : term.id)}
@@ -164,11 +164,11 @@ export const TreatyPanel = ({
                     className="flex w-full items-center gap-1.5 text-left"
                   >
                     {expanded ? (
-                      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                     ) : (
-                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                     )}
-                    <span className="text-[11px] text-foreground">
+                    <span className="text-sm text-foreground">
                       {term.order}. {term.title}
                     </span>
                     {term.binding ? (
@@ -179,10 +179,10 @@ export const TreatyPanel = ({
                     ) : null}
                   </button>
                   {!expanded && term.content ? (
-                    <div className="pl-4 text-[10px] text-muted-foreground">{term.content}</div>
+                    <div className="pl-5 text-xs text-muted-foreground">{term.content}</div>
                   ) : null}
                   {expanded && term.content ? (
-                    <div className="mt-1 whitespace-pre-wrap rounded-md border border-border/40 bg-muted/10 p-1.5 text-[10px] text-foreground">
+                    <div className="mt-1.5 whitespace-pre-wrap rounded-lg border border-border/40 bg-muted/10 p-2 text-xs leading-relaxed text-foreground">
                       {term.content}
                     </div>
                   ) : null}
@@ -199,11 +199,11 @@ export const TreatyPanel = ({
         count={detail.amendments.length}
       >
         <div
-          className={`space-y-1 rounded-md border p-2 ${
+          className={`space-y-2 rounded-xl border p-3 ${
             breached ? 'border-destructive/60 bg-destructive/10' : 'border-border/50 bg-muted/10'
           }`}
         >
-          <div className="flex items-start gap-1.5 text-[11px]">
+          <div className="flex items-start gap-1.5 text-sm">
             {breached ? (
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden="true" />
             ) : null}
@@ -212,29 +212,29 @@ export const TreatyPanel = ({
             </span>
           </div>
           {breached ? (
-            <div className="text-[10px] text-destructive">违约 / 中止：{detail.meta.breachState}</div>
+            <div className="text-xs text-destructive">违约 / 中止：{detail.meta.breachState}</div>
           ) : (
-            <div className="text-[10px] text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               未标注违约；到期或终端状态由状态定义与 expiresAt 推导（§4.6.5）
             </div>
           )}
         </div>
 
-        <div className="mt-1.5 space-y-0.5">
+        <div className="mt-2 space-y-1">
           {!full ? (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               修订 {detail.amendments.length} 条 · 速写档只显示计数，明细在结构档及以上开放（升级到结构档）。
             </div>
           ) : detail.amendments.length === 0 ? (
             <EmptyHint text="还没有修订记录" />
           ) : (
             detail.amendments.map((amendment) => (
-              <div key={amendment.id} className="flex items-start gap-1.5 px-1 py-0.5">
-                <span className="w-16 shrink-0 text-[10px] text-muted-foreground">
+              <div key={amendment.id} className="flex items-start gap-1.5 px-2 py-1">
+                <span className="w-16 shrink-0 text-xs text-muted-foreground">
                   {timeRangeText(amendment.time?.start, amendment.time?.end) || '未标时间'}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[11px] text-foreground">
+                  <span className="text-sm text-foreground">
                     {amendment.order}. {amendment.title}
                   </span>
                   {amendment.kindId ? (
@@ -243,7 +243,7 @@ export const TreatyPanel = ({
                     </span>
                   ) : null}
                   {amendment.content ? (
-                    <div className="text-[10px] text-muted-foreground">{amendment.content}</div>
+                    <div className="text-xs text-muted-foreground">{amendment.content}</div>
                   ) : null}
                 </div>
               </div>
@@ -252,7 +252,7 @@ export const TreatyPanel = ({
         </div>
 
         {politics.capabilities.timeline ? (
-          <div className="mt-1.5 text-[10px] text-muted-foreground">
+          <div className="mt-2 text-xs text-muted-foreground">
             沙盘档可叠加有效期缎带与时点快照（§5.6）
           </div>
         ) : null}

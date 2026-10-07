@@ -127,16 +127,16 @@ export const FocusPanel = ({
         onCloseOverlay={handleCloseOverlay}
       >
         {detail === undefined ? (
-          <div className="space-y-2 px-3 py-6 text-center" data-testid="focus-missing">
+          <div className="space-y-3 px-5 py-8 text-center" data-testid="focus-missing">
             <SearchX className="mx-auto h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-            <div className="text-xs font-medium text-foreground">该实体不在当前筛选结果中</div>
-            <p className="text-[11px] text-muted-foreground">
+            <div className="text-sm font-medium text-foreground">该实体不在当前筛选结果中</div>
+            <p className="text-xs text-muted-foreground">
               它可能已被删除，或被层级 / 等级 / 状态筛选排除。
             </p>
             <button
               type="button"
               onClick={onResetFilter}
-              className="rounded-md border border-border px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
+              className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
               清除筛选
             </button>
@@ -241,7 +241,7 @@ export const FocusPanel = ({
                     />
                   </InfoRow>
                 ) : null}
-                <div className="pt-1 text-[10px] text-muted-foreground">
+                <div className="pt-1 text-xs text-muted-foreground">
                   关联 出 {detail.view.counts.out} / 入 {detail.view.counts.in}：该类型的字段面板尚未开放。
                 </div>
               </SectionBlock>
@@ -250,7 +250,7 @@ export const FocusPanel = ({
         )}
 
         {/* 四类详情底部的统一关联区（契约 §5.1 / 设计 §4.8），不新建政治专属面板 */}
-        <div className="border-t border-border/40 px-3 py-2.5">
+        <div className="border-t border-border/30 px-5 py-4">
           <LinkPanel
             worldId={worldId}
             entity={entityRef}

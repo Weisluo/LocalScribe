@@ -103,8 +103,17 @@ const PAGES: { id: WorldSettingsPage; label: string; icon: typeof Info }[] = [
   { id: 'backup', label: '备份', icon: DatabaseBackup },
 ];
 
+/** 输入框配方（ui_style_alignment §3.1 / §4.5） */
 const FIELD_CLASS =
-  'w-full bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
+
+/** 主按钮（§4.3 的紧凑版） */
+const PRIMARY_BUTTON_CLASS =
+  'flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50';
+
+/** 次要按钮（§4.2 的紧凑版） */
+const SECONDARY_BUTTON_CLASS =
+  'flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50';
 
 /** 各模块配置的解析（前端默认值 + 后端 config），与模块视图同口径 */
 const resolveModuleConfig = (moduleType: string, raw: ModuleConfig): ModuleConfig => {
@@ -178,7 +187,7 @@ const WorldPreviewCard = ({
 
   return (
     <div className="space-y-2">
-      <div className="text-[11px] font-medium text-muted-foreground">实时预览（使用当前世界内容）</div>
+      <div className="text-xs font-medium text-muted-foreground">实时预览（使用当前世界内容）</div>
       <div
         className={`border border-border/60 p-3 ${radiusClass} ${textureClass}`}
         style={{ backgroundColor: option.surface, color: option.foreground }}
@@ -208,9 +217,9 @@ const WorldPreviewCard = ({
                   <span className="rounded-full px-1.5 text-[10px]" style={{ backgroundColor: `${accent}22`, color: accent }}>
                     {item.kindLabel}
                   </span>
-                  <span className="ml-auto text-[10px] opacity-60">{item.moduleLabel}</span>
+                  <span className="ml-auto text-xs opacity-60">{item.moduleLabel}</span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-[11px] opacity-80">{item.text}</p>
+                <p className="mt-1 line-clamp-2 text-xs opacity-80">{item.text}</p>
               </li>
             ))}
           </ul>
@@ -282,7 +291,7 @@ const ModuleConfigLauncher = ({
           <button
             type="button"
             onClick={() => setSubmoduleOpen(true)}
-            className="flex w-full items-center justify-between rounded-md border border-border/60 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="flex w-full items-center justify-between rounded-xl border border-border/50 bg-card/40 px-4 py-2.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             <span>打开子模块管理器（{module.submodule_count} 个子模块 / {module.item_count} 个条目）</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -582,19 +591,20 @@ export const WorldSettingsPanel = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="世界设置">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex h-[86vh] w-full max-w-4xl overflow-hidden rounded-xl border border-border bg-background shadow-xl">
-        <nav className="flex w-40 flex-shrink-0 flex-col gap-0.5 border-r border-border/60 bg-card/20 p-3" aria-label="世界设置分页">
-          <div className="mb-2 px-2 text-[11px] font-medium text-muted-foreground">世界设置</div>
+      <div className="relative z-10 flex h-[86vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-lg backdrop-blur-md">
+        <nav className="flex w-40 flex-shrink-0 flex-col gap-1 border-r border-border/30 bg-card/20 p-3" aria-label="世界设置分页">
+          <div className="mb-2 px-2 text-xs font-semibold tracking-tight text-foreground">世界设置</div>
           {PAGES.map((item) => {
             const Icon = item.icon;
+            const active = page === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setPage(item.id)}
-                aria-current={page === item.id}
-                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-                  page === item.id ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-accent/20 hover:text-foreground'
+                aria-current={active}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
+                  active ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -605,22 +615,22 @@ export const WorldSettingsPanel = ({
         </nav>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+          <header className="flex items-center gap-2 border-b border-border/30 px-5 py-4">
             <h2 className="text-sm font-semibold">{world.name}</h2>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {analysisEntities} 实体 · {world.link_count ?? 0} 关联
             </span>
             <button
               type="button"
               onClick={onClose}
               aria-label="关闭世界设置"
-              className="ml-auto rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+              className="ml-auto rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             {page === 'basic' && (
               <div className="space-y-4">
                 <label className="block space-y-1">
@@ -660,7 +670,7 @@ export const WorldSettingsPanel = ({
                     ))}
                     {modules.length === 0 && <option value={WORLD_DEFAULT_MODULE}>历史</option>}
                   </select>
-                  <span className="text-[11px] text-muted-foreground">进入这个世界时默认打开该模块。</span>
+                  <span className="text-xs text-muted-foreground">进入这个世界时默认打开该模块。</span>
                 </label>
                 <SaveRow saving={saving} onSave={save} />
               </div>
@@ -680,8 +690,8 @@ export const WorldSettingsPanel = ({
                           if (item.id !== 'custom') setAccent(item.accent);
                         }}
                         aria-pressed={palette === item.id}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
-                          palette === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border/60 text-muted-foreground hover:bg-accent/20'
+                        className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
+                          palette === item.id ? 'border-primary/40 bg-primary/10 text-primary shadow-sm' : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                         }`}
                       >
                         <span className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: item.accent }} />
@@ -735,12 +745,12 @@ export const WorldSettingsPanel = ({
 
             {page === 'terminology' && (
               <div className="space-y-3">
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   术语只改变显示：模块名、通用称谓与关联标签的世界内称呼。module_type / kind / link_type 等稳定标识不变。
                   留空即回退默认值。
                 </p>
                 {terminologyAudit.conflicts.length > 0 && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                     <span>
                       同名冲突：{terminologyAudit.conflicts.map((key) => termFor(terminology, key, DEFAULT_WORLD_TERMINOLOGY[key])).join('、')}
@@ -749,7 +759,7 @@ export const WorldSettingsPanel = ({
                   </div>
                 )}
                 {terminologyAudit.empty.length > 0 && (
-                  <div className="rounded-md border border-border/60 bg-card/30 px-3 py-2 text-[11px] text-muted-foreground">
+                  <div className="rounded-xl border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
                     空值回退默认：{terminologyAudit.empty.join('、')}
                   </div>
                 )}
@@ -765,7 +775,7 @@ export const WorldSettingsPanel = ({
                         aria-label={`术语 ${key}`}
                         onChange={(event) => setTerminology({ ...terminology, [key]: event.target.value })}
                       />
-                      <span className="w-24 flex-shrink-0 truncate text-[10px] text-muted-foreground/70">{key}</span>
+                      <span className="w-24 flex-shrink-0 truncate text-xs text-muted-foreground/70">{key}</span>
                     </div>
                   ))}
                 </div>
@@ -774,7 +784,7 @@ export const WorldSettingsPanel = ({
                   <button
                     type="button"
                     onClick={() => setTerminology({})}
-                    className="flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                    className={SECONDARY_BUTTON_CLASS}
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     恢复默认
@@ -786,7 +796,7 @@ export const WorldSettingsPanel = ({
 
             {page === 'calendar' && (
               <div className="space-y-4">
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   历法只用于展示与排序：自然语言时间（如 阳阙历三年）按原文存储，解析失败不改写原文。
                 </p>
                 <div className="grid grid-cols-2 gap-4">
@@ -832,12 +842,12 @@ export const WorldSettingsPanel = ({
 
             {page === 'modules' && (
               <div className="space-y-2">
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   七个固定模块各一行：显示 kind 数、字段数与是否已自定义；点开后进入该模块的配置面板。
                 </p>
                 {!canConfigureModules && (
                   <p
-                    className="text-[11px] text-amber-700 dark:text-amber-300"
+                    className="text-xs text-amber-700 dark:text-amber-300"
                     data-testid="module-config-sketch-hint"
                   >
                     速写档不开放模块配置：切到「结构」或「沙盘」档后可编辑类型 / 字段 / 等级 / 关联类型。
@@ -874,7 +884,7 @@ export const WorldSettingsPanel = ({
                   <button
                     type="button"
                     onClick={() => setActiveModuleType(null)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-xs text-muted-foreground hover:text-foreground"
                   >
                     关闭模块配置
                   </button>
@@ -889,15 +899,15 @@ export const WorldSettingsPanel = ({
                     <Download className="h-3.5 w-3.5" />
                     导出备份
                   </h3>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     导出完整 JSON（世界、模块配置、实体、关联），文件名 {backupFileName(world.name)}。
                   </p>
                   <button
                     type="button"
                     onClick={handleExport}
-                    className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-white transition-colors hover:bg-primary/90"
+                    className={PRIMARY_BUTTON_CLASS}
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download className="h-4 w-4" />
                     导出世界备份
                   </button>
                 </section>
@@ -920,25 +930,25 @@ export const WorldSettingsPanel = ({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                    className={SECONDARY_BUTTON_CLASS}
                   >
                     <Upload className="h-3.5 w-3.5" />
                     选择备份文件
                   </button>
                   {restoreFile && (
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {restoreFile.name}（{(restoreFile.size / 1024).toFixed(1)} KB）
                     </div>
                   )}
                   {backupError && (
-                    <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
+                    <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                       {backupError}
                     </div>
                   )}
                   {backupDoc && (
-                    <div className="space-y-2 rounded-md border border-border/60 bg-card/30 p-3">
-                      <div className="text-[11px] text-muted-foreground">
+                    <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 p-3">
+                      <div className="text-xs text-muted-foreground">
                         备份格式版本 {backupDoc.schema_version} · 模块 {backupDoc.modules.length} · 关联 {backupDoc.links.length}
                       </div>
                       <div className="space-y-1">
@@ -979,7 +989,7 @@ export const WorldSettingsPanel = ({
                             ))}
                           </select>
                           {targetNonEmpty && (
-                            <label className="flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-300">
+                            <label className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
                               <input
                                 type="checkbox"
                                 checked={confirmOverwrite}
@@ -998,19 +1008,19 @@ export const WorldSettingsPanel = ({
                         type="button"
                         onClick={handleRestore}
                         disabled={isImporting || overwriteBlocked}
-                        className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+                        className={PRIMARY_BUTTON_CLASS}
                       >
-                        {isImporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                        {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         开始恢复
                       </button>
                     </div>
                   )}
                   {report && (
-                    <div className="space-y-2 rounded-md border border-border/60 bg-card/30 p-3" data-testid="import-report">
+                    <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 p-3" data-testid="import-report">
                       <div className="text-xs font-medium">
                         {report.entityCount} 实体 · {report.linkCount} 关联 · id 映射 {report.idMapCount} 条
                       </div>
-                      <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+                      <ul className="space-y-0.5 text-xs text-muted-foreground">
                         {report.lines.map((line) => (
                           <li key={line}>{line}</li>
                         ))}
@@ -1036,8 +1046,8 @@ export const WorldSettingsPanel = ({
                     <AlertTriangle className="h-3.5 w-3.5" />
                     危险操作
                   </h3>
-                  <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
-                    <div className="text-[11px] text-muted-foreground">
+                  <div className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                    <div className="text-xs text-muted-foreground">
                       清空世界数据会删除全部子模块与条目，保留模块与配置；此操作不可撤销。
                     </div>
                     <div className="flex items-center gap-2">
@@ -1052,13 +1062,13 @@ export const WorldSettingsPanel = ({
                         type="button"
                         disabled={clearConfirm !== world.name || clearing}
                         onClick={handleClearWorldData}
-                        className="flex flex-shrink-0 items-center gap-1.5 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-40"
+                        className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3.5 py-1.5 text-xs font-medium text-destructive transition-all duration-200 hover:bg-destructive/20 disabled:opacity-40"
                       >
-                        {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        {clearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         清空世界数据
                       </button>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       删除世界会连同全部实体、关联与配置一起永久删除。
                     </div>
                     <div className="flex items-center gap-2">
@@ -1083,9 +1093,9 @@ export const WorldSettingsPanel = ({
                             toast.error((error as Error).message || '删除世界失败');
                           }
                         }}
-                        className="flex flex-shrink-0 items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs text-white transition-colors hover:bg-destructive/90 disabled:opacity-40"
+                        className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-br from-destructive to-destructive/90 px-3.5 py-1.5 text-xs font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-destructive/20 disabled:opacity-40"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                         删除世界
                       </button>
                     </div>
@@ -1118,9 +1128,9 @@ const SaveRow = ({ saving, onSave, inline }: { saving: boolean; onSave: () => vo
       type="button"
       onClick={onSave}
       disabled={saving}
-      className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+      className={PRIMARY_BUTTON_CLASS}
     >
-      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
       保存设置
     </button>
   </div>
@@ -1141,21 +1151,21 @@ const ModuleRow = ({
       type="button"
       onClick={onOpen}
       disabled={disabled}
-      className="flex w-full items-center gap-3 rounded-lg border border-border/60 bg-card/30 px-3 py-2 text-left transition-colors hover:bg-accent/20 disabled:opacity-50"
+      className="group flex w-full items-center gap-3 rounded-xl border border-border/50 bg-card/50 px-4 py-3 text-left shadow-sm transition-all duration-200 hover:border-primary/25 hover:shadow-md disabled:opacity-50"
     >
       <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm">{row.label}</span>
-        <span className="block text-[11px] text-muted-foreground">
+        <span className="block truncate text-sm font-semibold text-foreground">{row.label}</span>
+        <span className="block text-xs text-muted-foreground">
           {row.kindCount} 个类型 · {row.fieldCount} 个字段 · {row.submoduleCount} 实体 / {row.itemCount} 条目
         </span>
       </span>
       {row.customised ? (
         <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] text-primary">已自定义</span>
       ) : (
-        <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">默认</span>
+        <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">默认</span>
       )}
-      <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+      <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5" />
     </button>
   );
 };

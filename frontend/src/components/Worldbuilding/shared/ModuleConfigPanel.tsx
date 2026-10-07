@@ -53,12 +53,27 @@ import {
 } from './moduleConfig';
 import { lucideIcon } from './lucideIcon';
 
+/** 输入框配方（ui_style_alignment §3.1 / §4.5）：rounded-xl + muted 底 + primary 焦点环 */
 const FIELD_CLASS =
-  'w-full bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 /** 行内编辑用：FIELD_CLASS 的 w-full 放进 flex 行会互相挤压，这里用固定宽度 */
 const INLINE_FIELD_CLASS =
-  'bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
+
+/** 配置行（列表行，不是实体卡片）：§4.8 的轻量版 */
+const CONFIG_ROW_CLASS = 'rounded-lg border border-border/50 bg-card/40 px-3 py-1.5';
+
+/** 表单分组外壳（§4.9 面板内的局部区块） */
+const CONFIG_SECTION_CLASS = 'rounded-xl border border-border/50 bg-muted/20 p-3';
+
+/** 主按钮（§4.3 的紧凑版） */
+const PRIMARY_BUTTON_CLASS =
+  'flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20';
+
+/** 次要按钮（§4.2 的紧凑版） */
+const SECONDARY_BUTTON_CLASS =
+  'flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground';
 
 const FIELD_TYPES = CUSTOM_FIELD_TYPES;
 
@@ -642,28 +657,35 @@ export const ModuleConfigPanelBody = ({
 
   return (
     <div className="space-y-3" data-testid="module-config-panel">
-      <div role="tablist" aria-label="配置分区" className="flex flex-wrap gap-1">
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.id}
-            onClick={() => setTab(item.id)}
-            className={`rounded-md px-2.5 py-1 text-[11px] transition-colors ${
-              tab === item.id
-                ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
+      <div
+        role="tablist"
+        aria-label="配置分区"
+        className="flex flex-wrap items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
+      >
+        {tabs.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(item.id)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
+                active
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+              }`}
+            >
+              {item.label}
+            </button>
+          );
+        })}
       </div>
 
         {error && (
           <div
-            className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+            className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
             data-testid="config-error"
           >
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -671,7 +693,7 @@ export const ModuleConfigPanelBody = ({
           </div>
         )}
         {notice && (
-          <div className="rounded-md border border-border/50 bg-muted/20 px-2 py-1.5 text-[11px] text-muted-foreground">
+          <div className="rounded-xl border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
             {notice}
           </div>
         )}
@@ -685,7 +707,7 @@ export const ModuleConfigPanelBody = ({
                 return (
                   <div
                     key={def.id}
-                    className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                    className={`flex items-center gap-2 ${CONFIG_ROW_CLASS}`}
                     data-testid="config-kind-row"
                     data-kind-id={def.id}
                   >
@@ -697,15 +719,15 @@ export const ModuleConfigPanelBody = ({
                         aria-hidden="true"
                       />
                     )}
-                    <span className="text-[11px] font-medium text-foreground">{def.label}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{def.id}</span>
+                    <span className="text-xs font-medium text-foreground">{def.label}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{def.id}</span>
                     {def.parentKind && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         父级 {def.parentKind}
                       </span>
                     )}
                     {builtin ? (
-                      <span className="ml-auto rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+                      <span className="ml-auto rounded-full border border-border/50 px-1.5 text-xs text-muted-foreground">
                         内置
                       </span>
                     ) : (
@@ -713,7 +735,7 @@ export const ModuleConfigPanelBody = ({
                         type="button"
                         aria-label={`删除类型 ${def.label}`}
                         onClick={() => removeKind(def.id)}
-                        className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                        className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -723,8 +745,8 @@ export const ModuleConfigPanelBody = ({
               })}
             </div>
 
-            <div className="space-y-1.5 rounded-md border border-border/40 p-2">
-              <div className="text-[11px] font-medium text-foreground">新增自定义类型</div>
+            <div className={`space-y-1.5 ${CONFIG_SECTION_CLASS}`}>
+              <div className="text-xs font-medium text-foreground">新增自定义类型</div>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -775,13 +797,13 @@ export const ModuleConfigPanelBody = ({
                 <button
                   type="button"
                   onClick={addKind}
-                  className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+                  className={PRIMARY_BUTTON_CLASS}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   添加
                 </button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 自定义类型 id 自动生成为 {CUSTOM_KIND_PREFIX}*，必须声明父级；最多 {maxDepth} 层。
               </p>
             </div>
@@ -807,7 +829,7 @@ export const ModuleConfigPanelBody = ({
                 <button
                   type="button"
                   onClick={() => onManageFields(activeFieldKind)}
-                  className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                  className={SECONDARY_BUTTON_CLASS}
                   data-testid="config-open-field-editor"
                 >
                   字段编辑器
@@ -819,35 +841,35 @@ export const ModuleConfigPanelBody = ({
               {fieldsOfKind(activeFieldKind).map((field) => (
                 <div
                   key={field.id}
-                  className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                  className={`flex items-center gap-2 ${CONFIG_ROW_CLASS}`}
                   data-testid="config-field-row"
                   data-field-id={field.id}
                 >
-                  <span className="text-[11px] font-medium text-foreground">{field.label}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{field.id}</span>
-                  <span className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+                  <span className="text-xs font-medium text-foreground">{field.label}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{field.id}</span>
+                  <span className="rounded-full border border-border/50 px-1.5 text-xs text-muted-foreground">
                     {FIELD_TYPE_LABELS[field.type] ?? field.type}
                   </span>
                   {field.group && (
-                    <span className="text-[10px] text-muted-foreground">组 {field.group}</span>
+                    <span className="text-xs text-muted-foreground">组 {field.group}</span>
                   )}
                   <button
                     type="button"
                     aria-label={`删除字段 ${field.label}`}
                     onClick={() => removeField(activeFieldKind, field.id)}
-                    className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                    className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
               {fieldsOfKind(activeFieldKind).length === 0 && (
-                <p className="text-[11px] text-muted-foreground">该类型暂无自定义字段</p>
+                <p className="text-xs text-muted-foreground">该类型暂无自定义字段</p>
               )}
             </div>
 
-            <div className="space-y-1.5 rounded-md border border-border/40 p-2">
-              <div className="text-[11px] font-medium text-foreground">新增字段</div>
+            <div className={`space-y-1.5 ${CONFIG_SECTION_CLASS}`}>
+              <div className="text-xs font-medium text-foreground">新增字段</div>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -901,13 +923,13 @@ export const ModuleConfigPanelBody = ({
                 <button
                   type="button"
                   onClick={addField}
-                  className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+                  className={PRIMARY_BUTTON_CLASS}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   添加
                 </button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 删除字段只影响渲染；已填数据保留在 meta.customFields 或 item.content 中。
               </p>
             </div>
@@ -919,7 +941,7 @@ export const ModuleConfigPanelBody = ({
             {asDefs<LevelDef>(draft.levels).map((level) => (
               <div
                 key={level.id}
-                className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                className={`flex items-center gap-2 ${CONFIG_ROW_CLASS}`}
               >
                 <input
                   type="text"
@@ -928,7 +950,7 @@ export const ModuleConfigPanelBody = ({
                   aria-label={`等级名 ${level.label}`}
                   className={`${INLINE_FIELD_CLASS} w-36`}
                 />
-                <span className="font-mono text-[10px] text-muted-foreground">{level.id}</span>
+                <span className="font-mono text-xs text-muted-foreground">{level.id}</span>
                 <input
                   type="number"
                   value={typeof level.rank === 'number' ? level.rank : ''}
@@ -948,7 +970,7 @@ export const ModuleConfigPanelBody = ({
                       ),
                     })
                   }
-                  className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                  className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -978,13 +1000,13 @@ export const ModuleConfigPanelBody = ({
               <button
                 type="button"
                 onClick={addLevel}
-                className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                className={SECONDARY_BUTTON_CLASS}
               >
                 <Plus className="h-3.5 w-3.5" />
                 等级
               </button>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               等级含义由各模块自行定义（如 超级大国 / 王国 / 城邦），系统不规定档数与语义；
               rank 越大权重越高。
             </p>
@@ -996,10 +1018,10 @@ export const ModuleConfigPanelBody = ({
             {asDefs<StatusDef>(draft.statuses).map((status) => (
               <div
                 key={status.id}
-                className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                className={`flex items-center gap-2 ${CONFIG_ROW_CLASS}`}
               >
-                <span className="text-[11px]">{status.label}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">{status.id}</span>
+                <span className="text-xs">{status.label}</span>
+                <span className="font-mono text-xs text-muted-foreground">{status.id}</span>
                 <button
                   type="button"
                   aria-label={`删除状态 ${status.label}`}
@@ -1010,7 +1032,7 @@ export const ModuleConfigPanelBody = ({
                       ),
                     })
                   }
-                  className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                  className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -1040,13 +1062,13 @@ export const ModuleConfigPanelBody = ({
               <button
                 type="button"
                 onClick={addStatus}
-                className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                className={SECONDARY_BUTTON_CLASS}
               >
                 <Plus className="h-3.5 w-3.5" />
                 状态
               </button>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               状态用文字徽章加色阶表达（如 存续、已灭亡、流亡），不使用星号或 emoji 拼贴。
             </p>
           </div>
@@ -1055,11 +1077,11 @@ export const ModuleConfigPanelBody = ({
         {tab === 'linkTypes' && (
           <div className="space-y-3" data-testid="config-link-types">
             <div className="space-y-1">
-              <div className="text-[11px] font-medium text-foreground">
+              <div className="text-xs font-medium text-foreground">
                 核心关联类型（后端注册表，只读；可改名 / 改色 / 改图标，不可删除）
               </div>
               {(linkRegistry ?? []).length === 0 && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   未提供核心注册表（linkRegistry），仅显示自定义关联类型。
                 </p>
               )}
@@ -1069,7 +1091,7 @@ export const ModuleConfigPanelBody = ({
                 return (
                   <div
                     key={core.id}
-                    className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                    className={`flex flex-wrap items-center gap-2 ${CONFIG_ROW_CLASS}`}
                     data-testid="config-core-link-type"
                     data-link-type={core.id}
                   >
@@ -1090,8 +1112,8 @@ export const ModuleConfigPanelBody = ({
                       }
                       className={`${INLINE_FIELD_CLASS} w-28`}
                     />
-                    <span className="font-mono text-[10px] text-muted-foreground">{core.id}</span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="font-mono text-xs text-muted-foreground">{core.id}</span>
+                    <span className="text-xs text-muted-foreground">
                       {core.directed ? '有向' : '对称'}
                     </span>
                     <input
@@ -1104,14 +1126,14 @@ export const ModuleConfigPanelBody = ({
                       className={`${INLINE_FIELD_CLASS} w-24`}
                     />
                     <span className="ml-auto flex items-center gap-2">
-                      <span className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+                      <span className="rounded-full border border-border/50 px-1.5 text-xs text-muted-foreground">
                         核心
                       </span>
                       {override && (
                         <button
                           type="button"
                           onClick={() => resetLinkOverride(core.id)}
-                          className="text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                         >
                           恢复默认
                         </button>
@@ -1123,33 +1145,33 @@ export const ModuleConfigPanelBody = ({
             </div>
 
             <div className="space-y-1">
-              <div className="text-[11px] font-medium text-foreground">自定义关联类型</div>
+              <div className="text-xs font-medium text-foreground">自定义关联类型</div>
               {customLinkTypes.length === 0 && (
-                <p className="text-[11px] text-muted-foreground">尚未登记自定义关联类型。</p>
+                <p className="text-xs text-muted-foreground">尚未登记自定义关联类型。</p>
               )}
               {customLinkTypes.map((def) => (
                 <div
                   key={def.id}
-                  className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                  className={`flex flex-wrap items-center gap-2 ${CONFIG_ROW_CLASS}`}
                   data-testid="config-custom-link-type"
                   data-link-type={def.id}
                 >
-                  <span className="text-[11px] font-medium text-foreground">{def.label}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{def.id}</span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs font-medium text-foreground">{def.label}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{def.id}</span>
+                  <span className="text-xs text-muted-foreground">
                     源 {def.source?.module ?? '?'}
                     {def.source?.kind ? `/${def.source.kind}` : ''} · 目标{' '}
                     {def.target?.module ?? '?'}
                     {def.target?.kind ? `/${def.target.kind}` : ''}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {def.directed ? '有向' : '对称'}
                   </span>
                   <button
                     type="button"
                     aria-label={`删除关联类型 ${def.label}`}
                     onClick={() => removeLinkType(def.id, def.label)}
-                    className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                    className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -1157,8 +1179,8 @@ export const ModuleConfigPanelBody = ({
               ))}
             </div>
 
-            <div className="space-y-1.5 rounded-md border border-border/40 p-2">
-              <div className="text-[11px] font-medium text-foreground">新增自定义关联类型</div>
+            <div className={`space-y-1.5 ${CONFIG_SECTION_CLASS}`}>
+              <div className="text-xs font-medium text-foreground">新增自定义关联类型</div>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1226,7 +1248,7 @@ export const ModuleConfigPanelBody = ({
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <label className="flex items-center gap-1 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={newLinkType.directed}
@@ -1261,13 +1283,13 @@ export const ModuleConfigPanelBody = ({
                 <button
                   type="button"
                   onClick={addLinkType}
-                  className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+                  className={PRIMARY_BUTTON_CLASS}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   添加
                 </button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 自定义关联类型只写入本模块 config.linkTypes，不写入后端注册表；必须声明方向、标签与
                 源 / 目标范围。删除后既有该类型关联回退为「相关」（{LINK_TYPE_FALLBACK_ID}）并保留备注。
               </p>
@@ -1279,7 +1301,7 @@ export const ModuleConfigPanelBody = ({
           <div className="space-y-3" data-testid="config-display">
             <div className="flex gap-2">
               <label className="flex-1 space-y-0.5">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground/80">
                   默认复杂度
                 </span>
                 <select
@@ -1298,7 +1320,7 @@ export const ModuleConfigPanelBody = ({
                 </select>
               </label>
               <label className="flex-1 space-y-0.5">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground/80">
                   默认视图
                 </span>
                 <input
@@ -1311,7 +1333,7 @@ export const ModuleConfigPanelBody = ({
                 />
               </label>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               默认复杂度只决定新实体的起始披露档位，不影响已有数据；降档隐藏、升档恢复。
             </p>
           </div>
@@ -1323,9 +1345,9 @@ export const ModuleConfigPanelBody = ({
               {Object.entries(draft.terminology ?? {}).map(([key, value]) => (
                 <div
                   key={key}
-                  className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                  className={`flex items-center gap-2 ${CONFIG_ROW_CLASS}`}
                 >
-                  <span className="font-mono text-[10px] text-muted-foreground">{key}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{key}</span>
                   <input
                     type="text"
                     value={value}
@@ -1345,7 +1367,7 @@ export const ModuleConfigPanelBody = ({
                       delete next[key];
                       patchDraft({ terminology: next });
                     }}
-                    className="rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                    className="rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -1375,13 +1397,13 @@ export const ModuleConfigPanelBody = ({
                 <button
                   type="button"
                   onClick={addTerm}
-                  className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                  className={SECONDARY_BUTTON_CLASS}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   术语
                 </button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 术语只影响显示与导出文案；模块级术语优先于世界级，稳定 id 不变。
               </p>
             </div>
@@ -1391,16 +1413,16 @@ export const ModuleConfigPanelBody = ({
         {tab === 'module' && hasRacesKeys && (
           <div className="space-y-3" data-testid="config-races">
             <div className="space-y-1">
-              <div className="text-[11px] font-medium text-foreground">血缘语义分色</div>
+              <div className="text-xs font-medium text-foreground">血缘语义分色</div>
               {asDefs<RelationKindDef>(draft.relationKinds).map((kind) => (
                 <div
                   key={kind.id}
-                  className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                  className={`flex items-center gap-2 ${CONFIG_ROW_CLASS}`}
                   data-testid="config-relation-kind"
                 >
-                  <span className="text-[11px]">{kind.label}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{kind.id}</span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs">{kind.label}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{kind.id}</span>
+                  <span className="text-xs text-muted-foreground">
                     {kind.lineStyle ?? 'dashed'}
                   </span>
                   <button
@@ -1413,7 +1435,7 @@ export const ModuleConfigPanelBody = ({
                         ),
                       })
                     }
-                    className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                    className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -1458,7 +1480,7 @@ export const ModuleConfigPanelBody = ({
                 <button
                   type="button"
                   onClick={addRelationKind}
-                  className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                  className={SECONDARY_BUTTON_CLASS}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   添加
@@ -1467,12 +1489,12 @@ export const ModuleConfigPanelBody = ({
             </div>
 
             <div className="space-y-1">
-              <div className="text-[11px] font-medium text-foreground">纹章色板</div>
+              <div className="text-xs font-medium text-foreground">纹章色板</div>
               <div className="flex flex-wrap items-center gap-1">
                 {asDefs<string>(draft.emblemPalette).map((color, index) => (
                   <span
                     key={`${color}-${index}`}
-                    className="flex items-center gap-1 rounded-md border border-border/40 px-1.5 py-0.5"
+                    className="flex items-center gap-1 rounded-lg border border-border/50 bg-card/40 px-2 py-0.5"
                   >
                     <span
                       className="h-3 w-3 rounded-sm border border-border/60"
@@ -1503,7 +1525,7 @@ export const ModuleConfigPanelBody = ({
                           ),
                         })
                       }
-                      className="rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                      className="rounded-lg p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -1516,7 +1538,7 @@ export const ModuleConfigPanelBody = ({
                       emblemPalette: [...asDefs<string>(draft.emblemPalette), '#0f766e'],
                     })
                   }
-                  className="flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] transition-colors hover:bg-accent/30"
+                  className="flex items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-2 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
                 >
                   <Plus className="h-3 w-3" />
                   颜色
@@ -1530,7 +1552,7 @@ export const ModuleConfigPanelBody = ({
           <div className="space-y-3" data-testid="config-systems">
             <div className="flex gap-2">
               <label className="flex-1 space-y-0.5">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground/80">
                   阶位术语
                 </span>
                 <input
@@ -1542,7 +1564,7 @@ export const ModuleConfigPanelBody = ({
                 />
               </label>
               <label className="flex-1 space-y-0.5">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground/80">
                   新建步长
                 </span>
                 <input
@@ -1557,13 +1579,13 @@ export const ModuleConfigPanelBody = ({
             </div>
 
             <div className="space-y-1">
-              <div className="text-[11px] font-medium text-foreground">节点样式（kind 对应图标与颜色）</div>
+              <div className="text-xs font-medium text-foreground">节点样式（kind 对应图标与颜色）</div>
               {kinds.map((def) => {
                 const kind = def.id;
                 const style = draft.nodeStyles?.[kind];
                 return (
                   <div key={kind} className="flex items-center gap-2">
-                    <span className="w-24 font-mono text-[10px] text-muted-foreground">
+                    <span className="w-24 font-mono text-xs text-muted-foreground">
                       {kind}
                     </span>
                     <input
@@ -1608,7 +1630,7 @@ export const ModuleConfigPanelBody = ({
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground/80">
                 代价表单字段顺序（逗号分隔）
               </span>
               <input
@@ -1633,11 +1655,11 @@ export const ModuleConfigPanelBody = ({
 
         {extra}
 
-        <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
+        <div className="flex items-center justify-end gap-3 border-t border-border/30 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
           </button>
@@ -1645,9 +1667,9 @@ export const ModuleConfigPanelBody = ({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
-            {saving ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
             保存配置
           </button>
         </div>

@@ -7,10 +7,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
+import { motion } from 'framer-motion';
 
 import type { EntityRef, WorldLink } from '@/services/worldbuildingApi';
 import { shortRefId } from '../../hooks';
 import type { ModuleConfig } from '../../shared/moduleConfig';
+import { viewStagger } from '../../shared/motion';
 import { useVirtualGrid } from '../../shared/useVirtualList';
 import { RACES_MODULE, RACE_CARD_VIRTUAL_LIMIT, type RaceNode } from '../types';
 import { RaceCard } from './RaceCard';
@@ -132,7 +134,12 @@ export const RaceGrid = ({
       className="h-full overflow-y-auto overflow-x-hidden"
     >
       {enabled && <div style={{ height: paddingTop }} aria-hidden="true" />}
-      <div className="grid grid-cols-1 gap-4 p-0.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <motion.div
+        variants={viewStagger}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      >
         {items.map((node) => (
           <RaceCard
             key={node.id}
@@ -146,7 +153,7 @@ export const RaceGrid = ({
             onOpen={onOpen}
           />
         ))}
-      </div>
+      </motion.div>
       {enabled && <div style={{ height: paddingBottom }} aria-hidden="true" />}
     </div>
   );

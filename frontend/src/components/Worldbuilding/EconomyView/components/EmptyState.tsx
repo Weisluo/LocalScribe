@@ -9,6 +9,7 @@
  * - 主按钮存在但没有回调时置灰（不渲染成假按钮，也不偷偷创建数据）；备选没有回调时不渲染。
  */
 
+import { motion } from 'framer-motion';
 import {
   Activity,
   BookOpen,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { EmptyState } from '../../shared';
 import type { EconomyEmptyStateProps } from '../types';
 
 interface SceneAction {
@@ -123,41 +125,48 @@ const sceneOf = (props: EconomyEmptyStateProps): SceneDef => {
 
 export const EconomyEmptyState = (props: EconomyEmptyStateProps) => {
   const scene = sceneOf(props);
-  const Icon = scene.icon;
   const primaryDisabled = !scene.primary.onClick;
 
   return (
-    <div
-      data-testid={`economy-empty-${props.scene}`}
-      className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center"
-    >
-      <Icon className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-      <p className="text-sm font-medium text-foreground">{scene.title}</p>
-      <p className="max-w-md text-xs text-muted-foreground">{scene.description}</p>
-      <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
-        <button
+    <div data-testid={`economy-empty-${props.scene}`} className="w-full max-w-2xl">
+      {/*
+        §4.10 富空态：图标托盘 / 标题 / 描述交给共享件（shared/EmptyState），视图内不再自建一套。
+        动作区留在本组件：共享件的 actions 是冻结接口，没有 per-action testid 槽位，
+        而 economy-empty-primary / economy-empty-secondary 是既有契约，必须原样保留。
+      */}
+      <EmptyState
+        icon={scene.icon}
+        title={scene.title}
+        description={scene.description}
+      />
+      <div className="-mt-8 flex flex-wrap items-center justify-center gap-3 px-6 pb-10">
+        <motion.button
           type="button"
           data-testid="economy-empty-primary"
           disabled={primaryDisabled}
           aria-disabled={primaryDisabled || undefined}
+          whileHover={primaryDisabled ? undefined : { scale: 1.02 }}
+          whileTap={primaryDisabled ? undefined : { scale: 0.98 }}
           onClick={scene.primary.onClick}
           className={
             primaryDisabled
-              ? 'flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground opacity-60'
-              : 'flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 motion-reduce:transition-none'
+              ? 'flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-5 py-2.5 text-sm font-medium text-muted-foreground opacity-60'
+              : 'flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20'
           }
         >
           {scene.primary.label}
-        </button>
+        </motion.button>
         {scene.secondary?.onClick && (
-          <button
+          <motion.button
             type="button"
             data-testid="economy-empty-secondary"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={scene.secondary.onClick}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-5 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             {scene.secondary.label}
-          </button>
+          </motion.button>
         )}
       </div>
     </div>

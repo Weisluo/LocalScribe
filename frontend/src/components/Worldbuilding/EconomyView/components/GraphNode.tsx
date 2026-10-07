@@ -209,7 +209,7 @@ export const GraphNode = ({
       data-selected={selected ? 'true' : 'false'}
       data-dimmed={dimmed ? 'true' : 'false'}
       transform={`translate(${x} ${y})`}
-      className={`cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none ${
+      className={`group/node cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none ${
         dimmed ? 'opacity-25' : 'opacity-100'
       }`}
       onClick={(event) => {
@@ -254,6 +254,18 @@ export const GraphNode = ({
           className="stroke-muted-foreground/70"
         />
       )}
+
+      {/* hover 光环：只做反馈，不改变形状语义（§5：画布节点不加交错入场，只保留 hover / 选中） */}
+      <rect
+        x={-halfWidth - 5}
+        y={-half - 5}
+        width={halfWidth * 2 + 10}
+        height={half * 2 + 10}
+        rx={5}
+        fill="none"
+        strokeWidth={1}
+        className="stroke-primary/40 opacity-0 transition-opacity duration-200 group-hover/node:opacity-100 motion-reduce:transition-none"
+      />
 
       {selected && (
         <rect

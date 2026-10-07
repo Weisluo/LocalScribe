@@ -180,27 +180,29 @@ export const GlobalSearch = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-24" role="dialog" aria-modal="true" aria-label="全局搜索">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[70vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-background shadow-xl">
-        <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
-          <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <input
-            ref={inputRef}
-            autoFocus
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="搜索实体、字段、标签；支持 模块:政治 kind:polity 关联:历史 标签:古老"
-            aria-label="搜索关键词"
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-          />
-          <span className="hidden text-[11px] text-muted-foreground sm:inline">
+      <div className="relative z-10 flex max-h-[70vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-lg backdrop-blur-md">
+        <div className="flex items-center gap-3 border-b border-border/30 px-5 py-4">
+          <div className="relative group flex-1">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary" />
+            <input
+              ref={inputRef}
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="搜索实体、字段、标签；支持 模块:政治 kind:polity 关联:历史 标签:古老"
+              aria-label="搜索关键词"
+              className="w-full rounded-xl border border-border/40 bg-muted/30 py-2 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
+            />
+          </div>
+          <span className="hidden text-xs text-muted-foreground sm:inline">
             {total > 0 ? `${total} 条结果` : ''}
           </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="关闭搜索"
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+            className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -209,7 +211,7 @@ export const GlobalSearch = ({
         <div className="flex-1 overflow-y-auto">
           {isSearchQueryEmpty(qualifiers) && recent.length > 0 && (
             <div className="p-3">
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 最近搜索
               </div>
@@ -219,7 +221,7 @@ export const GlobalSearch = ({
                     key={item}
                     type="button"
                     onClick={() => setQuery(item)}
-                    className="rounded-full border border-border/60 bg-card/40 px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+                    className="rounded-full border border-border/40 bg-card/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-border/70 hover:bg-accent/5 hover:text-foreground"
                   >
                     {item}
                   </button>
@@ -229,13 +231,13 @@ export const GlobalSearch = ({
           )}
 
           {isSearchQueryEmpty(qualifiers) && recent.length === 0 && (
-            <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+            <div className="px-6 py-12 text-center text-xs text-muted-foreground">
               搜索全部模块的实体、描述、标签与自定义字段
             </div>
           )}
 
           {!isSearchQueryEmpty(qualifiers) && total === 0 && (
-            <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+            <div className="px-6 py-12 text-center text-xs text-muted-foreground">
               {linkHint
                 ? '当前档位未加载关联数据，「关联:」限定符暂时不可用；其它条件可以正常搜索'
                 : '没有匹配的实体'}
@@ -243,17 +245,17 @@ export const GlobalSearch = ({
           )}
 
           {hasQualifier(qualifiers) && (
-            <div className="flex items-center gap-1.5 border-b border-border/40 px-4 py-1.5 text-[11px] text-muted-foreground">
-              {qualifiers.module && <span className="rounded bg-accent/30 px-1.5">模块:{qualifiers.module}</span>}
-              {qualifiers.kind && <span className="rounded bg-accent/30 px-1.5">kind:{qualifiers.kind}</span>}
+            <div className="flex items-center gap-1.5 border-b border-border/20 bg-muted/10 px-5 py-2 text-xs text-muted-foreground">
+              {qualifiers.module && <span className="rounded-full bg-accent/20 px-2 py-0.5">模块:{qualifiers.module}</span>}
+              {qualifiers.kind && <span className="rounded-full bg-accent/20 px-2 py-0.5">kind:{qualifiers.kind}</span>}
               {qualifiers.link && (
-                <span className="rounded bg-accent/30 px-1.5">
+                <span className="rounded-full bg-accent/20 px-2 py-0.5">
                   <Link2 className="mr-1 inline h-3 w-3" />
                   关联:{qualifiers.link}
                 </span>
               )}
               {qualifiers.tag && (
-                <span className="rounded bg-accent/30 px-1.5">
+                <span className="rounded-full bg-accent/20 px-2 py-0.5">
                   <Tag className="mr-1 inline h-3 w-3" />
                   标签:{qualifiers.tag}
                 </span>
@@ -265,10 +267,10 @@ export const GlobalSearch = ({
             const ModuleIcon = lucideIcon(MODULE_ICONS[group.module]) ?? Search;
             return (
               <section key={group.module} aria-label={`${group.label} 的搜索结果`}>
-                <div className="flex items-center gap-2 bg-card/30 px-4 py-1.5 text-[11px] font-medium text-muted-foreground">
+                <div className="flex items-center gap-2 border-b border-border/20 bg-muted/20 px-5 py-2 text-xs font-semibold text-muted-foreground">
                   <ModuleIcon className="h-3.5 w-3.5" />
                   {group.label}
-                  <span className="text-muted-foreground/70">{group.hits.length}</span>
+                  <span className="rounded-full bg-muted/50 px-1.5 text-[10px] text-muted-foreground/80">{group.hits.length}</span>
                 </div>
                 <ul>
                   {group.hits.map((hit) => {
@@ -282,23 +284,23 @@ export const GlobalSearch = ({
                           data-testid="global-search-hit"
                           onMouseEnter={() => setActiveIndex(flatIndex)}
                           onClick={() => openHit(hit)}
-                          className={`flex w-full items-start gap-3 px-4 py-2 text-left transition-colors ${
-                            isActive ? 'bg-primary/10' : 'hover:bg-accent/20'
+                          className={`flex w-full items-start gap-3 px-5 py-2.5 text-left transition-colors duration-200 ${
+                            isActive ? 'bg-primary/10' : 'hover:bg-accent/10'
                           }`}
                         >
-                          <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded bg-accent/30 text-[10px] uppercase text-muted-foreground">
+                          <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-accent/20 text-[10px] uppercase text-muted-foreground">
                             {hit.entity.kind.slice(0, 2)}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center gap-2">
-                              <span className="truncate text-sm font-medium">
+                              <span className="truncate text-sm font-semibold">
                                 <Highlight text={hit.entity.name} query={freeText} />
                               </span>
-                              <span className="rounded border border-border/60 px-1.5 text-[10px] text-muted-foreground">
+                              <span className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
                                 {hit.entity.kindLabel}
                               </span>
                               {hit.entity.tags.slice(0, 2).map((tag) => (
-                                <span key={tag} className="rounded bg-accent/25 px-1.5 text-[10px] text-muted-foreground">
+                                <span key={tag} className="rounded-full bg-accent/20 px-1.5 text-[10px] text-muted-foreground">
                                   {tag}
                                 </span>
                               ))}
@@ -308,8 +310,8 @@ export const GlobalSearch = ({
                               <Highlight text={hit.snippet} query={freeText} />
                             </span>
                           </span>
-                          <span className="flex flex-shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
-                            <span className="rounded-full bg-accent/25 px-1.5">{group.label}</span>
+                          <span className="flex flex-shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                            <span className="rounded-full bg-accent/20 px-2 py-0.5">{group.label}</span>
                             <span className="flex items-center gap-0.5">
                               <Link2 className="h-3 w-3" />
                               {hit.entity.linkCount}
@@ -325,7 +327,7 @@ export const GlobalSearch = ({
           })}
         </div>
 
-        <div className="flex items-center gap-3 border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-4 border-t border-border/30 bg-muted/20 px-5 py-2.5 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <CornerDownLeft className="h-3 w-3" />
             打开

@@ -26,19 +26,19 @@ export const SectionBlock = ({ id, title, count, actions, children }: SectionBlo
   <section
     id={id}
     data-testid={id}
-    className="space-y-1.5 border-t border-border/40 px-3 py-2.5 first:border-t-0"
+    className="space-y-2 border-t border-border/30 px-5 py-4 first:border-t-0"
   >
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <h3 className={sectionTitleClass}>{title}</h3>
       {typeof count === 'number' && <CountPill value={count} />}
-      {actions ? <div className="ml-auto flex items-center gap-1">{actions}</div> : null}
+      {actions ? <div className="ml-auto flex items-center gap-1.5">{actions}</div> : null}
     </div>
     {children}
   </section>
 );
 
 export const CountPill = ({ value, label }: { value: number; label?: string }) => (
-  <span className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+  <span className="rounded-full border border-border/50 px-2 py-0.5 text-[10px] text-muted-foreground">
     {label ? `${label} ${value}` : value}
   </span>
 );
@@ -53,9 +53,9 @@ export const InfoRow = ({
   children: ReactNode;
   action?: ReactNode;
 }) => (
-  <div className="flex items-start gap-2">
+  <div className="flex items-start gap-2.5">
     <span className={`${labelClass} w-14 shrink-0 pt-0.5`}>{label}</span>
-    <div className="min-w-0 flex-1 text-[11px] leading-relaxed text-foreground">{children}</div>
+    <div className="min-w-0 flex-1 text-sm leading-relaxed text-foreground">{children}</div>
     {action ? <div className="shrink-0">{action}</div> : null}
   </div>
 );
@@ -72,14 +72,14 @@ export const EmptyHint = ({
   onAction?: () => void;
   icon?: LucideIcon;
 }) => (
-  <div className="flex items-center gap-1.5 px-0.5 text-[11px] text-muted-foreground">
+  <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/40 px-3 py-2 text-sm text-muted-foreground">
     {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
     <span>{text}</span>
     {actionLabel && onAction ? (
       <button
         type="button"
         onClick={onAction}
-        className="text-[11px] text-primary transition-colors hover:underline"
+        className="text-sm font-medium text-primary transition-colors hover:underline"
       >
         {actionLabel}
       </button>
@@ -100,7 +100,7 @@ export const LinkChip = ({
   title?: string;
 }) => {
   const classes = `${chipClass} ${toneTextClass(tone)} ${
-    onClick ? 'hover:bg-accent/30' : 'cursor-default'
+    onClick ? 'hover:bg-accent/20' : 'cursor-default'
   }`;
   if (!onClick) {
     return (
@@ -181,7 +181,7 @@ export const IconAction = ({
       title={label}
       aria-label={label}
       disabled={disabled}
-      className={`rounded p-0.5 text-muted-foreground transition-colors ${toneClass} disabled:opacity-40`}
+      className={`rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 ${toneClass} disabled:opacity-40`}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
     </button>

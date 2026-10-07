@@ -63,7 +63,7 @@ export const OrganizationCluster = ({
           ))}
 
         {variant === 'chips' && organizations.length === 0 && (
-          <span className="text-[10px] text-muted-foreground/70">暂无卫星组织</span>
+          <span className="text-xs leading-tight text-muted-foreground/70">暂无卫星组织</span>
         )}
 
         {(overflow > 0 || variant === 'count') && (
@@ -92,9 +92,9 @@ export const OrganizationCluster = ({
               event.stopPropagation();
               onAdd();
             }}
-            className="inline-flex h-7 items-center gap-0.5 rounded-full border border-dashed border-border/60 px-1.5 text-[10px] text-muted-foreground transition-colors hover:text-primary motion-reduce:transition-none"
+            className="inline-flex h-7 items-center gap-0.5 rounded-full border border-dashed border-border/60 px-2 text-xs text-muted-foreground transition-colors hover:text-primary motion-reduce:transition-none"
           >
-            <Plus className="h-3 w-3" aria-hidden="true" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -103,11 +103,11 @@ export const OrganizationCluster = ({
         <div
           role="group"
           aria-label="卫星组织列表"
-          className="absolute left-0 top-full z-30 mt-1 max-h-44 w-56 overflow-y-auto rounded-md border border-border/60 bg-popover p-1 shadow-lg"
+          className="absolute left-0 top-full z-30 mt-1 max-h-44 w-56 overflow-y-auto rounded-xl border border-border/60 bg-popover p-1.5 shadow-lg"
           data-testid="atlas-organization-cluster-popover"
         >
           {organizations.length === 0 ? (
-            <div className="px-2 py-1 text-[10px] text-muted-foreground">暂无卫星组织</div>
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">暂无卫星组织</div>
           ) : (
             organizations.map((organization) => (
               <button
@@ -118,9 +118,9 @@ export const OrganizationCluster = ({
                   setOpen(false);
                   onOpen(organization.id);
                 }}
-                className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
               >
-                <Shield className="h-3 w-3 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+                <Shield className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
                 <span className="min-w-0 truncate">{organization.name}</span>
               </button>
             ))

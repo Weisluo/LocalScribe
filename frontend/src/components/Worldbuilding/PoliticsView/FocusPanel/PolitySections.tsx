@@ -345,7 +345,7 @@ export const PolitySections = ({
           <button
             type="button"
             onClick={onEdit}
-            className="text-[10px] text-primary transition-colors hover:underline"
+            className="text-xs font-medium text-primary transition-colors hover:underline"
           >
             编辑
           </button>
@@ -401,7 +401,7 @@ export const PolitySections = ({
               onClick={() => setRulerEditorOpen(true)}
               disabled={!canWrite}
               title={canWrite ? '设置 / 更换 / 移除统治者（写 leads 边上的职位与任期）' : '当前不可写实体'}
-              className="text-[10px] text-primary transition-colors hover:underline disabled:opacity-50"
+              className="text-xs font-medium text-primary transition-colors hover:underline disabled:opacity-50"
             >
               {rulerGroups.length > 0 ? '更换 / 编辑任职' : '设置统治者'}
             </button>
@@ -436,7 +436,7 @@ export const PolitySections = ({
                       type="button"
                       onClick={() => setRulerEditorOpen(true)}
                       title="编辑任命 / 任期 / 是否主要（写 leads 边）"
-                      className="text-[10px] text-primary transition-colors hover:underline"
+                      className="text-xs font-medium text-primary transition-colors hover:underline"
                     >
                       编辑任职
                     </button>
@@ -468,7 +468,7 @@ export const PolitySections = ({
                 <button
                   type="button"
                   onClick={() => setRacePickerOpen(true)}
-                  className="text-[10px] text-primary transition-colors hover:underline"
+                  className="text-xs font-medium text-primary transition-colors hover:underline"
                 >
                   添加种族构成
                 </button>
@@ -510,7 +510,7 @@ export const PolitySections = ({
                         tone="teal"
                         onClick={() => onNavigateToEntity(race.ref)}
                       />
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {race.share === undefined
                           ? race.note || '占比未标注'
                           : `${race.share}%${race.note ? ` · ${race.note}` : ''}`}
@@ -545,7 +545,7 @@ export const PolitySections = ({
                       }
                       className={`${chipClass} ${
                         group.refs.length > 0
-                          ? 'border-border/60 text-foreground hover:bg-accent/30'
+                          ? 'border-border/60 text-foreground hover:bg-accent/20'
                           : 'border-border/50 text-muted-foreground'
                       }`}
                     >
@@ -578,7 +578,7 @@ export const PolitySections = ({
                             key={`${ref.module}-${ref.kind}-${ref.id}`}
                             className="flex items-center gap-1.5"
                           >
-                            <span className="text-[10px] text-muted-foreground">{group.label}</span>
+                            <span className="text-xs text-muted-foreground">{group.label}</span>
                             <LinkChip
                               label={politics.refs.resolveName(ref)}
                               onClick={() => onNavigateToEntity(ref)}
@@ -589,7 +589,7 @@ export const PolitySections = ({
                           <button
                             type="button"
                             onClick={() => setExpandedEconomyGroup(group.id)}
-                            className="text-[10px] text-primary transition-colors hover:underline"
+                            className="text-xs font-medium text-primary transition-colors hover:underline"
                           >
                             查看全部 {group.refs.length}
                           </button>
@@ -608,7 +608,7 @@ export const PolitySections = ({
               <button
                 type="button"
                 onClick={() => scrollTo('chronicle')}
-                className="text-[10px] text-primary transition-colors hover:underline"
+                className="text-xs font-medium text-primary transition-colors hover:underline"
               >
                 查看沿革
               </button>
@@ -625,7 +625,7 @@ export const PolitySections = ({
                 <button
                   type="button"
                   onClick={() => onNavigateToEntity(detail.historyEvents[0].ref)}
-                  className="text-[10px] text-primary transition-colors hover:underline"
+                  className="text-xs font-medium text-primary transition-colors hover:underline"
                 >
                   打开历史
                 </button>
@@ -653,7 +653,7 @@ export const PolitySections = ({
               <button
                 type="button"
                 onClick={() => setOrgFormOpen(true)}
-                className="text-[10px] text-primary transition-colors hover:underline"
+                className="text-xs font-medium text-primary transition-colors hover:underline"
               >
                 添加组织
               </button>
@@ -675,33 +675,33 @@ export const PolitySections = ({
                 return (
                   <div
                     key={organization.id}
-                    className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent/30"
+                    className="flex items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-accent/20"
                   >
                     <Shield className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                     <button
                       type="button"
                       onClick={() => onOpenFocus(organization.id)}
-                      className="min-w-0 truncate text-[11px] text-foreground transition-colors hover:text-primary"
+                      className="min-w-0 truncate text-sm text-foreground transition-colors hover:text-primary"
                     >
                       {organization.name}
                     </button>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {normalizeScope(organization.meta.scope) === 'intra_polity'
                         ? '机构'
                         : SCOPE_LABELS[normalizeScope(organization.meta.scope)]}
                     </span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       负责人 {holder ?? '未指定'}
                     </span>
                     {children > 0 ? (
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         下辖 {children}
                       </span>
                     ) : null}
                     <button
                       type="button"
                       onClick={() => onOpenFocus(organization.id)}
-                      className="ml-auto shrink-0 text-[10px] text-primary transition-colors hover:underline"
+                      className="ml-auto shrink-0 text-xs font-medium text-primary transition-colors hover:underline"
                     >
                       打开
                     </button>
@@ -724,7 +724,7 @@ export const PolitySections = ({
               <button
                 type="button"
                 onClick={() => setFigureFormOpen(true)}
-                className="text-[10px] text-primary transition-colors hover:underline"
+                className="text-xs font-medium text-primary transition-colors hover:underline"
               >
                 关联全局角色
               </button>
@@ -746,7 +746,7 @@ export const PolitySections = ({
                 return (
                   <div
                     key={figure.id}
-                    className="flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent/30"
+                    className="flex items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-accent/20"
                   >
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted/50">
                       <UserRound className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
@@ -754,14 +754,14 @@ export const PolitySections = ({
                     <button
                       type="button"
                       onClick={() => onOpenFocus(figure.id)}
-                      className="min-w-0 truncate text-[11px] text-foreground transition-colors hover:text-primary"
+                      className="min-w-0 truncate text-sm text-foreground transition-colors hover:text-primary"
                     >
                       {figureName(figure)}
                     </button>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {figure.meta.identityLabel || office || '政治身份未标注'}
                     </span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {timeRangeText(bands[0]?.start, bands[0]?.end)}
                     </span>
                     {bands.some((band) => band.isPrimary) ? (
@@ -777,7 +777,7 @@ export const PolitySections = ({
                             id: figure.meta.characterId,
                           })
                         }
-                        className="ml-auto shrink-0 text-[10px] text-primary transition-colors hover:underline"
+                        className="ml-auto shrink-0 text-xs font-medium text-primary transition-colors hover:underline"
                       >
                         角色档案
                       </button>
@@ -807,24 +807,24 @@ export const PolitySections = ({
                   typeof link.meta?.strength === 'number' ? (link.meta.strength as number) : undefined;
                 return (
                   <div key={link.id} className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent/30">
-                      <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-accent/20">
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">
                         {linkTypeLabel(link, polityRef, outgoing)}
                       </span>
                       <LinkChip
                         label={politics.refs.resolveName(counterpart)}
                         onClick={() => onNavigateToEntity(counterpart)}
                       />
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {timeRangeText(link.time?.start, link.time?.end)}
                       </span>
                       {strength !== undefined ? (
-                        <span className="text-[10px] text-muted-foreground">强度 {strength}</span>
+                        <span className="text-xs text-muted-foreground">强度 {strength}</span>
                       ) : null}
                       <button
                         type="button"
                         onClick={() => openEdgeCard(link.id)}
-                        className="ml-auto shrink-0 text-[10px] text-primary transition-colors hover:underline"
+                        className="ml-auto shrink-0 text-xs font-medium text-primary transition-colors hover:underline"
                       >
                         编辑
                       </button>
@@ -858,7 +858,7 @@ export const PolitySections = ({
                 <button
                   type="button"
                   onClick={() => setTreatyFormOpen(true)}
-                  className="text-[10px] text-primary transition-colors hover:underline"
+                  className="text-xs font-medium text-primary transition-colors hover:underline"
                 >
                   发起条约
                 </button>
@@ -866,7 +866,7 @@ export const PolitySections = ({
               <button
                 type="button"
                 onClick={onOpenTreatyBook}
-                className="text-[10px] text-primary transition-colors hover:underline"
+                className="text-xs font-medium text-primary transition-colors hover:underline"
               >
                 打开条约簿
               </button>
@@ -888,7 +888,7 @@ export const PolitySections = ({
                 const terms = expanded ? treatyTermsOf(politics.items, ribbon.treaty.id) : [];
                 return (
                   <div key={ribbon.treaty.id} className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent/30">
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-accent/20">
                       <ScrollText
                         className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
                         aria-hidden="true"
@@ -896,17 +896,17 @@ export const PolitySections = ({
                       <button
                         type="button"
                         onClick={() => onOpenFocus(ribbon.treaty.id)}
-                        className="min-w-0 truncate text-[11px] text-foreground transition-colors hover:text-primary"
+                        className="min-w-0 truncate text-sm text-foreground transition-colors hover:text-primary"
                       >
                         {ribbon.treaty.name}
                       </button>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         与{' '}
                         {others.length > 0
                           ? others.map((party) => party.label).join('、')
                           : '（单缔约方，旌旗）'}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {TREATY_STATUS_LABELS[ribbon.status]}
                       </span>
                       <button
@@ -914,20 +914,20 @@ export const PolitySections = ({
                         onClick={() =>
                           setExpandedTreatyId(expanded ? null : ribbon.treaty.id)
                         }
-                        className="ml-auto shrink-0 text-[10px] text-primary transition-colors hover:underline"
+                        className="ml-auto shrink-0 text-xs font-medium text-primary transition-colors hover:underline"
                       >
                         {expanded ? '收起条款' : '展开条款'}
                       </button>
                     </div>
                     {expanded ? (
-                      <div className="space-y-0.5 rounded-md border border-border/40 bg-muted/10 p-1.5">
+                      <div className="space-y-1 rounded-lg border border-border/40 bg-muted/10 p-2">
                         {terms.length === 0 ? (
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             该条约还没有条款，可在条约详情补充
                           </span>
                         ) : (
                           terms.map((term) => (
-                            <div key={term.id} className="text-[10px] text-foreground">
+                            <div key={term.id} className="text-xs leading-relaxed text-foreground">
                               <span className="font-medium">{term.title}</span>
                               {term.content ? (
                                 <span className="text-muted-foreground"> · {term.content}</span>
@@ -963,7 +963,7 @@ export const PolitySections = ({
                   ) : (
                     <Landmark className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
                   )}
-                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground">
+                  <span className="w-16 shrink-0 text-xs text-muted-foreground">
                     {anchor.timeText || '未标时间'}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -971,15 +971,15 @@ export const PolitySections = ({
                       <button
                         type="button"
                         onClick={() => onNavigateToEntity(anchor.ref as EntityRef)}
-                        className="text-[11px] text-foreground transition-colors hover:text-primary"
+                        className="text-sm text-foreground transition-colors hover:text-primary"
                       >
                         {anchor.label}
                       </button>
                     ) : (
-                      <span className="text-[11px] text-foreground">{anchor.label}</span>
+                      <span className="text-sm text-foreground">{anchor.label}</span>
                     )}
                     {anchor.summary ? (
-                      <div className="text-[10px] text-muted-foreground">{anchor.summary}</div>
+                      <div className="text-xs text-muted-foreground">{anchor.summary}</div>
                     ) : null}
                   </div>
                 </div>
@@ -989,7 +989,7 @@ export const PolitySections = ({
 
           <div className="mt-1.5 flex items-end gap-1.5">
             <label className="flex-1 space-y-0.5">
-              <span className="text-[10px] text-muted-foreground">标题</span>
+              <span className="text-xs text-muted-foreground">标题</span>
               <input
                 type="text"
                 value={chronicleDraft.title}
@@ -1003,7 +1003,7 @@ export const PolitySections = ({
               />
             </label>
             <label className="w-24 space-y-0.5">
-              <span className="text-[10px] text-muted-foreground">时间</span>
+              <span className="text-xs text-muted-foreground">时间</span>
               <input
                 type="text"
                 value={chronicleDraft.time}
@@ -1021,7 +1021,7 @@ export const PolitySections = ({
               onClick={() => void handleAddChronicle()}
               disabled={savingChronicle || !canWrite}
               title={canWrite ? '添加沿革条目' : '当前不可写实体'}
-              className="shrink-0 rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30 disabled:opacity-50"
+              className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
             >
               添加沿革
             </button>

@@ -9,6 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import type { DragEvent } from 'react';
+import { motion } from 'framer-motion';
 import {
   ArrowDown,
   ArrowUp,
@@ -25,6 +26,7 @@ import {
 
 import type { ModuleConfig } from '../../shared/moduleConfig';
 import { kindLabelOf } from '../../shared/moduleConfig';
+import { viewSpring } from '../../shared/motion';
 import type { EntityRefsResult } from '../../hooks';
 import type { WorldLinkCountMap } from '../../shared/useLinkCountMap';
 import { nodeStyleOf } from '../config';
@@ -39,7 +41,7 @@ import {
 import { lucideIcon } from './systemsSupport';
 
 const CHIP_CLASS =
-  'inline-flex max-w-full items-center gap-1 rounded-full border border-border/50 bg-muted/20 px-1.5 py-0.5 text-[11px] text-foreground transition-colors hover:border-primary/50 hover:text-primary';
+  'inline-flex max-w-full items-center gap-1 rounded-full border border-border/50 bg-muted/20 px-2 py-0.5 text-xs text-foreground transition-colors hover:border-primary/50 hover:text-primary';
 
 export interface TierNodeProps {
   tier: SystemNode;
@@ -113,7 +115,7 @@ const MemberChip = ({ node, config, grantCounts, onSelectNode }: MemberChipProps
       <span className="truncate">{node.name}</span>
       {reusable && (
         <span
-          className="rounded-full border border-violet-500/40 bg-violet-500/10 px-1 text-[9px] text-violet-700 dark:text-violet-300"
+          className="rounded-full border border-violet-500/40 bg-violet-500/10 px-1.5 text-[10px] text-violet-700 dark:text-violet-300"
           title="同一节点被多个阶位引用"
           data-testid="reuse-badge"
         >
@@ -215,151 +217,170 @@ export const TierNode = ({
   }, [config, granted]);
 
   return (
-    <article
-      data-testid="tier-node"
-      data-tier-rank={rank}
-      data-tier-id={tier.id}
-      data-position={position}
-      aria-current={selected ? 'true' : undefined}
-      draggable={canManageTier}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onClick={onSelect}
-      className={`group relative rounded-xl border bg-card/60 p-3 transition-[border-color,box-shadow,background-color] motion-reduce:transition-none ${
-        selected
-          ? 'border-violet-500/70 shadow-sm ring-1 ring-violet-500/30'
-          : 'border-border/50 hover:border-violet-500/40'
-      } ${dragging ? 'opacity-50' : ''}`}
-    >
-      <div className="flex items-start gap-2">
-        {canManageTier && (
-          <span
-            className="mt-0.5 cursor-grab text-muted-foreground/50"
-            title="拖拽调整阶位顺序"
-            aria-hidden="true"
-          >
-            <GripVertical className="h-3.5 w-3.5" />
-          </span>
-        )}
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
-              r{rank}
-            </span>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onSelect();
-              }}
-              className="min-w-0 truncate text-left text-[15px] font-semibold text-foreground transition-colors hover:text-primary"
+    /* 外层 motion.div 只负责 hover 抬升：framer-motion 的 onDragStart 是手势签名，
+       不能和 article 的原生 HTML5 拖拽回调共用同一个元素 */
+    <motion.div whileHover={{ y: -3 }} transition={viewSpring} className="group">
+      <article
+        data-testid="tier-node"
+        data-tier-rank={rank}
+        data-tier-id={tier.id}
+        data-position={position}
+        aria-current={selected ? 'true' : undefined}
+        draggable={canManageTier}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onClick={onSelect}
+        className={`relative rounded-xl border bg-card/50 p-4 shadow-sm transition-all duration-300 motion-reduce:transition-none ${
+          selected
+            ? 'border-violet-500/70 shadow-lg shadow-violet-500/10 ring-1 ring-violet-500/30'
+            : 'border-border/50 hover:border-violet-500/30 hover:shadow-lg'
+        } ${dragging ? 'opacity-50' : ''}`}
+      >
+        <div className="flex items-start gap-2.5">
+          {canManageTier && (
+            <span
+              className="mt-0.5 cursor-grab text-muted-foreground/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              title="拖拽调整阶位顺序"
+              aria-hidden="true"
             >
-              {tier.name}
-            </button>
-            <span className="text-[10px] text-muted-foreground">{tierTerm}</span>
-            {tier.tierMeta.branch && (
-              <span
-                className="rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                data-testid="tier-branch"
-              >
-                分支 {tier.tierMeta.branch}
+              <GripVertical className="h-4 w-4" />
+            </span>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
+                r{rank}
               </span>
-            )}
-            {statusLabel && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] text-foreground"
-                data-testid="tier-status"
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSelect();
+                }}
+                className="min-w-0 truncate text-left text-base font-semibold tracking-tight text-foreground transition-colors hover:text-primary"
               >
+                {tier.name}
+              </button>
+              <span className="text-xs text-muted-foreground">{tierTerm}</span>
+              {tier.tierMeta.branch && (
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${statusColor ?? 'bg-violet-500'}`}
-                  aria-hidden="true"
-                />
-                {statusLabel}
-              </span>
+                  className="rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground"
+                  data-testid="tier-branch"
+                >
+                  分支 {tier.tierMeta.branch}
+                </span>
+              )}
+              {statusLabel && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-foreground"
+                  data-testid="tier-status"
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${statusColor ?? 'bg-violet-500'}`}
+                    aria-hidden="true"
+                  />
+                  {statusLabel}
+                </span>
+              )}
+            </div>
+
+            {!sketch && tier.tierMeta.breakthrough && (
+              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                突破条件：{tier.tierMeta.breakthrough}
+              </p>
             )}
           </div>
 
-          {!sketch && tier.tierMeta.breakthrough && (
-            <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-              突破条件：{tier.tierMeta.breakthrough}
-            </p>
-          )}
+          <div className="flex shrink-0 items-center gap-1">
+            <span
+              className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground"
+              title="关联计数"
+            >
+              <Link2 className="mr-0.5 inline h-2.5 w-2.5" aria-hidden="true" />
+              {linkCount}
+            </span>
+            {canManageTier && (
+              <>
+                <button
+                  type="button"
+                  aria-label={`上移 ${tier.name}`}
+                  title="上移（提高 rank）"
+                  disabled={position >= total - 1}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMove('up');
+                  }}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground disabled:opacity-30"
+                >
+                  <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`下移 ${tier.name}`}
+                  title="下移（降低 rank）"
+                  disabled={position <= 0}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMove('down');
+                  }}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground disabled:opacity-30"
+                >
+                  <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`编辑 ${tier.name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEdit();
+                  }}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                >
+                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`删除 ${tier.name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete();
+                  }}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
-          <span
-            className="rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-muted-foreground"
-            title="关联计数"
-          >
-            <Link2 className="mr-0.5 inline h-2.5 w-2.5" aria-hidden="true" />
-            {linkCount}
-          </span>
-          {canManageTier && (
-            <>
-              <button
-                type="button"
-                aria-label={`上移 ${tier.name}`}
-                title="上移（提高 rank）"
-                disabled={position >= total - 1}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onMove('up');
-                }}
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
-              >
-                <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-label={`下移 ${tier.name}`}
-                title="下移（降低 rank）"
-                disabled={position <= 0}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onMove('down');
-                }}
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
-              >
-                <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-label={`编辑 ${tier.name}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEdit();
-                }}
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-label={`删除 ${tier.name}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDelete();
-                }}
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+        {!sketch && (
+          <div className="mt-3 space-y-2 border-t border-border/30 pt-3">
+            {chipGroups.map((group) =>
+              group.nodes.length === 0 ? null : (
+                <div key={group.kind} className="flex flex-wrap items-center gap-1.5">
+                  <span className="w-10 shrink-0 text-xs text-muted-foreground/80">
+                    {group.label}
+                  </span>
+                  {group.nodes.map((node) => (
+                    <MemberChip
+                      key={node.id}
+                      node={node}
+                      config={config}
+                      grantCounts={grantCounts}
+                      onSelectNode={onSelectNode}
+                    />
+                  ))}
+                </div>
+              )
+            )}
 
-      {!sketch && (
-        <div className="mt-2 space-y-1.5 border-t border-border/40 pt-2">
-          {chipGroups.map((group) =>
-            group.nodes.length === 0 ? null : (
-              <div key={group.kind} className="flex flex-wrap items-center gap-1">
-                <span className="w-8 shrink-0 text-[10px] text-muted-foreground/80">
-                  {group.label}
-                </span>
-                {group.nodes.map((node) => (
+            {costs.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="w-10 shrink-0 text-xs text-muted-foreground/80">代价</span>
+                {costs.map((node) => (
                   <MemberChip
                     key={node.id}
                     node={node}
@@ -369,157 +390,145 @@ export const TierNode = ({
                   />
                 ))}
               </div>
-            )
-          )}
+            )}
 
-          {costs.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="w-8 shrink-0 text-[10px] text-muted-foreground/80">代价</span>
-              {costs.map((node) => (
-                <MemberChip
-                  key={node.id}
-                  node={node}
-                  config={config}
-                  grantCounts={grantCounts}
-                  onSelectNode={onSelectNode}
-                />
-              ))}
-            </div>
-          )}
+            {externalCosts.length > 0 && (
+              <div
+                className="flex flex-wrap items-center gap-1.5"
+                data-testid="external-cost-chips"
+              >
+                <span className="w-10 shrink-0 text-xs text-muted-foreground/80" />
+                {/*
+                  systems.costs 指向经济资源 / 商品：经济未接入时没有 kind 定义与跳转入口，
+                  按 systems_ui_design §4.2 降级为纯文本 chip。
+                */}
+                {externalCosts.map((edge) => (
+                  <span
+                    key={edge.link.id}
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/60 px-2 py-0.5 text-xs text-muted-foreground"
+                    title={edge.link.note ?? edge.link.link_type}
+                  >
+                    <Flame className="h-3 w-3 text-orange-500" aria-hidden="true" />
+                    {refs.resolveName(edge.link.target)}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {externalCosts.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1" data-testid="external-cost-chips">
-              <span className="w-8 shrink-0 text-[10px] text-muted-foreground/80" />
-              {/*
-                systems.costs 指向经济资源 / 商品：经济未接入时没有 kind 定义与跳转入口，
-                按 systems_ui_design §4.2 降级为纯文本 chip。
-              */}
-              {externalCosts.map((edge) => (
-                <span
-                  key={edge.link.id}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground"
-                  title={edge.link.note ?? edge.link.link_type}
-                >
-                  <Flame className="h-3 w-3 text-orange-500" aria-hidden="true" />
-                  {refs.resolveName(edge.link.target)}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {canEdit && (
-            <div className="flex flex-wrap items-center gap-1">
-              {/*
-                「赋予」只能指向能力节点（契约 §4：systems.grants 目标仅 ability），
-                所以只有能力按钮会带「自动建立关联」的语义；规则 / 代价仍可在此新建，
-                但不在本阶位自动连线（数据层也会拒绝非法 grants），提示写在 title 上。
-              */}
-              {[
-                {
-                  kind: ABILITY_KIND,
-                  label: '添加能力',
-                  hint: `新建能力并自动建立「赋予」关联到本${tierTerm}`,
-                },
-                {
-                  kind: RULE_KIND,
-                  label: '添加规则',
-                  hint: `只新建规则节点，不自动关联到本${tierTerm}（「赋予」只能指向能力节点）`,
-                },
-                {
-                  kind: COST_KIND,
-                  label: '添加代价',
-                  hint: `只新建代价节点，不自动关联到本${tierTerm}（可在关联面板手动补充）`,
-                },
-              ].map((item) => (
+            {canEdit && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/*
+                  「赋予」只能指向能力节点（契约 §4：systems.grants 目标仅 ability），
+                  所以只有能力按钮会带「自动建立关联」的语义；规则 / 代价仍可在此新建，
+                  但不在本阶位自动连线（数据层也会拒绝非法 grants），提示写在 title 上。
+                */}
+                {[
+                  {
+                    kind: ABILITY_KIND,
+                    label: '添加能力',
+                    hint: `新建能力并自动建立「赋予」关联到本${tierTerm}`,
+                  },
+                  {
+                    kind: RULE_KIND,
+                    label: '添加规则',
+                    hint: `只新建规则节点，不自动关联到本${tierTerm}（「赋予」只能指向能力节点）`,
+                  },
+                  {
+                    kind: COST_KIND,
+                    label: '添加代价',
+                    hint: `只新建代价节点，不自动关联到本${tierTerm}（可在关联面板手动补充）`,
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.kind}
+                    type="button"
+                    title={item.hint}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onAddMember(tier.id, item.kind);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/70 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                  >
+                    <Plus className="h-3 w-3" aria-hidden="true" />
+                    {item.label}
+                  </button>
+                ))}
+                <span className="mx-1 h-3 w-px bg-border/60" aria-hidden="true" />
                 <button
-                  key={item.kind}
                   type="button"
-                  title={item.hint}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onAddMember(tier.id, item.kind);
+                    setEdgeType(
+                      edgeType === 'systems.advances_to' ? null : 'systems.advances_to'
+                    );
+                    setTargetId('');
                   }}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/70 px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                  title="建立进阶（systems.advances_to）"
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-violet-500/50 px-2 py-0.5 text-xs text-violet-700 transition-colors hover:bg-violet-500/10 dark:text-violet-300"
                 >
-                  <Plus className="h-3 w-3" aria-hidden="true" />
-                  {item.label}
+                  <ArrowUp className="h-3 w-3" aria-hidden="true" />+ 进阶
                 </button>
-              ))}
-              <span className="mx-1 h-3 w-px bg-border/60" aria-hidden="true" />
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setEdgeType(
-                    edgeType === 'systems.advances_to' ? null : 'systems.advances_to'
-                  );
-                  setTargetId('');
-                }}
-                title="建立进阶（systems.advances_to）"
-                className="inline-flex items-center gap-1 rounded-full border border-dashed border-violet-500/50 px-1.5 py-0.5 text-[11px] text-violet-700 transition-colors hover:bg-violet-500/10 dark:text-violet-300"
-              >
-                <ArrowUp className="h-3 w-3" aria-hidden="true" />+ 进阶
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setEdgeType(edgeType === 'systems.requires' ? null : 'systems.requires');
-                  setTargetId('');
-                }}
-                title="建立前置（systems.requires）"
-                className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-500/50 px-1.5 py-0.5 text-[11px] text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-300"
-              >
-                <Lock className="h-3 w-3" aria-hidden="true" />+ 前置
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setEdgeType(edgeType === 'systems.requires' ? null : 'systems.requires');
+                    setTargetId('');
+                  }}
+                  title="建立前置（systems.requires）"
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-500/50 px-2 py-0.5 text-xs text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-300"
+                >
+                  <Lock className="h-3 w-3" aria-hidden="true" />+ 前置
+                </button>
+              </div>
+            )}
 
-          {edgeType && (
-            <div
-              className="flex flex-wrap items-center gap-1 rounded-md border border-border/50 bg-muted/20 p-1.5"
-              data-testid="stair-edge-picker"
-            >
-              <select
-                value={targetId}
-                onChange={(event) => setTargetId(event.target.value)}
-                aria-label={edgeType === 'systems.advances_to' ? '进阶目标阶位' : '前置目标阶位'}
-                className="min-w-0 flex-1 rounded-md border border-border/50 bg-background px-1.5 py-1 text-[11px] focus:border-primary focus:outline-none"
+            {edgeType && (
+              <div
+                className="flex flex-wrap items-center gap-2 rounded-xl border border-border/50 bg-muted/20 p-2"
+                data-testid="stair-edge-picker"
               >
-                <option value="">选择{tierTerm}</option>
-                {candidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.name}（r{rankOf(candidate.id)}）
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={!targetId || busy}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void submitEdge();
-                }}
-                className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {busy && <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />}
-                {edgeType === 'systems.advances_to' ? '建立进阶' : '建立前置'}
-              </button>
-              <button
-                type="button"
-                aria-label="取消连线"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  closePicker();
-                }}
-                className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="h-3 w-3" aria-hidden="true" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </article>
+                <select
+                  value={targetId}
+                  onChange={(event) => setTargetId(event.target.value)}
+                  aria-label={edgeType === 'systems.advances_to' ? '进阶目标阶位' : '前置目标阶位'}
+                  className="min-w-0 flex-1 rounded-lg border border-border/40 bg-muted/30 px-2 py-1 text-xs focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
+                >
+                  <option value="">选择{tierTerm}</option>
+                  {candidates.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.name}（r{rankOf(candidate.id)}）
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={!targetId || busy}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void submitEdge();
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
+                >
+                  {busy && <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />}
+                  {edgeType === 'systems.advances_to' ? '建立进阶' : '建立前置'}
+                </button>
+                <button
+                  type="button"
+                  aria-label="取消连线"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    closePicker();
+                  }}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                >
+                  <X className="h-3 w-3" aria-hidden="true" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </article>
+    </motion.div>
   );
 };

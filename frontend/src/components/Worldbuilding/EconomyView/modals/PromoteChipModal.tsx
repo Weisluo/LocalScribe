@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 
 import { ECONOMY_RECOMMENDED_KINDS, sketchFieldKind } from '../config';
@@ -68,20 +69,24 @@ export const PromoteChipModal = ({
       aria-label="它是什么"
       data-testid="economy-promote-modal"
     >
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-3 shadow-lg">
-        <h2 className="text-xs font-semibold text-foreground">它是什么？</h2>
-        <p className="mt-1 text-[11px] text-muted-foreground">
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="w-full max-w-sm rounded-2xl border border-border/50 bg-card/40 p-5 shadow-lg backdrop-blur-sm"
+      >
+        <h2 className="text-sm font-semibold text-foreground">它是什么？</h2>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           「{chip.label}」仍然留在速写卡上，只是多出一个可以走动的站点；同一个 id，随时可以收回来。
         </p>
 
-        <label className="mt-3 block text-[11px] text-muted-foreground">
+        <label className="mt-4 block text-xs text-muted-foreground">
           {field?.label ?? '关键词'}的类型
           <select
             ref={kindRef}
             value={kind}
             onChange={(event) => setKind(event.target.value)}
             data-testid="economy-promote-kind"
-            className="mt-1 w-full rounded-md border border-border/60 bg-background px-1.5 py-1 text-[11px] text-foreground"
+            className="mt-1 w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm text-foreground transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             {candidateKinds.map((def) => (
               <option key={def.id} value={def.id}>
@@ -91,26 +96,30 @@ export const PromoteChipModal = ({
           </select>
         </label>
 
-        <div className="mt-3 flex items-center justify-end gap-1.5">
-          <button
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <motion.button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             先不展开
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             disabled={busy}
             onClick={() => void confirm()}
             data-testid="economy-promote-chip"
-            className="inline-flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1 text-[11px] text-white transition-colors hover:bg-green-700 disabled:opacity-50 motion-reduce:transition-none"
+            whileHover={busy ? undefined : { scale: 1.02 }}
+            whileTap={busy ? undefined : { scale: 0.98 }}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             {busy ? '展开中…' : '展开'}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

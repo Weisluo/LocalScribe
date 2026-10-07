@@ -38,30 +38,30 @@ export const IndependentLane = ({
   return (
     <div data-testid="atlas-independent-lane">
       <div
-        className="absolute flex items-center gap-1.5 text-[10px]"
+        className="absolute flex items-center gap-1.5 text-xs leading-tight"
         style={{ left: band.x, top: band.y - 26 }}
       >
-        <ShieldHalf className="h-3 w-3 text-red-600 dark:text-red-400" aria-hidden="true" />
-        <span className="font-medium text-foreground">独立势力 / 跨国组织</span>
-        <span className="text-muted-foreground">{items.length}</span>
+        <ShieldHalf className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+        <span className="whitespace-nowrap font-medium text-foreground">独立势力 / 跨国组织</span>
+        <span className="shrink-0 text-muted-foreground">{items.length}</span>
         <button
           type="button"
           aria-expanded={!collapsed}
           aria-label={collapsed ? '展开独立势力带' : '折叠独立势力带'}
           onClick={() => setCollapsedOverride(!collapsed)}
-          className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+          className="shrink-0 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
           {collapsed ? (
-            <ChevronDown className="h-3 w-3" aria-hidden="true" />
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
           ) : (
-            <ChevronUp className="h-3 w-3" aria-hidden="true" />
+            <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
           )}
         </button>
         <button
           type="button"
           aria-label="新建独立 / 跨国组织"
           onClick={onCreate}
-          className="rounded border border-dashed border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-primary motion-reduce:transition-none"
+          className="shrink-0 whitespace-nowrap rounded-lg border border-dashed border-border/60 px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-primary motion-reduce:transition-none"
         >
           + 新建
         </button>
@@ -94,22 +94,22 @@ export const IndependentLane = ({
             }
             onClick={() => onOpen(force.entity.id)}
             style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
-            className={`absolute flex flex-col justify-center gap-0.5 rounded-lg border bg-card/95 px-2 text-left transition-colors hover:border-primary/60 motion-reduce:transition-none ${
+            className={`absolute flex flex-col justify-center gap-0.5 rounded-xl border bg-card/95 px-2.5 text-left shadow-sm transition-all duration-300 hover:border-primary/25 hover:shadow-lg motion-reduce:transition-none ${
               force.unattached ? 'border-dashed border-amber-500/50' : 'border-red-500/40'
             } ${dimmed ? 'opacity-60' : ''}`}
           >
-            <span className="flex items-center gap-1 text-[11px] font-medium text-foreground">
-              <Shield className="h-3 w-3 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+            <span className="flex items-center gap-1 text-xs font-medium leading-tight text-foreground">
+              <Shield className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
               <span className="min-w-0 truncate">{force.entity.name}</span>
               {force.unattached ? (
-                <span className="shrink-0 rounded-full border border-amber-500/50 px-1 text-[9px] text-amber-700 dark:text-amber-300">
+                <span className="shrink-0 rounded-full border border-amber-500/50 px-1.5 py-0.5 text-[10px] text-amber-700 dark:text-amber-300">
                   未归属
                 </span>
               ) : null}
               {/* 旧数据只标不改：势力项本来没有编辑入口，标记只是让用户知道来源 */}
               {legacyIds?.has(force.entity.id) && (
                 <span
-                  className="shrink-0 rounded-full border border-dashed border-slate-500/50 px-1 text-[9px] text-slate-700 dark:text-slate-300"
+                  className="shrink-0 rounded-full border border-dashed border-slate-500/50 px-1.5 py-0.5 text-[10px] text-slate-700 dark:text-slate-300"
                   data-testid="atlas-legacy-badge"
                   title="回填迁移写入的旧数据：只读"
                 >
@@ -117,7 +117,7 @@ export const IndependentLane = ({
                 </span>
               )}
             </span>
-            <span className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="flex flex-wrap items-center gap-1 text-xs leading-tight text-muted-foreground">
               <span>{force.unattached ? '未归属' : SCOPE_LABELS[force.scope]}</span>
               {force.scope === 'cross_polity' && (
                 <span>· 吸附 {force.anchors.length} 个政权</span>
@@ -129,7 +129,7 @@ export const IndependentLane = ({
 
       {!collapsed && items.length === 0 && (
         <div
-          className="absolute flex items-center text-[10px] text-muted-foreground/70"
+          className="absolute flex items-center text-xs leading-tight text-muted-foreground/70"
           style={{ left: band.x + 12, top: band.y + 36 }}
         >
           暂无独立 / 跨国势力，可用上方「+ 新建」添加。

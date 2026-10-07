@@ -60,7 +60,7 @@ import {
 import { lucideIcon } from '../shared/lucideIcon';
 
 const FIELD_CLASS =
-  'w-full bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 /** 图标选择器的候选项：全部为 lucide-react 真实导出（kebab-case） */
 export const SUBMODULE_ICON_CHOICES: string[] = [
@@ -374,8 +374,8 @@ const SortableRow = ({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-1.5 rounded-md border px-1.5 py-1 ${
-        selected ? 'border-primary/60 bg-primary/5' : 'border-border/40'
+      className={`flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3 py-2 shadow-sm transition-all duration-200 ${
+        selected ? 'border-primary/60 bg-primary/5' : ''
       } ${isDragging ? 'opacity-60' : ''}`}
       data-testid="submodule-row"
       data-submodule-id={row.submodule.id}
@@ -415,7 +415,7 @@ const SortableRow = ({
           aria-hidden="true"
         />
       )}
-      <span className="truncate text-[11px] font-medium text-foreground">
+      <span className="truncate text-xs font-medium text-foreground">
         {row.submodule.name}
       </span>
       <span
@@ -424,11 +424,11 @@ const SortableRow = ({
         aria-hidden="true"
       />
       {kind && (
-        <span className="shrink-0 rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+        <span className="shrink-0 rounded-full border border-border/50 px-1.5 text-xs text-muted-foreground">
           {kindLabel(kind)}
         </span>
       )}
-      <span className="shrink-0 text-[10px] text-muted-foreground" data-testid="submodule-count">
+      <span className="shrink-0 text-xs text-muted-foreground" data-testid="submodule-count">
         条目 {itemCount} · 关联 {linkCount}
       </span>
       <span className="ml-auto flex shrink-0 items-center gap-0.5">
@@ -488,22 +488,22 @@ export const DeleteImpactPanel = ({
   onMoveUp,
 }: DeleteImpactPanelProps) => (
   <div
-    className="space-y-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2"
+    className="space-y-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3"
     data-testid="submodule-delete-impact"
   >
-    <div className="flex items-center gap-1.5 text-[11px] font-medium text-destructive">
+    <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive">
       <AlertTriangle className="h-3.5 w-3.5" />
       删除「{impact.name}」将影响 {impact.descendants.length} 个子级、{impact.items} 个条目、
       {impact.links} 条关联
     </div>
-    <p className="text-[10px] text-muted-foreground">
+    <p className="text-xs text-muted-foreground">
       级联删除会连同全部下级一起删除；子级上移会把直接子级挂到原父级下并保留内容。
     </p>
-    <div className="flex flex-wrap justify-end gap-2">
+    <div className="flex flex-wrap justify-end gap-3">
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+        className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-foreground"
       >
         取消
       </button>
@@ -511,7 +511,7 @@ export const DeleteImpactPanel = ({
         type="button"
         disabled={busy}
         onClick={onMoveUp}
-        className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30 disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
         data-testid="submodule-delete-move-up"
       >
         <Undo2 className="h-3.5 w-3.5" />
@@ -521,7 +521,7 @@ export const DeleteImpactPanel = ({
         type="button"
         disabled={busy}
         onClick={onCascade}
-        className="flex items-center gap-1 rounded-md bg-destructive px-2 py-1 text-[11px] text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-destructive to-destructive/90 px-3 py-1.5 text-xs font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-destructive/20 disabled:opacity-50"
         data-testid="submodule-delete-cascade"
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -761,31 +761,31 @@ export const SubmoduleManagerPanel = ({
 
   return (
     <div className="space-y-3" data-testid="submodule-manager">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-xs text-muted-foreground">
           世界 {worldId} · 模块 {moduleType}
         </span>
         <button
           type="button"
           onClick={() => openCreate(null)}
-          className="ml-auto flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+          className="ml-auto flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
           data-testid="submodule-create-root"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-4 w-4" />
           新建顶层分类
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+          className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
         >
           关闭
         </button>
       </div>
 
       {builtins.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/40 px-2 py-1.5">
-          <span className="text-[10px] text-muted-foreground">推荐 kind（可选快捷项）：</span>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/50 bg-muted/20 px-3 py-2">
+          <span className="text-xs text-muted-foreground">推荐 kind（可选快捷项）：</span>
           {builtins.map((def) => (
             <button
               key={def.id}
@@ -794,12 +794,12 @@ export const SubmoduleManagerPanel = ({
                 if (createParent === undefined && !editingId) openCreate(null);
                 setForm((prev) => ({ ...prev, kind: def.id }));
               }}
-              className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+              className="rounded-full border border-border/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 motion-reduce:transition-none hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
             >
               {def.label}
             </button>
           ))}
-          <span className="text-[10px] text-muted-foreground/70">
+          <span className="text-xs text-muted-foreground/70">
             只填充 kind，不预置任何内容
           </span>
         </div>
@@ -807,7 +807,7 @@ export const SubmoduleManagerPanel = ({
 
       {error && (
         <div
-          className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+          className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
           data-testid="submodule-error"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -815,17 +815,17 @@ export const SubmoduleManagerPanel = ({
         </div>
       )}
       {notice && (
-        <div className="rounded-md border border-border/50 bg-muted/20 px-2 py-1.5 text-[11px] text-muted-foreground">
+        <div className="rounded-xl border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           {notice}
         </div>
       )}
 
       {rows.length === 0 ? (
         <div
-          className="flex flex-col items-center gap-1 rounded-md border border-dashed border-border/50 px-3 py-6 text-[11px] text-muted-foreground"
+          className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border/40 px-4 py-10 text-sm text-muted-foreground"
           data-testid="submodule-empty"
         >
-          <FolderTree className="h-5 w-5" />
+          <FolderTree className="h-6 w-6 text-muted-foreground/70" />
           该模块还没有子模块。子模块承载分类与实体，条目承载字段组与长文。
         </div>
       ) : (
@@ -872,8 +872,8 @@ export const SubmoduleManagerPanel = ({
       )}
 
       {(createParent !== undefined || editingId) && (
-        <div className="space-y-1.5 rounded-md border border-border/40 p-2" data-testid="submodule-form">
-          <div className="text-[11px] font-medium text-foreground">
+        <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 p-3" data-testid="submodule-form">
+          <div className="text-sm font-semibold text-foreground">
             {editingId ? '编辑子模块' : createParent ? `新建子级：${kindLabel(submodules.find((item) => item.id === createParent)?.kind)}` : '新建顶层分类'}
           </div>
           <div className="flex gap-2">
@@ -937,7 +937,7 @@ export const SubmoduleManagerPanel = ({
             )}
           </div>
           <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground/80">
               图标（Lucide 名）
             </div>
             <div className="flex flex-wrap items-center gap-1">
@@ -971,7 +971,7 @@ export const SubmoduleManagerPanel = ({
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground/80">颜色</div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground/80">颜色</div>
             <div className="flex flex-wrap items-center gap-1">
               <input
                 type="text"
@@ -998,23 +998,23 @@ export const SubmoduleManagerPanel = ({
               ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={resetForm}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
               取消
             </button>
             <button
               type="button"
               onClick={() => void submitForm()}
               disabled={busy}
-              className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
               data-testid="submodule-save"
             >
-              <Save className="h-3.5 w-3.5" />
+              <Save className="h-4 w-4" />
               保存
             </button>
           </div>
@@ -1031,7 +1031,7 @@ export const SubmoduleManagerPanel = ({
         />
       )}
 
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         层级建议不超过 3 层；拖拽只调整同级顺序。删除只影响结构，条目内容随所选方式一起删除或上移。
       </p>
     </div>

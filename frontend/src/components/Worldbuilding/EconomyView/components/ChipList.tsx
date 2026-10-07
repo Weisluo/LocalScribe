@@ -85,18 +85,18 @@ export const ChipList = ({
       {chips.map((chip) => (
         <span
           key={chip.id}
-          className="inline-flex items-center gap-1 rounded-full border border-green-500/40 bg-green-500/5 px-2 py-0.5 text-[11px] text-foreground"
+          className="inline-flex items-center gap-1 rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-xs font-medium text-foreground transition-all duration-200"
         >
           <button
             type="button"
             data-testid={`economy-chip-${chip.id}`}
             onClick={() => onPromote(chip)}
             title={term('promoChip', '展开为脉络')}
-            className="inline-flex items-center gap-1 rounded-full px-0.5 transition-colors hover:text-green-700 motion-reduce:transition-none dark:hover:text-green-300"
+            className="inline-flex items-center gap-1 rounded-full px-0.5 transition-colors duration-200 hover:text-green-700 motion-reduce:transition-none dark:hover:text-green-300"
           >
             {chip.label}
             {chip.entityRef ? (
-              <span className="text-[9px] text-muted-foreground">已展开</span>
+              <span className="text-xs text-muted-foreground">已展开</span>
             ) : null}
           </button>
           {canWrite ? (
@@ -104,7 +104,7 @@ export const ChipList = ({
               type="button"
               aria-label={`删除 ${chip.label}`}
               onClick={() => onChange(chips.filter((item) => item.id !== chip.id))}
-              className="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-destructive motion-reduce:transition-none"
+              className="rounded-full p-0.5 text-muted-foreground transition-colors duration-200 hover:text-destructive"
             >
               <X className="h-3 w-3" aria-hidden="true" />
             </button>
@@ -123,13 +123,13 @@ export const ChipList = ({
             placeholder={chips.length > 0 ? '再写一个…' : '写一个…'}
             aria-label={`${field.label}：写一个`}
             data-testid={`economy-chip-input-${field.id}`}
-            className="w-24 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600/60"
+            className="w-28 rounded-xl border border-border/40 bg-muted/30 px-3 py-1 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <button
             type="button"
             data-testid={`economy-chip-add-${field.id}`}
             onClick={() => commit()}
-            className="inline-flex items-center gap-0.5 rounded-md border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+            className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             <Plus className="h-3 w-3" aria-hidden="true" />
             写一个
@@ -142,7 +142,7 @@ export const ChipList = ({
           type="button"
           onClick={onExpandAll}
           data-testid={`economy-chip-expand-all-${field.id}`}
-          className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] text-cyan-700 transition-colors hover:bg-cyan-500/10 motion-reduce:transition-none dark:text-cyan-300"
+          className="inline-flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-medium text-primary transition-all duration-200 hover:bg-primary/10 motion-reduce:transition-none"
         >
           <Sparkles className="h-3 w-3" aria-hidden="true" />
           {term('expandWord', '展开')}全部
@@ -150,14 +150,14 @@ export const ChipList = ({
       ) : null}
 
       {quickAdd && quickAdd.length > 0 ? (
-        <span className="inline-flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+        <span className="inline-flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           建议：
           {quickAdd.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => commit(item)}
-              className="rounded-full border border-border/50 px-1.5 py-0.5 transition-colors hover:text-foreground motion-reduce:transition-none"
+              className="rounded-full border border-border/40 px-2.5 py-0.5 transition-all duration-200 hover:border-border/70 hover:bg-accent/5 hover:text-foreground motion-reduce:transition-none"
             >
               {item}
             </button>
@@ -165,7 +165,7 @@ export const ChipList = ({
         </span>
       ) : null}
 
-      {hint ? <span className="text-[10px] text-amber-600 dark:text-amber-400">{hint}</span> : null}
+      {hint ? <span className="text-xs text-amber-600 dark:text-amber-400">{hint}</span> : null}
     </div>
   );
 };

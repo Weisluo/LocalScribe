@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, Layers, Loader2, Save } from 'lucide-react';
 
 import { Modal } from '@/components/Modals/Modal';
@@ -25,7 +26,7 @@ import type { SystemFormValues } from '../hooks/useSystems';
 import { colorDot, lucideIcon } from '../components/systemsSupport';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-xs text-foreground transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 export interface SystemFormModalProps {
   open: boolean;
@@ -116,15 +117,15 @@ export const SystemFormModal = ({
 
   return (
     <Modal isOpen={open} onClose={onClose} title={editing ? '编辑体系' : '新建体系'}>
-      <div className="space-y-3" data-testid="system-form">
+      <div className="space-y-4" data-testid="system-form">
         {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {error}
           </div>
         )}
 
         <label className="block space-y-1">
-          <span className="text-[11px] font-medium text-foreground">
+          <span className="text-xs font-medium text-foreground">
             体系名 <span className="text-destructive">*</span>
           </span>
           <input
@@ -139,7 +140,7 @@ export const SystemFormModal = ({
         </label>
 
         <label className="block space-y-1">
-          <span className="text-[11px] font-medium text-foreground">一句话说明</span>
+          <span className="text-xs font-medium text-foreground">一句话说明</span>
           <input
             type="text"
             value={tagline}
@@ -148,7 +149,7 @@ export const SystemFormModal = ({
             aria-label="一句话说明"
             className={FIELD_CLASS}
           />
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             建议填写（最短路径要求「体系名 + 一句话」）；留空不阻塞保存，可后补。
           </span>
         </label>
@@ -157,20 +158,20 @@ export const SystemFormModal = ({
           type="button"
           onClick={() => setShowMore((value) => !value)}
           aria-expanded={showMore}
-          className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           {showMore ? (
-            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           )}
           更多（类型 / 图标 / 颜色 / 排序方向 / 自定义字段）
         </button>
 
         {showMore && (
-          <div className="space-y-3 rounded-md border border-border/40 p-2">
+          <div className="space-y-4 rounded-xl border border-border/40 bg-muted/20 p-3">
             <label className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+              <span className="text-xs font-medium text-muted-foreground">
                 类型（展示名，由用户定义）
               </span>
               <input
@@ -185,7 +186,7 @@ export const SystemFormModal = ({
 
             <div className="flex gap-2">
               <label className="flex-1 space-y-1">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs font-medium text-muted-foreground">
                   Lucide 图标名
                 </span>
                 <input
@@ -198,7 +199,7 @@ export const SystemFormModal = ({
                 />
               </label>
               <label className="flex-1 space-y-1">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs font-medium text-muted-foreground">
                   颜色（token 或 hex）
                 </span>
                 <input
@@ -212,9 +213,9 @@ export const SystemFormModal = ({
               </label>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+            <div className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/60 px-3 py-2">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 预览
               </span>
               {dot && (
@@ -227,7 +228,7 @@ export const SystemFormModal = ({
             </div>
 
             <label className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+              <span className="text-xs font-medium text-muted-foreground">
                 排序方向
               </span>
               <select
@@ -255,27 +256,31 @@ export const SystemFormModal = ({
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
-          <button
+        <div className="flex items-center justify-end gap-3 border-t border-border/30 pt-3">
+          <motion.button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={pending}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {pending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Save className="h-3.5 w-3.5" aria-hidden="true" />
+              <Save className="h-4 w-4" aria-hidden="true" />
             )}
             保存
-          </button>
+          </motion.button>
         </div>
       </div>
     </Modal>

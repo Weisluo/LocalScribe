@@ -197,7 +197,7 @@ export const OrganizationPanel = ({
           <button
             type="button"
             onClick={onEdit}
-            className="text-[10px] text-primary transition-colors hover:underline"
+            className="text-xs font-medium text-primary transition-colors hover:underline"
           >
             编辑
           </button>
@@ -224,7 +224,7 @@ export const OrganizationPanel = ({
               <button
                 type="button"
                 onClick={() => setParentPickerOpen(true)}
-                className="text-[10px] text-primary transition-colors hover:underline"
+                className="text-xs font-medium text-primary transition-colors hover:underline"
               >
                 {detail.parents.length > 0 ? '改归属' : '归入政权'}
               </button>
@@ -249,7 +249,7 @@ export const OrganizationPanel = ({
             <div className="space-y-0.5">
               {detail.parents.map((parent) => (
                 <div key={`${parent.ref.module}-${parent.ref.id}`} className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {linkTypeLabel(
                       { link_type: parent.linkType, source: orgRef },
                       orgRef,
@@ -273,7 +273,7 @@ export const OrganizationPanel = ({
             </div>
           )}
           {parentPickerOpen ? (
-            <div className="mt-1 text-[10px] text-muted-foreground">
+            <div className="mt-1 text-xs text-muted-foreground">
               已排除自身、自己的下级与现有上级（会成环）；组织树上限 {POLITICS_MAX_ORG_DEPTH} 层，
               挂载后会超过上限的目标不可选（当前子树高度 {parentPicker.subtreeHeight}）。
             </div>
@@ -330,7 +330,7 @@ export const OrganizationPanel = ({
                     tone="green"
                     onClick={() => onOpenFocus(ribbon.treaty.id)}
                   />
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     缔约方 {ribbon.parties.length}
                   </span>
                 </div>
@@ -370,7 +370,7 @@ export const OrganizationPanel = ({
       {/* §8.1：速写档只给概览与计数，成员分工整段降级为提示（不是空白区） */}
       {!full ? (
         <SectionBlock id={sectionDomId(entity.id, 'members')} title="成员">
-          <div className="space-y-0.5 text-[11px] text-muted-foreground">
+          <div className="space-y-1 text-sm text-muted-foreground">
             <div>成员 {detail.members.length} 人 · 任职带 {detail.tenureBands.length} 条</div>
             <div>速写档只显示成员计数：任职分工与编辑在结构档及以上开放（升级到结构档）。</div>
           </div>
@@ -385,7 +385,7 @@ export const OrganizationPanel = ({
             <button
               type="button"
               onClick={onEdit}
-              className="text-[10px] text-primary transition-colors hover:underline"
+              className="text-xs font-medium text-primary transition-colors hover:underline"
             >
               编辑
             </button>
@@ -403,23 +403,23 @@ export const OrganizationPanel = ({
               const bands = detail.tenureBands.filter((band) => band.figureId === figure.id);
               return (
                 <div key={figure.id} className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-accent/30">
+                  <div className="flex flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 hover:bg-accent/20">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted/50">
                       <UserRound className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
                     </span>
                     <button
                       type="button"
                       onClick={() => onOpenFocus(figure.id)}
-                      className="min-w-0 truncate text-[11px] text-foreground transition-colors hover:text-primary"
+                      className="min-w-0 truncate text-sm text-foreground transition-colors hover:text-primary"
                     >
                       {figureName(figure)}
                     </button>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {bands.map((band) => band.officeTitle).filter(Boolean).join(' / ') ||
                         figure.meta.identityLabel ||
                         '职位未标注'}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {timeRangeText(bands[0]?.start, bands[0]?.end)}
                     </span>
                     {bands.some((band) => band.isPrimary) ? (
@@ -429,7 +429,7 @@ export const OrganizationPanel = ({
                       <button
                         type="button"
                         onClick={() => openEdgeCard(bands[0].edgeId)}
-                        className="ml-auto shrink-0 text-[10px] text-primary transition-colors hover:underline"
+                        className="ml-auto shrink-0 text-xs font-medium text-primary transition-colors hover:underline"
                       >
                         编辑任职
                       </button>

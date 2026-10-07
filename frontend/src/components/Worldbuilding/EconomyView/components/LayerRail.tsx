@@ -8,6 +8,7 @@
  * 图标一律走 `shared/lucideIcon`（`layer.icon` 是 Lucide 名，kebab-case）；全文无 emoji。
  */
 
+import { motion } from 'framer-motion';
 import { Layers } from 'lucide-react';
 
 import { lucideIcon } from '../../shared/lucideIcon';
@@ -37,10 +38,10 @@ export const LayerRail = ({ layers, value, complexity, onChange }: LayerRailProp
       data-testid="economy-layer-rail"
       role="group"
       aria-label="图层"
-      className="flex flex-wrap items-center gap-1"
+      className="flex flex-wrap items-center gap-1.5"
     >
-      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <Layers className="h-3 w-3" aria-hidden="true" />
+      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Layers className="h-3.5 w-3.5" aria-hidden="true" />
         图层
       </span>
       {visible.map((layer) => {
@@ -48,25 +49,27 @@ export const LayerRail = ({ layers, value, complexity, onChange }: LayerRailProp
         const id = layer.id as EconomyLayerId;
         const on = value[id] ?? layer.defaultOn;
         return (
-          <button
+          <motion.button
             key={layer.id}
             type="button"
             data-testid={`economy-layer-${layer.id}`}
             aria-pressed={on}
             title={`${layer.label}：${LAYER_HINTS[layer.id] ?? ''}（只影响绘制，不改变筛选结果）`}
             onClick={() => onChange({ ...value, [id]: !on })}
-            className={
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
               on
-                ? 'flex items-center gap-1 rounded border border-cyan-600/60 bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-cyan-500/25 motion-reduce:transition-none'
-                : 'flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none'
-            }
+                ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
+            }`}
           >
             {Icon && <Icon className="h-3 w-3" aria-hidden="true" />}
             {layer.label}
-          </button>
+          </motion.button>
         );
       })}
-      <span className="text-[10px] text-muted-foreground">只影响绘制，不改变筛选结果</span>
+      <span className="text-xs text-muted-foreground/70">只影响绘制，不改变筛选结果</span>
     </div>
   );
 };

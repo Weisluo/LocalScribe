@@ -84,18 +84,18 @@ export const FigureRow = ({
           onOpen();
         }}
         title={`${displayName}（点击打开轻量侧栏）`}
-        className="min-w-0 max-w-[9rem] shrink-0 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
+        className="min-w-0 max-w-[9rem] shrink-0 truncate text-left text-sm font-medium text-foreground transition-colors hover:text-primary"
       >
         {displayName}
       </button>
-      <span className="hidden max-w-[7rem] min-w-0 shrink-0 truncate text-[10px] text-muted-foreground sm:block">
+      <span className="hidden max-w-[7rem] min-w-0 shrink-0 truncate text-xs text-muted-foreground sm:block">
         {meta.identityLabel || ORPHAN_LABEL}
       </span>
-      <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-[10px] text-foreground">
+      <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-xs text-foreground">
         {isPrimary && <Crown className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-300" aria-hidden="true" />}
         <span className="truncate">{officeText || '还没有任职'}</span>
       </span>
-      <span className="hidden w-32 shrink-0 truncate text-right text-[10px] text-muted-foreground md:block">
+      <span className="hidden w-32 shrink-0 truncate text-right text-xs text-muted-foreground md:block">
         {officeText ? tenure : ORPHAN_LABEL}
       </span>
       {characterRef ? (
@@ -107,13 +107,13 @@ export const FigureRow = ({
           }}
           aria-label={`打开全局角色 ${displayName}`}
           title="打开全局角色"
-          className="shrink-0 rounded border border-border/50 px-1 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+          className="shrink-0 rounded-lg border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
         >
           角色
         </button>
       ) : (
         <span
-          className="shrink-0 rounded-full border border-border/50 px-1 py-0.5 text-[10px] text-muted-foreground"
+          className="shrink-0 rounded-full border border-border/40 px-1.5 py-0.5 text-[10px] text-muted-foreground"
           title="该政治人物尚未绑定全局角色"
         >
           尚未绑定角色

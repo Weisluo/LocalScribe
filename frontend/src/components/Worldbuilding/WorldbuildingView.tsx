@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { motion, MotionConfig } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   worldbuildingApi,
@@ -59,7 +60,7 @@ import { EconomyView } from './EconomyView';
 import { RacesView } from './RacesView';
 import { SystemsView } from './SystemsView';
 import { PoliticsView } from './PoliticsView';
-import { EmptyState } from './shared';
+import { EmptyState, viewSpring, viewSpringSnappy } from './shared';
 import { ComplexityProvider, ComplexitySwitcher, type ComplexityLevel } from '@/components/common/ComplexitySwitcher';
 import {
   useWorlds,
@@ -176,7 +177,7 @@ const Modal = ({ isOpen, onClose, title, children, showCloseButton = true }: Mod
       />
       <div
         className={`
-          relative bg-background border border-border rounded-lg shadow-lg w-full max-w-md p-6 z-10
+          relative z-10 w-full max-w-md rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg backdrop-blur-md
           transition-all duration-200 ease-out
           ${isClosing
             ? 'opacity-0 scale-95'
@@ -184,15 +185,15 @@ const Modal = ({ isOpen, onClose, title, children, showCloseButton = true }: Mod
           }
         `}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
+        <div className="mb-5 flex items-center justify-between border-b border-border/30 pb-4">
+          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
           {showCloseButton && (
             <button
               onClick={handleClose}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/20"
+              className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               aria-label="关闭"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -258,41 +259,49 @@ const WorldWelcomeModal = ({ isOpen, onClose, onCreateNew, onRestore }: WorldWel
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${isClosing ? 'opacity-0' : 'opacity-100'}`} onClick={handleClose} />
-      <div className={`relative z-10 w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-lg ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">欢迎来到你的世界</h3>
-          <button onClick={handleClose} className="rounded-md p-1 text-muted-foreground hover:bg-accent/20" aria-label="关闭">
-            <X className="h-5 w-5" />
+      <div className={`relative z-10 w-full max-w-md rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg backdrop-blur-md ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+        <div className="mb-5 flex items-center justify-between border-b border-border/30 pb-4">
+          <h3 className="text-base font-semibold tracking-tight">欢迎来到你的世界</h3>
+          <button onClick={handleClose} className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground" aria-label="关闭">
+            <X className="h-4 w-4" />
           </button>
         </div>
-        <p className="mb-6 text-center text-sm text-muted-foreground">
+        <p className="mb-6 text-center text-xs text-muted-foreground">
           这里没有任何预设内容。新建世界后从第一条设定开始，或恢复一份世界备份。
         </p>
         <div className="grid grid-cols-2 gap-4">
-          <button
+          <motion.button
+            type="button"
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.98 }}
+            transition={viewSpring}
             onClick={() => choose(onCreateNew)}
-            className="group flex flex-col items-center gap-3 rounded-lg border border-border p-6 transition-all hover:border-primary hover:bg-primary/5"
+            className="group flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-6 shadow-sm transition-all duration-300 hover:border-primary/25 hover:shadow-lg"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 transition-colors duration-200 group-hover:bg-primary/20">
               <FilePlus className="h-6 w-6 text-primary" />
             </span>
             <span className="text-center">
-              <span className="block font-medium">新建世界</span>
+              <span className="block text-sm font-semibold">新建世界</span>
               <span className="mt-1 block text-xs text-muted-foreground">从空白开始</span>
             </span>
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            type="button"
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.98 }}
+            transition={viewSpring}
             onClick={() => choose(onRestore)}
-            className="group flex flex-col items-center gap-3 rounded-lg border border-border p-6 transition-all hover:border-primary hover:bg-primary/5"
+            className="group flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-card/50 p-6 shadow-sm transition-all duration-300 hover:border-primary/25 hover:shadow-lg"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 transition-colors duration-200 group-hover:bg-primary/20">
               <FileUp className="h-6 w-6 text-primary" />
             </span>
             <span className="text-center">
-              <span className="block font-medium">恢复世界备份</span>
+              <span className="block text-sm font-semibold">恢复世界备份</span>
               <span className="mt-1 block text-xs text-muted-foreground">从 .world.json 恢复</span>
             </span>
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>
@@ -345,7 +354,7 @@ const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldMod
               if (event.key === 'Enter' && name.trim()) submit();
             }}
             placeholder="请输入世界名称"
-            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+            className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
             autoFocus
           />
         </div>
@@ -360,7 +369,7 @@ const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldMod
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="例如：一座靠潮汐历法运转的群岛世界"
-            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+            className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
 
@@ -376,8 +385,8 @@ const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldMod
                   setPalette(item.id);
                   if (item.id !== 'custom') setAccent(item.accent);
                 }}
-                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors ${
-                  palette === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border/60 text-muted-foreground hover:bg-accent/20'
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
+                  palette === item.id ? 'border-primary/40 bg-primary/10 text-primary shadow-sm' : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                 }`}
               >
                 <span className="h-3 w-3 rounded-full border border-black/10" style={{ backgroundColor: item.accent }} />
@@ -394,7 +403,7 @@ const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldMod
               onChange={(event) => setAccent(event.target.value)}
               className="h-7 w-9 cursor-pointer rounded"
             />
-            <span className="text-[11px] text-muted-foreground">{accent}</span>
+            <span className="text-xs text-muted-foreground">{accent}</span>
           </div>
         </div>
 
@@ -408,8 +417,8 @@ const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldMod
                 aria-pressed={complexity === option.id}
                 title={option.hint}
                 onClick={() => setComplexity(option.id)}
-                className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
-                  complexity === option.id ? 'border-primary bg-primary/10 text-primary' : 'border-border/60 text-muted-foreground hover:bg-accent/20'
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
+                  complexity === option.id ? 'border-primary/40 bg-primary/10 text-primary shadow-sm' : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                 }`}
               >
                 {option.label}
@@ -418,18 +427,18 @@ const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldMod
           </div>
         </div>
 
-        <p className="rounded-md border border-border/60 bg-card/30 px-3 py-2 text-[11px] text-muted-foreground">
+        <p className="rounded-xl border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           新世界为空，不包含任何预设内容。
         </p>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <div className="flex justify-end gap-3 pt-2">
+          <button onClick={onClose} className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground">
             取消
           </button>
           <button
             onClick={submit}
             disabled={!name.trim() || isLoading}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {isLoading ? '创建中...' : '创建空白世界'}
@@ -538,8 +547,8 @@ const RestoreBackupModal = ({ isOpen, onClose, worlds, currentWorldId, isImporti
               event.preventDefault();
               setDragActive(false);
             }}
-            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-all ${
-              dragActive ? 'border-primary bg-primary/5' : file ? 'border-emerald-500 bg-emerald-50/40' : 'border-border hover:border-primary/50 hover:bg-accent/20'
+            className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-all duration-200 ${
+              dragActive ? 'border-primary bg-primary/5' : file ? 'border-primary/40 bg-primary/5' : 'border-border/40 hover:border-primary/30 hover:bg-accent/5'
             }`}
           >
             <input
@@ -554,8 +563,8 @@ const RestoreBackupModal = ({ isOpen, onClose, worlds, currentWorldId, isImporti
             />
             {file ? (
               <div className="flex flex-col items-center gap-2">
-                <FileUp className="h-5 w-5 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-700">{file.name}</span>
+                <FileUp className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium text-foreground">{file.name}</span>
                 <button
                   onClick={(event) => {
                     event.stopPropagation();
@@ -591,7 +600,7 @@ const RestoreBackupModal = ({ isOpen, onClose, worlds, currentWorldId, isImporti
             {mode === 'overwrite' && (
               <div className="space-y-2">
                 <select
-                  className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                   value={targetWorldId}
                   onChange={(event) => {
                     setTargetWorldId(event.target.value);
@@ -628,11 +637,11 @@ const RestoreBackupModal = ({ isOpen, onClose, worlds, currentWorldId, isImporti
         )}
 
         {report && (
-          <div className="space-y-1 rounded-md border border-border/60 bg-card/30 p-3" data-testid="restore-report">
+          <div className="space-y-1 rounded-xl border border-border/50 bg-muted/20 p-3" data-testid="restore-report">
             <div className="text-xs font-medium">
               {report.entityCount} 实体 · {report.linkCount} 关联 · id 映射 {report.idMapCount} 条
             </div>
-            <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+            <ul className="space-y-0.5 text-xs text-muted-foreground">
               {report.lines.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -640,14 +649,14 @@ const RestoreBackupModal = ({ isOpen, onClose, worlds, currentWorldId, isImporti
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <div className="flex justify-end gap-3 pt-2">
+          <button onClick={onClose} className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground">
             {report ? '关闭' : '取消'}
           </button>
           <button
             onClick={submit}
             disabled={!file || busy || isImporting || overwriteBlocked}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {busy || isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {busy || isImporting ? '恢复中...' : '恢复'}
@@ -699,17 +708,17 @@ const DeleteWorldModal = ({ isOpen, onClose, onConfirm, worldName, entityCount, 
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
             placeholder={worldName}
-            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+            className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
         </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50">
+        <div className="flex justify-end gap-3 pt-2">
+          <button onClick={onClose} disabled={isLoading} className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50">
             取消
           </button>
           <button
             onClick={onConfirm}
             disabled={typed !== worldName || isLoading}
-            className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm text-white transition-colors hover:bg-destructive/90 disabled:opacity-40"
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-destructive to-destructive/90 px-4 py-2 text-sm font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-destructive/20 disabled:opacity-40"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             删除世界
@@ -743,6 +752,56 @@ const TAB_ICON_NAMES: Record<TabType, string> = {
   races: 'users',
   systems: 'sparkles',
   special: 'star',
+};
+
+/**
+ * 标签栏领域色（ui_style_alignment §6 + worldbuilding_ui_design §8.1）：
+ * 领域色只落在实体层（激活态的浅底 / 强调色文字 / 底部指示条），工具栏其余部分一律 primary + muted。
+ * 暗色模式单独取值，不做简单反色。
+ */
+const TAB_ACCENT: Record<TabType, { surface: string; text: string; bar: string; badge: string }> = {
+  map: {
+    surface: 'bg-blue-500/10',
+    text: 'text-blue-600 dark:text-blue-300',
+    bar: 'bg-blue-500',
+    badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-300',
+  },
+  history: {
+    surface: 'bg-amber-500/10',
+    text: 'text-amber-600 dark:text-amber-300',
+    bar: 'bg-amber-500',
+    badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  },
+  politics: {
+    surface: 'bg-red-500/10',
+    text: 'text-red-600 dark:text-red-300',
+    bar: 'bg-red-500',
+    badge: 'bg-red-500/15 text-red-600 dark:text-red-300',
+  },
+  economy: {
+    surface: 'bg-green-500/10',
+    text: 'text-green-600 dark:text-green-300',
+    bar: 'bg-green-500',
+    badge: 'bg-green-500/15 text-green-600 dark:text-green-300',
+  },
+  races: {
+    surface: 'bg-teal-500/10',
+    text: 'text-teal-600 dark:text-teal-300',
+    bar: 'bg-teal-500',
+    badge: 'bg-teal-500/15 text-teal-600 dark:text-teal-300',
+  },
+  systems: {
+    surface: 'bg-violet-500/10',
+    text: 'text-violet-600 dark:text-violet-300',
+    bar: 'bg-violet-500',
+    badge: 'bg-violet-500/15 text-violet-600 dark:text-violet-300',
+  },
+  special: {
+    surface: 'bg-muted/60',
+    text: 'text-foreground',
+    bar: 'bg-muted-foreground/60',
+    badge: 'bg-muted/60 text-muted-foreground',
+  },
 };
 
 /**
@@ -801,23 +860,23 @@ const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditor
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-border/50 bg-card p-4">
+    <div className="space-y-4 rounded-xl border border-border/50 bg-card/60 p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <input
           type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          className="border-b border-border bg-transparent px-2 py-1 text-lg font-semibold focus:border-primary focus:outline-none"
+          className="rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm font-semibold transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           placeholder="条目名称"
         />
         <div className="flex items-center gap-2">
-          <button onClick={() => onSave({ name, content })} className="rounded-lg p-2 text-emerald-600 transition-colors hover:bg-accent/50" title="保存">
+          <button onClick={() => onSave({ name, content })} className="rounded-lg border border-border/50 bg-muted/40 p-2 text-primary transition-all duration-200 hover:border-accent/30 hover:bg-accent/10" title="保存">
             <Save className="h-4 w-4" />
           </button>
-          <button onClick={onDelete} className="rounded-lg p-2 text-destructive transition-colors hover:bg-accent/50" title="删除">
+          <button onClick={onDelete} className="rounded-lg border border-border/50 bg-muted/40 p-2 text-destructive transition-all duration-200 hover:border-destructive/30 hover:bg-destructive/10" title="删除">
             <Trash2 className="h-4 w-4" />
           </button>
-          <button onClick={onCancel} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50" title="取消">
+          <button onClick={onCancel} className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground" title="取消">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -827,16 +886,16 @@ const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditor
         {Object.entries(content).map(([key, value]) => (
           <div key={key} className="flex items-start gap-2">
             <div className="grid flex-1 grid-cols-2 gap-2">
-              <input type="text" value={key} disabled className="rounded-md bg-muted/30 px-3 py-2 text-sm font-medium" />
+              <input type="text" value={key} disabled className="rounded-xl bg-muted/30 px-3 py-2 text-sm font-medium" />
               <input
                 type="text"
                 value={value}
                 onChange={(event) => setContent({ ...content, [key]: event.target.value })}
-                className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                 placeholder="内容"
               />
             </div>
-            <button onClick={() => handleRemoveField(key)} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-destructive">
+            <button onClick={() => handleRemoveField(key)} className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -848,18 +907,18 @@ const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditor
               type="text"
               value={newKey}
               onChange={(event) => setNewKey(event.target.value)}
-              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
               placeholder="属性名称"
             />
             <input
               type="text"
               value={newValue}
               onChange={(event) => setNewValue(event.target.value)}
-              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
               placeholder="属性值"
             />
           </div>
-          <button onClick={handleAddField} className="rounded-lg p-2 text-primary transition-colors hover:bg-accent/50">
+          <button onClick={handleAddField} className="rounded-lg border border-border/50 bg-muted/40 p-2 text-primary transition-all duration-200 hover:border-accent/30 hover:bg-accent/10">
             <Plus className="h-4 w-4" />
           </button>
         </div>
@@ -910,7 +969,7 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onTog
     <div className="ml-4 space-y-2 border-l-2 border-border/30 pl-4">
       <button
         onClick={onToggle}
-        className={`group flex w-full items-center gap-2 rounded text-sm font-medium transition-colors hover:text-primary ${
+        className={`group flex w-full items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-colors duration-200 hover:bg-accent/5 hover:text-primary ${
           highlightId === submodule.id ? 'ring-1 ring-primary/50' : ''
         }`}
         style={{ color: submodule.color || undefined }}
@@ -938,7 +997,7 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onTog
               ) : (
                 <button
                   onClick={() => setEditingItem(item)}
-                  className={`w-full rounded-lg bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40 ${
+                  className={`w-full rounded-xl border border-border/50 bg-card/50 p-3 text-left shadow-sm transition-all duration-200 hover:border-primary/25 hover:shadow-md ${
                     highlightId === item.id ? 'ring-1 ring-primary/60' : ''
                   }`}
                 >
@@ -1030,37 +1089,46 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/50 bg-card/30">
-      <button onClick={() => setIsExpanded(!isExpanded)} className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-accent/20">
-        {module.icon ? <Globe2 className="h-6 w-6 text-muted-foreground" /> : <Package className="h-6 w-6 text-muted-foreground" />}
+    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors duration-200 hover:bg-accent/5"
+      >
+        {module.icon ? <Globe2 className="h-5 w-5 text-muted-foreground" /> : <Package className="h-5 w-5 text-muted-foreground" />}
         <div className="flex-1">
-          <h3 className="font-semibold">{module.name}</h3>
-          {module.description && <p className="mt-0.5 text-sm text-muted-foreground">{module.description}</p>}
+          <h3 className="text-sm font-semibold">{module.name}</h3>
+          {module.description && <p className="mt-0.5 text-xs text-muted-foreground">{module.description}</p>}
         </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="rounded bg-accent/20 px-2 py-1">{module.submodule_count} 子模块</span>
-          <span className="rounded bg-accent/20 px-2 py-1">{module.item_count} 条目</span>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full bg-muted/50 px-2 py-0.5 text-[10px]">{module.submodule_count} 子模块</span>
+          <span className="rounded-full bg-muted/50 px-2 py-0.5 text-[10px]">{module.item_count} 条目</span>
         </div>
-        {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
       </button>
 
       {isExpanded && (
-        <div className="space-y-4 border-t border-border/30 p-4">
-          <div className="flex gap-2">
-            <button
+        <div className="space-y-4 border-t border-border/30 p-5">
+          <div className="flex gap-3">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setShowSubmoduleForm(true)}
-              className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/20"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               添加子模块
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               onClick={() => setShowItemForm(true)}
-              className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1.5 text-sm text-accent transition-colors hover:bg-accent/20"
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               添加条目
-            </button>
+            </motion.button>
           </div>
 
           {showSubmoduleForm && (
@@ -1111,7 +1179,7 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
                 <button
                   key={item.id}
                   onClick={() => setEditingItem(item)}
-                  className={`w-full rounded-lg bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40 ${
+                  className={`w-full rounded-xl border border-border/50 bg-card/50 p-3 text-left shadow-sm transition-all duration-200 hover:border-primary/25 hover:shadow-md ${
                     highlightId === item.id ? 'ring-1 ring-primary/60' : ''
                   }`}
                 >
@@ -1145,27 +1213,27 @@ const SubmoduleForm = ({ onSubmit, onCancel, isLoading }: SubmoduleFormProps) =>
         type="text"
         value={name}
         onChange={(event) => setName(event.target.value)}
-        className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+        className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
         placeholder="子模块名称"
       />
       <input
         type="text"
         value={description}
         onChange={(event) => setDescription(event.target.value)}
-        className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+        className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
         placeholder="描述（可选）"
       />
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">颜色：</span>
         <input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="h-8 w-8 cursor-pointer rounded" />
-        <div className="ml-auto flex flex-1 justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <div className="ml-auto flex flex-1 justify-end gap-3">
+          <button onClick={onCancel} className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground">
             取消
           </button>
           <button
             onClick={() => name.trim() && onSubmit({ name: name.trim(), description: description.trim() || undefined, color })}
             disabled={!name.trim() || isLoading}
-            className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '创建'}
           </button>
@@ -1203,7 +1271,7 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
         type="text"
         value={name}
         onChange={(event) => setName(event.target.value)}
-        className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+        className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
         placeholder="条目名称"
       />
 
@@ -1211,7 +1279,7 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
         <select
           value={submoduleId}
           onChange={(event) => setSubmoduleId(event.target.value)}
-          className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+          className="w-full rounded-xl border border-border/40 bg-muted/30 px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
         >
           <option value="">不归属任何子模块</option>
           {submodules.map((item) => (
@@ -1227,12 +1295,12 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
         {Object.entries(content).map(([key, value]) => (
           <div key={key} className="flex items-center gap-2">
             <div className="grid flex-1 grid-cols-2 gap-2">
-              <input type="text" value={key} disabled className="rounded-md bg-muted/30 px-3 py-2 text-sm" />
+              <input type="text" value={key} disabled className="rounded-xl bg-muted/30 px-3 py-2 text-sm" />
               <input
                 type="text"
                 value={value}
                 onChange={(event) => setContent({ ...content, [key]: event.target.value })}
-                className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
               />
             </div>
             <button
@@ -1241,7 +1309,7 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
                 delete next[key];
                 setContent(next);
               }}
-              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-destructive"
+              className="rounded-lg p-2 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-destructive"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1253,31 +1321,31 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
               type="text"
               value={newKey}
               onChange={(event) => setNewKey(event.target.value)}
-              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
               placeholder="属性名"
             />
             <input
               type="text"
               value={newValue}
               onChange={(event) => setNewValue(event.target.value)}
-              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              className="rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
               placeholder="属性值"
             />
           </div>
-          <button onClick={handleAddField} className="rounded-lg p-2 text-primary transition-colors hover:bg-accent/50">
+          <button onClick={handleAddField} className="rounded-lg p-2 text-primary transition-colors duration-200 hover:bg-accent/10">
             <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+      <div className="flex justify-end gap-3">
+        <button onClick={onCancel} className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground">
           取消
         </button>
         <button
           onClick={() => name.trim() && onSubmit({ name: name.trim(), content, submodule_id: submoduleId || undefined })}
           disabled={!name.trim() || Object.keys(content).length === 0 || isLoading}
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '创建'}
         </button>
@@ -1298,18 +1366,20 @@ interface WorldSwitcherProps {
 
 const WorldSwitcher = ({ open, onToggle, worlds, currentWorldId, onSelect, onCreate }: WorldSwitcherProps) => (
   <div className="relative">
-    <button
+    <motion.button
       type="button"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onToggle}
       aria-expanded={open}
       aria-haspopup="listbox"
       aria-label="切换世界"
-      className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+      className="flex items-center gap-1 rounded-lg border border-border/50 bg-muted/40 p-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
     >
-      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
-    </button>
+      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+    </motion.button>
     {open && (
-      <div role="listbox" aria-label="世界列表" className="absolute left-0 top-full z-40 mt-2 w-80 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
+      <div role="listbox" aria-label="世界列表" className="absolute left-0 top-full z-40 mt-2 w-80 overflow-hidden rounded-xl border border-border/50 bg-popover shadow-lg">
         <ul className="max-h-80 overflow-y-auto">
           {worlds.map((world) => (
             <li key={world.id}>
@@ -1318,23 +1388,23 @@ const WorldSwitcher = ({ open, onToggle, worlds, currentWorldId, onSelect, onCre
                 role="option"
                 aria-selected={world.id === currentWorldId}
                 onClick={() => onSelect(world.id)}
-                className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${
-                  world.id === currentWorldId ? 'bg-primary/10' : 'hover:bg-accent/20'
+                className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors duration-200 ${
+                  world.id === currentWorldId ? 'bg-primary/10' : 'hover:bg-accent/10'
                 }`}
               >
                 {world.coverImage ? (
-                  <img src={world.coverImage} alt="" className="h-9 w-9 flex-shrink-0 rounded object-cover" />
+                  <img src={world.coverImage} alt="" className="h-9 w-9 flex-shrink-0 rounded-lg object-cover" />
                 ) : (
-                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-primary/20 to-accent/20">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
                     <Globe2 className="h-4 w-4 text-primary/70" />
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{world.name}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">
+                  <span className="block truncate text-xs text-muted-foreground">
                     {world.description || '（无描述）'}
                   </span>
-                  <span className="block text-[11px] text-muted-foreground/80">
+                  <span className="block text-xs text-muted-foreground/80">
                     {world.entityCount !== null ? `${world.entityCount} 实体 · ` : `${world.moduleCount} 模块 · `}
                     {world.linkCount} 关联 · {world.updatedLabel}
                   </span>
@@ -1347,7 +1417,7 @@ const WorldSwitcher = ({ open, onToggle, worlds, currentWorldId, onSelect, onCre
         <button
           type="button"
           onClick={onCreate}
-          className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
+          className="flex w-full items-center gap-2 border-t border-border/30 px-3 py-2 text-sm font-medium text-primary transition-colors duration-200 hover:bg-primary/10"
         >
           <Plus className="h-4 w-4" />
           新建世界
@@ -1810,10 +1880,11 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const universeEntityCount = entityNames.size;
 
   return (
+    <MotionConfig reducedMotion="user">
     <ComplexityProvider value={activeComplexity} onChange={handleComplexityChange}>
       <div className="flex h-full flex-col bg-background">
-        <header className="group relative flex h-16 flex-shrink-0 items-center justify-center border-b border-border/60 bg-card/20 px-6 backdrop-blur-sm">
-          <h1 className="absolute left-6 flex items-center gap-2 text-xl font-semibold text-foreground">
+        <header className="group relative flex h-16 flex-shrink-0 items-center justify-center border-b border-border/20 bg-gradient-to-b from-background via-background/95 to-background/90 px-6 backdrop-blur-md">
+          <h1 className="absolute left-6 flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
             <Globe2 className="h-5 w-5" />
             世界观设定
           </h1>
@@ -1832,30 +1903,30 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                         setEditingWorldName('');
                       }
                     }}
-                    className="rounded border border-border/50 bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
+                    className="rounded-xl border border-border/40 bg-muted/30 px-2.5 py-1 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                     autoFocus
                   />
                   <button
                     onClick={handleSaveWorldName}
                     disabled={updateWorldMutation.isPending}
-                    className="rounded p-1 text-emerald-600 transition-colors hover:bg-accent/50"
+                    className="rounded-lg p-1.5 text-primary transition-colors duration-200 hover:bg-accent/10"
                     title="保存"
                   >
-                    {updateWorldMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    {updateWorldMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   </button>
                   <button
                     onClick={() => {
                       setIsEditingWorldName(false);
                       setEditingWorldName('');
                     }}
-                    className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/50"
+                    className="rounded-lg p-1.5 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-foreground"
                     title="取消"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
-                <span className="text-2xl font-semibold text-foreground">{worldDetail?.name ?? currentWorld.name}</span>
+                <span className="text-lg font-semibold tracking-tight text-foreground">{worldDetail?.name ?? currentWorld.name}</span>
               )}
               <WorldSwitcher
                 open={switcherOpen}
@@ -1872,41 +1943,47 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
           )}
           <div className="absolute right-6 flex items-center gap-2">
             {activeWorld && (
-              <span className="hidden rounded-full border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] text-muted-foreground sm:inline">
+              <span className="hidden rounded-full border border-border/50 bg-card/40 px-2 py-0.5 text-[10px] text-muted-foreground sm:inline">
                 {universeEntityCount} 实体 · {activeWorld.link_count ?? 0} 关联
               </span>
             )}
             {activeWorld && <ComplexitySwitcher value={activeComplexity} onChange={handleComplexityChange} />}
-            <button
+            <motion.button
               type="button"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               title="全局搜索（Ctrl/Cmd + K）"
             >
-              <Search className="h-3.5 w-3.5" />
+              <Search className="h-4 w-4" />
               搜索
-            </button>
+            </motion.button>
             {activeWorld && webEntry.visible && (
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => setWebOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
                 title={`世界脉络（${webEntry.reason}）`}
               >
-                <Network className="h-3.5 w-3.5" />
+                <Network className="h-4 w-4" />
                 世界脉络
-              </button>
+              </motion.button>
             )}
             {currentWorld && (
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => setSettingsOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
                 title="世界设置"
               >
-                <Settings className="h-3.5 w-3.5" />
+                <Settings className="h-4 w-4" />
                 设置
-              </button>
+              </motion.button>
             )}
             {hasEntryPoint && container && (
               <button
@@ -1919,10 +1996,10 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
               </button>
             )}
             {currentWorld && !isEditingWorldName && (
-              <div className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <div className="flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                 <button
                   onClick={handleStartEditWorldName}
-                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                  className="rounded-lg border border-border/50 bg-muted/40 p-1.5 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
                   title="修改名称"
                 >
                   <Edit2 className="h-3.5 w-3.5" />
@@ -1930,7 +2007,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                 <button
                   onClick={() => setShowDeleteModal(true)}
                   disabled={deleteWorldMutation.isPending}
-                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-destructive"
+                  className="rounded-lg border border-border/50 bg-muted/40 p-1.5 text-muted-foreground transition-all duration-200 hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                   title="删除世界"
                 >
                   {deleteWorldMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -1950,17 +2027,17 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
 
         {/* 返回栈面包屑（P2-T7）：仅进入实体后出现 */}
         {!isAtRoot(navStack) && (
-          <div className="flex items-center gap-2 border-b border-border/60 bg-card/20 px-6 py-1.5 text-xs">
+          <div className="flex items-center gap-2 border-b border-border/20 bg-card/20 px-6 py-2 text-xs">
             {breadcrumbs.map((item, index) => {
               const isCurrent = index === breadcrumbs.length - 1;
               return (
                 <span key={item.ref ? refKey(item.ref) : 'root'} className="flex items-center gap-2">
-                  {index > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/60" />}
+                  {index > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />}
                   <button
                     type="button"
                     onClick={() => handleBreadcrumbClick(index)}
                     disabled={isCurrent}
-                    className={isCurrent ? 'font-medium text-foreground' : 'text-muted-foreground transition-colors hover:text-foreground'}
+                    className={isCurrent ? 'font-medium text-foreground' : 'rounded-md px-1.5 py-0.5 text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-foreground'}
                   >
                     {item.label}
                   </button>
@@ -1970,10 +2047,10 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
             <button
               type="button"
               onClick={handleNavigateBack}
-              className="ml-auto flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+              className="ml-auto flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               title="返回（Esc）"
             >
-              <ChevronLeft className="h-3 w-3" />
+              <ChevronLeft className="h-3.5 w-3.5" />
               返回
             </button>
           </div>
@@ -1981,44 +2058,86 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
 
         {/* 失效引用（T7 缺口）：目标已删除时提供查看来源 / 清理引用 */}
         {brokenRef && (
-          <div className="flex items-center gap-2 border-b border-destructive/40 bg-destructive/10 px-6 py-1.5 text-xs text-destructive">
+          <div className="flex items-center gap-2 border-b border-destructive/30 bg-destructive/10 px-6 py-2 text-xs text-destructive">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
             <span>引用已失效：{brokenRef.label}（目标可能已被删除）</span>
             {brokenRef.fromModule && (
-              <button type="button" onClick={handleViewBrokenSource} className="rounded border border-destructive/40 px-2 py-0.5 hover:bg-destructive/20">
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={handleViewBrokenSource}
+                className="rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-1 font-medium transition-all duration-200 hover:bg-destructive/20"
+              >
                 查看来源
-              </button>
+              </motion.button>
             )}
-            <button type="button" onClick={() => void handleCleanupBrokenRef()} className="rounded border border-destructive/40 px-2 py-0.5 hover:bg-destructive/20">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => void handleCleanupBrokenRef()}
+              className="rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-1 font-medium transition-all duration-200 hover:bg-destructive/20"
+            >
               清理引用
-            </button>
-            <button type="button" onClick={() => setBrokenRef(null)} className="ml-auto text-destructive/70 hover:text-destructive">
+            </motion.button>
+            <button type="button" onClick={() => setBrokenRef(null)} className="ml-auto rounded-md px-2 py-1 text-destructive/70 transition-colors duration-200 hover:bg-destructive/10 hover:text-destructive">
               忽略
             </button>
           </div>
         )}
 
-        {/* 横向标签栏 */}
-        <div className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-card/10 px-6 py-3">
+        {/* 横向标签栏：激活态领域色浅底 + 强调色文字 + 底部指示条（ui_style_alignment §2.3 / §6） */}
+        <div
+          role="tablist"
+          aria-label="世界模块"
+          className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-border/20 bg-card/10 px-6 py-2"
+        >
           {TAB_ORDER.map((tab) => {
             const config = TAB_CONFIG[tab];
             const Icon = config.icon;
             const isActive = activeTab === tab;
             const linkTotal = linkCountByModule.get(tab) ?? 0;
+            const accent = TAB_ACCENT[tab];
 
             return (
-              <button
+              <motion.button
                 key={tab}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                layout
                 onClick={() => handleTabClick(tab)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 transition-all duration-200 ${
-                  isActive ? 'bg-primary/20 text-primary shadow-sm' : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={viewSpringSnappy}
+                className={`relative flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 motion-reduce:transition-none ${
+                  isActive ? accent.text : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title={moduleLabels[tab] ?? config.label}
               >
-                <Icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{moduleLabels[tab] ?? config.label}</span>
-                {linkTotal > 0 && <span className="rounded-full bg-accent/30 px-1.5 text-[10px]">{linkTotal}</span>}
-              </button>
+                {isActive && (
+                  <motion.span
+                    layoutId="worldbuilding-tab-indicator"
+                    className={`absolute inset-0 rounded-lg ${accent.surface}`}
+                    transition={viewSpringSnappy}
+                  />
+                )}
+                <Icon className="relative z-10 h-4 w-4" />
+                <span className="relative z-10">{moduleLabels[tab] ?? config.label}</span>
+                {linkTotal > 0 && (
+                  <span className={`relative z-10 rounded-full px-1.5 text-[10px] ${accent.badge}`}>
+                    {linkTotal}
+                  </span>
+                )}
+                {isActive && (
+                  <motion.span
+                    layoutId="worldbuilding-tab-underline"
+                    className={`absolute -bottom-2 left-3 right-3 h-0.5 rounded-full ${accent.bar}`}
+                    transition={viewSpringSnappy}
+                  />
+                )}
+              </motion.button>
             );
           })}
         </div>
@@ -2026,26 +2145,26 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
         <div className="flex flex-1 overflow-hidden">
           <div className="flex flex-1 flex-col overflow-hidden">
             {!currentWorld && !worldsLoading && (
-              <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
-                <Globe2 className="mb-3 h-12 w-12 text-muted-foreground/50" />
-                <p className="mb-1 text-foreground">还没有世界</p>
-                <p className="mb-4 text-sm text-muted-foreground">先新建一个空白世界，或恢复一份世界备份。</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
-                  >
-                    <Plus className="h-4 w-4" />
-                    新建世界
-                  </button>
-                  <button
-                    onClick={() => setShowRestoreModal(true)}
-                    className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 transition-colors hover:bg-accent/20"
-                  >
-                    <FileUp className="h-4 w-4" />
-                    恢复世界备份
-                  </button>
-                </div>
+              <div className="flex flex-1 items-center justify-center px-6 py-10">
+                <EmptyState
+                  icon={Globe2}
+                  title="还没有世界"
+                  description="先新建一个空白世界，或恢复一份世界备份。"
+                  actions={[
+                    {
+                      label: '新建世界',
+                      onClick: () => setShowCreateModal(true),
+                      icon: Plus,
+                      variant: 'primary',
+                    },
+                    {
+                      label: '恢复世界备份',
+                      onClick: () => setShowRestoreModal(true),
+                      icon: FileUp,
+                      variant: 'secondary',
+                    },
+                  ]}
+                />
               </div>
             )}
 
@@ -2219,15 +2338,12 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-1 flex-col items-center justify-center text-center">
-                  <span className="mb-3 flex h-12 w-12 items-center justify-center text-muted-foreground/30">
-                    {(() => {
-                      const Icon = TAB_CONFIG[activeTab].icon;
-                      return <Icon className="h-12 w-12" />;
-                    })()}
-                  </span>
-                  <p className="text-muted-foreground">该模块暂无内容</p>
-                  <p className="mt-1 text-sm text-muted-foreground/70">点击模块内的添加按钮开始添加设定</p>
+                <div className="flex flex-1 items-center justify-center p-6">
+                  <EmptyState
+                    icon={TAB_CONFIG[activeTab].icon}
+                    title="该模块暂无内容"
+                    description="点击模块内的添加按钮开始添加设定"
+                  />
                 </div>
               )}
             </div>
@@ -2235,6 +2351,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
         </div>
       </div>
     </ComplexityProvider>
+    </MotionConfig>
   );
 };
 

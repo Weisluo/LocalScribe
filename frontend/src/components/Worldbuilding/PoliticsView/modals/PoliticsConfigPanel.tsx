@@ -77,8 +77,8 @@ const PoliticsViewExtras = ({
   };
 
   return (
-    <div className="space-y-3 rounded-md border border-border/50 p-2" data-testid="politics-config-extras">
-      <div className="text-[11px] font-medium text-foreground">视图、色板与三视图术语</div>
+    <div className="space-y-3 rounded-xl border border-border/50 p-3" data-testid="politics-config-extras">
+      <div className="text-sm font-semibold text-foreground">视图、色板与三视图术语</div>
 
       <label className="block space-y-0.5">
         <span className={labelClass}>默认视图（三主视图之一）</span>
@@ -125,7 +125,7 @@ const PoliticsViewExtras = ({
         <span className={labelClass}>三视图术语（留空则用默认文案）</span>
         {VIEW_TERM_KEYS.map((key) => (
           <div key={key} className="flex items-center gap-2">
-            <span className="w-16 shrink-0 font-mono text-[10px] text-muted-foreground">{key}</span>
+            <span className="w-20 shrink-0 font-mono text-xs text-muted-foreground">{key}</span>
             <input
               type="text"
               value={viewTerms[key] ?? ''}
@@ -145,7 +145,7 @@ const PoliticsViewExtras = ({
           type="button"
           onClick={() => void handleSave()}
           disabled={saving}
-          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
         >
           {saving ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
           保存视图与色板

@@ -108,14 +108,14 @@ export const DegradeLedgerMatrix = ({
   return (
     <div
       data-testid="economy-degrade-matrix"
-      className="space-y-2 overflow-y-auto p-2"
+      className="space-y-4 overflow-y-auto p-5"
     >
       <div
         data-testid="economy-degrade-reason"
-        className="rounded-lg border border-amber-600/40 bg-amber-500/10 px-2 py-1.5"
+        className="rounded-2xl border border-amber-600/40 bg-amber-500/10 px-4 py-3 shadow-sm"
       >
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-foreground">
-          <Grid3x3 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
+          <Grid3x3 className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           <span>
             {/* nodes 为空 = 降级载荷只给 counts：此处说的是全量节点数，不是当前筛选结果 */}
             {nodes.length > 0
@@ -124,12 +124,12 @@ export const DegradeLedgerMatrix = ({
                 ? `全量 ${counts.nodes} 个节点，超过 ${limit} 阈值；已切换为账册矩阵`
                 : `节点数超过 ${limit} 阈值；已切换为账册矩阵`}
           </span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             不再铺开画布；超过阈值不另造第二条路径
           </span>
         </div>
-        {extraReason && <p className="mt-0.5 text-[10px] text-muted-foreground">原因：{extraReason}</p>}
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
+        {extraReason && <p className="mt-1 text-xs text-muted-foreground">原因：{extraReason}</p>}
+        <p className="mt-1 text-xs text-muted-foreground">
           {nodes.length > 0
             ? `关联 ${edges.length} 条`
             : counts
@@ -141,38 +141,42 @@ export const DegradeLedgerMatrix = ({
         </p>
       </div>
 
-      <section className="space-y-1">
-        <h3 className="text-[11px] font-medium text-foreground">
+      <section className="rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm">
+        <h3 className="text-sm font-semibold text-foreground">
           账册矩阵
-          <span className="ml-1 text-[10px] text-muted-foreground">
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
             类型 × 阶段计数（{kindRows.length} 类 / {stages.length} 阶段）
           </span>
         </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[11px]">
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="text-left text-[10px] tracking-[0.08em] text-muted-foreground">
-                <th scope="col" className="border-b border-border/40 px-1.5 py-1">类型</th>
+              <tr className="text-left text-xs tracking-[0.08em] text-muted-foreground">
+                <th scope="col" className="border-b border-border/40 px-3 py-2">类型</th>
                 {stages.map((stage) => (
                   <th
                     key={stage.id}
                     scope="col"
-                    className="border-b border-border/40 px-1.5 py-1 text-right"
+                    className="border-b border-border/40 px-3 py-2 text-right"
                   >
                     {stage.label}
                   </th>
                 ))}
-                <th scope="col" className="border-b border-border/40 px-1.5 py-1 text-right">合计</th>
+                <th scope="col" className="border-b border-border/40 px-3 py-2 text-right">合计</th>
               </tr>
             </thead>
             <tbody>
               {kindRows.map((row) => {
                 const Icon = lucideIcon(row.icon ?? undefined);
                 return (
-                  <tr key={row.id} data-testid={`economy-degrade-kind-${row.id}`}>
-                    <td className="border-b border-border/30 px-1.5 py-1 text-foreground">
-                      <span className="flex items-center gap-1">
-                        {Icon && <Icon className="h-3 w-3 text-muted-foreground" aria-hidden="true" />}
+                  <tr
+                    key={row.id}
+                    data-testid={`economy-degrade-kind-${row.id}`}
+                    className="transition-colors duration-200 hover:bg-accent/5"
+                  >
+                    <td className="border-b border-border/30 px-3 py-1.5 text-foreground">
+                      <span className="flex items-center gap-1.5">
+                        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
                         {row.label}
                       </span>
                     </td>
@@ -180,14 +184,14 @@ export const DegradeLedgerMatrix = ({
                       <td
                         key={stage.id}
                         data-testid={`economy-degrade-cell-${row.id}-${stage.id}`}
-                        className="border-b border-border/30 px-1.5 py-1 text-right tabular-nums text-muted-foreground"
+                        className="border-b border-border/30 px-3 py-1.5 text-right tabular-nums text-muted-foreground"
                       >
                         {cellCount(row.id, stage.id)}
                       </td>
                     ))}
                     <td
                       data-testid={`economy-degrade-total-${row.id}`}
-                      className="border-b border-border/30 px-1.5 py-1 text-right tabular-nums text-foreground"
+                      className="border-b border-border/30 px-3 py-1.5 text-right tabular-nums font-medium text-foreground"
                     >
                       {kindTotal(row.id)}
                     </td>
@@ -196,7 +200,7 @@ export const DegradeLedgerMatrix = ({
               })}
               {kindRows.length === 0 && (
                 <tr>
-                  <td className="px-1.5 py-2 text-[11px] text-muted-foreground" colSpan={stages.length + 2}>
+                  <td className="px-3 py-3 text-sm text-muted-foreground" colSpan={stages.length + 2}>
                     当前结果集没有实体：放宽筛选，或先添加实体。
                   </td>
                 </tr>
@@ -206,34 +210,34 @@ export const DegradeLedgerMatrix = ({
         </div>
       </section>
 
-      <section className="space-y-1">
-        <h3 className="text-[11px] font-medium text-foreground">
+      <section className="rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm">
+        <h3 className="text-sm font-semibold text-foreground">
           实体清单
-          <span className="ml-1 text-[10px] text-muted-foreground">
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
             {nodes.length > 0 ? `${nodes.length} 项（按类型分组）` : '明细已收起'}
           </span>
         </h3>
         {nodes.length === 0 ? (
           // 降级载荷的 nodes 是空数组：这里没有可渲染的明细，也不谎称有明细
-          <p className="text-[11px] text-muted-foreground">
+          <p className="mt-2 rounded-xl border-2 border-dashed border-border/40 px-4 py-6 text-center text-sm text-muted-foreground">
             已按降级策略收起明细：放宽筛选或减少节点后可回到画布。
             {counts ? '上方矩阵计数取自全量统计。' : ''}
           </p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="mt-2 space-y-2">
             {kindRows.map((row) => {
               const list = nodesByKind.get(row.id) ?? [];
               if (list.length === 0) return null;
               return (
-                <div key={row.id} className="space-y-0.5">
-                  <div className="text-[10px] text-muted-foreground">
+                <div key={row.id} className="space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">
                     {row.label} · {list.length}
                   </div>
                   {list.map((node) => (
                     <div
                       key={node.id}
-                      className={`flex flex-wrap items-center gap-1.5 rounded border border-border/40 px-1.5 py-1 text-[11px] ${
-                        node.id === selectedId ? 'bg-primary/10' : ''
+                      className={`flex flex-wrap items-center gap-2 rounded-xl border border-border/40 px-3 py-1.5 text-sm transition-colors duration-200 hover:bg-accent/5 ${
+                        node.id === selectedId ? 'bg-primary/5 border-primary/25' : ''
                       }`}
                     >
                       <button
@@ -243,35 +247,35 @@ export const DegradeLedgerMatrix = ({
                           onSelect(node.id);
                           onOpenEntity(node.id);
                         }}
-                        className="max-w-[40%] truncate text-left text-foreground hover:text-primary"
+                        className="max-w-[40%] truncate text-left text-base font-semibold text-foreground transition-colors duration-200 hover:text-primary"
                       >
                         {node.name}
                       </button>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {stages.find((stage) => stage.id === stageOf(node))?.label ?? stageOf(node)}
                       </span>
-                      {node.level && <span className="text-[10px] text-muted-foreground">{node.level}</span>}
+                      {node.level && <span className="text-xs text-muted-foreground">{node.level}</span>}
                       {typeof node.scale === 'number' && (
-                        <span className="text-[10px] tabular-nums text-muted-foreground">
+                        <span className="text-xs tabular-nums text-muted-foreground">
                           规模 {node.scale}
                           {node.unit ? ` ${node.unit}` : ''}
                         </span>
                       )}
                       {typeof node.scale !== 'number' && (
-                        <span className="text-[10px] text-muted-foreground">规模未填</span>
+                        <span className="text-xs text-muted-foreground">规模未填</span>
                       )}
                       {node.counts && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           出 {node.counts.outgoing} / 入 {node.counts.incoming}
                         </span>
                       )}
-                      {node.stub && <span className="text-[10px] text-muted-foreground">占位</span>}
-                      {!node.hasMetrics && <span className="text-[10px] text-muted-foreground">未填指标</span>}
+                      {node.stub && <span className="text-xs text-muted-foreground">占位</span>}
+                      {!node.hasMetrics && <span className="text-xs text-muted-foreground">未填指标</span>}
                       {node.external && (
                         <button
                           type="button"
                           onClick={() => onNavigateToEntity(node.ref)}
-                          className="ml-auto rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                          className="ml-auto rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
                         >
                           跳转外站
                         </button>
@@ -285,43 +289,46 @@ export const DegradeLedgerMatrix = ({
         )}
       </section>
 
-      <section data-testid="economy-recommendations" className="space-y-1">
-        <h3 className="text-[11px] font-medium text-foreground">
+      <section
+        data-testid="economy-recommendations"
+        className="space-y-2 rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm"
+      >
+        <h3 className="text-sm font-semibold text-foreground">
           推荐关联
-          <span className="ml-1 text-[10px] text-muted-foreground">
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
             只推荐，不写入（{recommendations.length} 条）
           </span>
         </h3>
         {recommendations.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="rounded-xl border-2 border-dashed border-border/40 px-4 py-6 text-center text-sm text-muted-foreground">
             当前结果集里没有可推荐的同类 / 上下游节点对：两端都在结果集、尚无边、阶段相邻才会推荐。
           </p>
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {recommendations.map((item) => (
               <div
                 key={`${item.source.id}|${item.target.id}|${item.linkType}`}
-                className="flex flex-wrap items-center gap-1.5 rounded border border-border/40 px-1.5 py-1 text-[11px]"
+                className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 px-3 py-1.5 text-sm transition-colors duration-200 hover:bg-accent/5"
               >
                 <button
                   type="button"
                   onClick={() => onSelect(item.source.id)}
-                  className="max-w-[28%] truncate text-left text-foreground hover:text-primary"
+                  className="max-w-[28%] truncate text-left text-foreground transition-colors duration-200 hover:text-primary"
                 >
                   {item.source.name}
                 </button>
-                <span className="flex items-center gap-1 text-[10px] text-cyan-700 dark:text-cyan-300">
+                <span className="flex items-center gap-1 text-xs text-cyan-700 dark:text-cyan-300">
                   <Link2 className="h-3 w-3" aria-hidden="true" />
                   {ECONOMY_LINK_LABELS[item.linkType]?.label ?? item.linkType}
                 </span>
                 <button
                   type="button"
                   onClick={() => onSelect(item.target.id)}
-                  className="max-w-[28%] truncate text-left text-foreground hover:text-primary"
+                  className="max-w-[28%] truncate text-left text-foreground transition-colors duration-200 hover:text-primary"
                 >
                   {item.target.name}
                 </button>
-                <span className="text-[10px] text-muted-foreground">{item.reason}</span>
+                <span className="text-xs text-muted-foreground">{item.reason}</span>
               </div>
             ))}
           </div>

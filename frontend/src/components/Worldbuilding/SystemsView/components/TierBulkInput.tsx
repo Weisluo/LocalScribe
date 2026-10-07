@@ -3,9 +3,12 @@
  *
  * 多行录入阶位：每行一个阶位，rank = 序号 × rankStep（第 1 行 = 步长本身）；
  * 行首尾空白自动裁剪，空行跳过。三行即可得到一条有序阶梯，之后可改名或拖拽调序。
+ *
+ * 视觉对齐 ui_style_alignment：子面板 §4.9、输入框 §4.5、主按钮 §4.3。
  */
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { ListPlus, Loader2 } from 'lucide-react';
 
 export interface TierBulkInputProps {
@@ -49,11 +52,11 @@ export const TierBulkInput = ({
 
   return (
     <div
-      className={`space-y-2 rounded-lg border border-border/50 bg-card/40 p-3 ${className}`}
+      className={`space-y-3 rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm ${className}`}
       data-testid="tier-bulk-input"
     >
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
-        <ListPlus className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <ListPlus className="h-4 w-4 text-primary" aria-hidden="true" />
         快速录入{tierTerm}
       </div>
       <textarea
@@ -62,25 +65,27 @@ export const TierBulkInput = ({
         rows={4}
         aria-label={`每行一个${tierTerm}`}
         placeholder={`每行一个${tierTerm}\n第一阶\n第二阶\n第三阶`}
-        className="w-full rounded-md border border-border/50 bg-background px-2 py-1.5 text-xs text-foreground transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
+        className="w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
       />
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] text-muted-foreground">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
           rank = 序号 × {rankStep}（第 1 行 = {rankStep}）；行首尾空白裁剪，空行跳过。
         </p>
-        <button
+        <motion.button
           type="button"
           onClick={handleSubmit}
           disabled={lines.length === 0 || pending}
-          className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground transition-[background-color,opacity] hover:bg-primary/90 disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
         >
           {pending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <ListPlus className="h-3.5 w-3.5" aria-hidden="true" />
+            <ListPlus className="h-4 w-4" aria-hidden="true" />
           )}
           批量创建
-        </button>
+        </motion.button>
       </div>
     </div>
   );

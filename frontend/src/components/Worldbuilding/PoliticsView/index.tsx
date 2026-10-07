@@ -14,11 +14,17 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { Compass, Landmark, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { useComplexity, COMPLEXITY_LABELS } from '@/components/common/ComplexitySwitcher';
 import type { EntityRef } from '@/services/worldbuildingApi';
-import { QuickStart } from '../shared/QuickStart';
+import {
+  lucideIcon,
+  QuickStart,
+  viewItemVariants,
+  viewStagger,
+} from '../shared';
 import { useModuleConfig } from '../shared/useModuleConfig';
 import { PoliticsFormModal } from './modals/PoliticsFormModal';
 import { QuickGuideModal } from './modals/QuickGuideModal';
@@ -36,13 +42,14 @@ import { TreatyBook } from './TreatyBook';
 import { PoliticsEmptyState } from './EmptyState';
 import {
   POLITICS_TERM_DEFAULTS,
+  POLITICS_VIEW_ICONS,
   POLITICS_VIEWS,
   POLITICS_VIEW_LABELS,
   resolvePoliticsView,
   type PoliticsViewId,
 } from './config';
 import { FOCUS_PIN_LIMIT, ORGANIZATION_KIND, POLITY_KIND, TREATY_KIND, type PoliticsEntity } from './types';
-import { fieldClass, toneTextClass } from './tone';
+import { toneTextClass } from './tone';
 
 export interface PoliticsViewProps {
   worldId: string;
@@ -290,14 +297,14 @@ export const PoliticsView = ({
     if (politics.isError) {
       return (
         <div
-          className="flex flex-col items-start gap-2 p-4 text-xs text-destructive"
+          className="flex flex-col items-start gap-3 p-4 text-sm text-destructive"
           data-testid="politics-error"
         >
           <span>政治数据加载失败</span>
           <button
             type="button"
             onClick={() => void politics.refetch?.()}
-            className="rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             重试
           </button>
@@ -307,11 +314,11 @@ export const PoliticsView = ({
     if (politics.isLoading && totalCount === 0) {
       // §7.3：列表与画布用骨架屏，不用纯文本
       return (
-        <div className="space-y-2 p-3" data-testid="politics-loading">
+        <div className="space-y-3 px-6 py-6" data-testid="politics-loading">
           {[0, 1, 2].map((index) => (
             <div
               key={index}
-              className="h-16 animate-pulse rounded-lg border border-border/50 bg-muted/30 motion-reduce:animate-none"
+              className="h-16 animate-pulse rounded-xl border border-border/50 bg-muted/30 motion-reduce:animate-none"
             />
           ))}
         </div>
@@ -319,25 +326,34 @@ export const PoliticsView = ({
     }
     if (totalCount === 0) {
       return (
-        <div className="space-y-3 overflow-y-auto p-2">
-          <QuickStart
-            title="3 分钟最小可用路径"
-            description="必填只有政权名称、等级与一位统治者；其余留白，不阻塞后续生长。"
-            steps={[
-              { label: '新建政权：填名称 + 选等级（可内联新建）', done: politics.polities.length > 0 },
-              { label: '添加一位统治者（全局角色选择器）', done: politics.figures.length > 0 },
-              { label: '可选：从政权卡内添加一个组织卫星', done: politics.organizations.length > 0 },
-              { label: '可选：拖出一条关系边', done: visitedRelations },
-              { label: '可选：发起一条条约缎带', done: politics.treaties.length > 0 },
-              { label: '可选：进入沿革视图确认兴亡线', done: visitedChronicle },
-            ]}
-          />
-          <PoliticsEmptyState
-            term={term}
-            onCreatePolity={() => setForm({ kind: POLITY_KIND, entityId: null })}
-            onOpenGuide={() => setGuideOpen(true)}
-          />
-        </div>
+        <motion.div
+          variants={viewStagger}
+          initial="hidden"
+          animate="visible"
+          className="space-y-4 overflow-y-auto px-6 py-6"
+        >
+          <motion.div variants={viewItemVariants}>
+            <QuickStart
+              title="3 分钟最小可用路径"
+              description="必填只有政权名称、等级与一位统治者；其余留白，不阻塞后续生长。"
+              steps={[
+                { label: '新建政权：填名称 + 选等级（可内联新建）', done: politics.polities.length > 0 },
+                { label: '添加一位统治者（全局角色选择器）', done: politics.figures.length > 0 },
+                { label: '可选：从政权卡内添加一个组织卫星', done: politics.organizations.length > 0 },
+                { label: '可选：拖出一条关系边', done: visitedRelations },
+                { label: '可选：发起一条条约缎带', done: politics.treaties.length > 0 },
+                { label: '可选：进入沿革视图确认兴亡线', done: visitedChronicle },
+              ]}
+            />
+          </motion.div>
+          <motion.div variants={viewItemVariants}>
+            <PoliticsEmptyState
+              term={term}
+              onCreatePolity={() => setForm({ kind: POLITY_KIND, entityId: null })}
+              onOpenGuide={() => setGuideOpen(true)}
+            />
+          </motion.div>
+        </motion.div>
       );
     }
     if (view === 'atlas') {
@@ -394,285 +410,323 @@ export const PoliticsView = ({
     filter.kind !== 'all' || !!filter.level || !!filter.status || !!search.trim();
 
   return (
-    <div
-      data-testid="politics-view"
-      data-view={view}
-      className="relative flex h-full min-h-0 flex-col gap-2"
-    >
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Landmark className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          <h1 className="text-sm font-semibold text-foreground">{term(view)}</h1>
+    /* §5 动效：根节点包一层 MotionConfig，尊重系统「减少动态效果」设置 */
+    <MotionConfig reducedMotion="user">
+      <div
+        data-testid="politics-view"
+        data-view={view}
+        className="relative flex h-full min-h-0 flex-col"
+      >
+        <header className="flex flex-wrap items-center gap-3 px-6 py-4 bg-gradient-to-b from-background via-background/95 to-background/90 backdrop-blur-md border-b border-border/20">
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <Landmark className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <h1 className="text-base font-semibold tracking-tight text-foreground">{term(view)}</h1>
 
-          <div
-            role="tablist"
-            aria-label="政治视图切换"
-            className="flex items-center gap-0.5 rounded-md border border-border/50 p-0.5"
-          >
-            {POLITICS_VIEWS.map((id) => (
-              <button
-                key={id}
+            <div
+              role="tablist"
+              aria-label="政治视图切换"
+              className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
+            >
+              {POLITICS_VIEWS.map((id) => {
+                const ViewIcon = lucideIcon(POLITICS_VIEW_ICONS[id]);
+                const active = view === id;
+                return (
+                  <motion.button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    data-testid={`politics-view-tab-${id}`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setView(id);
+                      if (id === 'chronicle') setVisitedChronicle(true);
+                    }}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
+                      active
+                        ? 'bg-background text-primary shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                    }`}
+                  >
+                    {ViewIcon && <ViewIcon className="h-3.5 w-3.5" aria-hidden="true" />}
+                    {POLITICS_VIEW_LABELS[id]}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* §4.5 搜索框（保留 ref / aria-label / data-testid 与 / 聚焦） */}
+            <div className="relative group w-96">
+              <Search
+                className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
+                aria-hidden="true"
+              />
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="搜索名称 / 别名 / 标签 / 关联 / 自定义字段（按 / 聚焦）"
+                aria-label="搜索政治实体"
+                data-testid="politics-search"
+                className="w-full rounded-xl border border-border/40 bg-muted/30 py-2 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
+              />
+              <AnimatePresence>
+                {search && (
+                  <motion.button
+                    type="button"
+                    aria-label="清除搜索"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <span className="text-xs text-muted-foreground">{COMPLEXITY_LABELS[level]}档</span>
+
+            <div className="ml-auto flex items-center gap-3">
+              <motion.button
                 type="button"
-                role="tab"
-                aria-selected={view === id}
-                data-testid={`politics-view-tab-${id}`}
-                onClick={() => {
-                  setView(id);
-                  if (id === 'chronicle') setVisitedChronicle(true);
-                }}
-                className={`rounded px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
-                  view === id
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                onClick={() => setTreatyBookOpen(true)}
+                data-testid="open-treaty-book"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
-                {POLITICS_VIEW_LABELS[id]}
+                <Compass className="h-4 w-4" aria-hidden="true" />
+                {term('treatyBook')}
+                <span className="text-[10px] text-muted-foreground">{politics.treaties.length}</span>
+              </motion.button>
+              {level !== 'sketch' && (
+                <motion.button
+                  type="button"
+                  onClick={() => setConfigOpen(true)}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
+                >
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                  模块配置
+                </motion.button>
+              )}
+              <motion.button
+                type="button"
+                onClick={() => setForm({ kind: POLITY_KIND, entityId: null })}
+                data-testid="new-polity"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                {term('newPolity')}
+              </motion.button>
+            </div>
+          </div>
+
+          {/* 第二行：层级过滤器（§4.7 chip）+ 等级 / 状态 / 清除 */}
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <div
+              role="group"
+              aria-label="层级导航（过滤器）"
+              className="flex flex-wrap items-center gap-2"
+              data-testid="politics-kind-filter"
+            >
+              {kindFilters.map((tab) => {
+                const active = filter.kind === tab.id;
+                return (
+                  <motion.button
+                    key={tab.id}
+                    type="button"
+                    aria-pressed={active}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setFilter((prev) => ({ ...prev, kind: tab.id }))}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
+                      active
+                        ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                        : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
+                    }`}
+                  >
+                    {tab.label}
+                    <span className="ml-1 text-[10px] text-muted-foreground">
+                      {filteredCounts[tab.id] ?? 0}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            <div className="ml-auto flex items-center gap-3">
+              {politics.levels && politics.levels.length > 0 && (
+                <select
+                  aria-label="按等级筛选"
+                  value={filter.level}
+                  onChange={(event) => setFilter((prev) => ({ ...prev, level: event.target.value }))}
+                  className="rounded-lg border border-border/40 bg-muted/30 px-2.5 py-1.5 text-sm text-foreground transition-all duration-200 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+                >
+                  <option value="">全部等级</option>
+                  {politics.levels?.map((def) => (
+                    <option key={def.id} value={def.id}>
+                      {def.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {politics.statuses && politics.statuses.length > 0 && (
+                <select
+                  aria-label="按状态筛选"
+                  value={filter.status}
+                  onChange={(event) => setFilter((prev) => ({ ...prev, status: event.target.value }))}
+                  className="rounded-lg border border-border/40 bg-muted/30 px-2.5 py-1.5 text-sm text-foreground transition-all duration-200 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15"
+                >
+                  <option value="">全部状态</option>
+                  {politics.statuses?.map((def) => (
+                    <option key={def.id} value={def.id}>
+                      {def.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {hasFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilter(EMPTY_POLITICS_FILTER);
+                    setSearch('');
+                    setDebounced('');
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  清除筛选
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* §9：没有任何任职边的人物不属于任何政权 / 组织分组，这里给一个明确入口，
+            避免「创建了但哪里都看不到」的静默丢失。 */}
+        {politics.unattachedFigures.length > 0 && (
+          <div
+            className="flex flex-wrap items-center gap-2 border-b border-border/30 bg-muted/20 px-6 py-2.5 text-xs text-muted-foreground"
+            data-testid="politics-unattached-figures"
+          >
+            <span>未归属人物 {politics.unattachedFigures.length}</span>
+            {politics.unattachedFigures.slice(0, 8).map((figure) => (
+              <button
+                key={figure.id}
+                type="button"
+                onClick={() => openFocus(figure.id)}
+                className="rounded-full border border-border/40 px-3 py-1 text-xs font-medium text-foreground transition-all duration-200 hover:border-border/70 hover:bg-accent/5 motion-reduce:transition-none"
+              >
+                {politics.refs.resolveName({ module: 'politics', kind: figure.kind, id: figure.id }) ||
+                  figure.name}
               </button>
             ))}
+            <span>（为其补一条任职边即可归入政权 / 组织）</span>
           </div>
+        )}
 
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
+        <div className="flex min-h-0 flex-1 gap-3">
+          <div className="min-h-0 flex-1 overflow-hidden">{renderBody()}</div>
+          {selectedEntity && (
+            <FocusPanel
+              key={selectedEntity.id}
+              politics={politics}
+              worldId={worldId}
+              entity={selectedEntity}
+              pinned={isPinned}
+              onTogglePin={() => togglePin(selectedEntity.id)}
+              onClose={closeFocus}
+              onNavigateToEntity={onNavigateToEntity}
+              onOpenTreatyBook={() => setTreatyBookOpen(true)}
+              onOpenFocus={openFocus}
+              onDelete={handleDelete}
+              onEdit={(entity) => setForm({ kind: entity.kind, entityId: entity.id })}
+              onResetFilter={resetFilter}
             />
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索名称 / 别名 / 标签 / 关联 / 自定义字段（按 / 聚焦）"
-              aria-label="搜索政治实体"
-              data-testid="politics-search"
-              className={`${fieldClass} w-56 pl-7`}
-            />
-          </div>
-
-          <span className="text-[10px] text-muted-foreground">{COMPLEXITY_LABELS[level]}档</span>
-
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setTreatyBookOpen(true)}
-              data-testid="open-treaty-book"
-              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
-            >
-              <Compass className="h-3.5 w-3.5" aria-hidden="true" />
-              {term('treatyBook')}
-              <span className="text-muted-foreground">{politics.treaties.length}</span>
-            </button>
-            {level !== 'sketch' && (
-              <button
-                type="button"
-                onClick={() => setConfigOpen(true)}
-                className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-                模块配置
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setForm({ kind: POLITY_KIND, entityId: null })}
-              data-testid="new-polity"
-              className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              {term('newPolity')}
-            </button>
-          </div>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <TreatyBook
+          open={treatyBookOpen}
+          politics={politics}
+          onClose={() => setTreatyBookOpen(false)}
+          onOpenTreaty={(entityId) => {
+            setTreatyBookOpen(false);
+            setFocusedId(entityId);
+          }}
+          onCreate={() => {
+            setTreatyBookOpen(false);
+            setForm({ kind: TREATY_KIND, entityId: null });
+          }}
+          onNavigateToEntity={onNavigateToEntity}
+        />
+
+        <PoliticsFormModal
+          open={form !== null}
+          kind={form?.kind ?? POLITY_KIND}
+          editing={form?.entityId ? politics.byId.get(form.entityId) : undefined}
+          politics={politics}
+          onClose={() => setForm(null)}
+          onSaved={(entityId) => {
+            setForm(null);
+            setFocusedId(entityId);
+          }}
+        />
+
+        {pinnedIds.length > 0 && (
           <div
-            role="group"
-            aria-label="层级导航（过滤器）"
-            className="flex flex-wrap items-center gap-1"
-            data-testid="politics-kind-filter"
+            className="pointer-events-none absolute bottom-3 left-3 z-20 flex flex-wrap gap-1.5"
+            data-testid="politics-pinned"
           >
-            {kindFilters.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={filter.kind === tab.id}
-                onClick={() => setFilter((prev) => ({ ...prev, kind: tab.id }))}
-                className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
-                  filter.kind === tab.id
-                    ? 'border-primary/50 bg-primary/10 text-primary'
-                    : 'border-border/50 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-                <span className="ml-1 text-[9px] text-muted-foreground">
-                  {filteredCounts[tab.id] ?? 0}
-                </span>
-              </button>
-            ))}
+            {pinnedIds.map((id) => {
+              const entity = politics.byId.get(id);
+              if (!entity) return null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFocusedId(id)}
+                  className={`pointer-events-auto rounded-lg border bg-card/95 px-2.5 py-1 text-xs shadow-sm transition-all duration-200 hover:shadow-md ${
+                    entity.kind === POLITY_KIND ? toneTextClass('gold') : 'border-border/60'
+                  }`}
+                >
+                  {entity.name}
+                </button>
+              );
+            })}
           </div>
+        )}
 
-          <div className="ml-auto flex items-center gap-1.5">
-            {politics.levels && politics.levels.length > 0 && (
-              <select
-                aria-label="按等级筛选"
-                value={filter.level}
-                onChange={(event) => setFilter((prev) => ({ ...prev, level: event.target.value }))}
-                className="rounded-md border border-border/50 bg-background px-1.5 py-0.5 text-[11px]"
-              >
-                <option value="">全部等级</option>
-                {politics.levels?.map((def) => (
-                  <option key={def.id} value={def.id}>
-                    {def.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            {politics.statuses && politics.statuses.length > 0 && (
-              <select
-                aria-label="按状态筛选"
-                value={filter.status}
-                onChange={(event) => setFilter((prev) => ({ ...prev, status: event.target.value }))}
-                className="rounded-md border border-border/50 bg-background px-1.5 py-0.5 text-[11px]"
-              >
-                <option value="">全部状态</option>
-                {politics.statuses?.map((def) => (
-                  <option key={def.id} value={def.id}>
-                    {def.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            {hasFilter && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFilter(EMPTY_POLITICS_FILTER);
-                  setSearch('');
-                  setDebounced('');
-                }}
-                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" aria-hidden="true" />
-                清除筛选
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* §9：没有任何任职边的人物不属于任何政权 / 组织分组，这里给一个明确入口，
-          避免「创建了但哪里都看不到」的静默丢失。 */}
-      {politics.unattachedFigures.length > 0 && (
-        <div
-          className="flex flex-wrap items-center gap-1.5 rounded-md border border-border/40 bg-muted/20 px-2 py-1 text-[10px] text-muted-foreground"
-          data-testid="politics-unattached-figures"
-        >
-          <span>未归属人物 {politics.unattachedFigures.length}</span>
-          {politics.unattachedFigures.slice(0, 8).map((figure) => (
-            <button
-              key={figure.id}
-              type="button"
-              onClick={() => openFocus(figure.id)}
-              className="rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
-            >
-              {politics.refs.resolveName({ module: 'politics', kind: figure.kind, id: figure.id }) ||
-                figure.name}
-            </button>
-          ))}
-          <span className="text-[10px]">（为其补一条任职边即可归入政权 / 组织）</span>
-        </div>
-      )}
-
-      <div className="flex min-h-0 flex-1 gap-3">
-        <div className="min-h-0 flex-1 overflow-hidden">{renderBody()}</div>
-        {selectedEntity && (
-          <FocusPanel
-            key={selectedEntity.id}
-            politics={politics}
-            worldId={worldId}
-            entity={selectedEntity}
-            pinned={isPinned}
-            onTogglePin={() => togglePin(selectedEntity.id)}
-            onClose={closeFocus}
-            onNavigateToEntity={onNavigateToEntity}
-            onOpenTreatyBook={() => setTreatyBookOpen(true)}
-            onOpenFocus={openFocus}
-            onDelete={handleDelete}
-            onEdit={(entity) => setForm({ kind: entity.kind, entityId: entity.id })}
-            onResetFilter={resetFilter}
+        {configOpen && (
+          <PoliticsConfigPanel
+            open={configOpen}
+            onClose={() => setConfigOpen(false)}
+            config={politics.config}
+            rawConfig={moduleConfig.raw ?? undefined}
+            onSave={moduleConfig.save}
           />
         )}
-      </div>
 
-      <TreatyBook
-        open={treatyBookOpen}
-        politics={politics}
-        onClose={() => setTreatyBookOpen(false)}
-        onOpenTreaty={(entityId) => {
-          setTreatyBookOpen(false);
-          setFocusedId(entityId);
-        }}
-        onCreate={() => {
-          setTreatyBookOpen(false);
-          setForm({ kind: TREATY_KIND, entityId: null });
-        }}
-        onNavigateToEntity={onNavigateToEntity}
-      />
-
-      <PoliticsFormModal
-        open={form !== null}
-        kind={form?.kind ?? POLITY_KIND}
-        editing={form?.entityId ? politics.byId.get(form.entityId) : undefined}
-        politics={politics}
-        onClose={() => setForm(null)}
-        onSaved={(entityId) => {
-          setForm(null);
-          setFocusedId(entityId);
-        }}
-      />
-
-      {pinnedIds.length > 0 && (
-        <div
-          className="pointer-events-none absolute bottom-3 left-3 z-20 flex flex-wrap gap-1"
-          data-testid="politics-pinned"
-        >
-          {pinnedIds.map((id) => {
-            const entity = politics.byId.get(id);
-            if (!entity) return null;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setFocusedId(id)}
-                className={`pointer-events-auto rounded-md border bg-card/95 px-2 py-0.5 text-[11px] ${
-                  entity.kind === POLITY_KIND ? toneTextClass('gold') : 'border-border/60'
-                }`}
-              >
-                {entity.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {configOpen && (
-        <PoliticsConfigPanel
-          open={configOpen}
-          onClose={() => setConfigOpen(false)}
-          config={politics.config}
-          rawConfig={moduleConfig.raw ?? undefined}
-          onSave={moduleConfig.save}
+        <QuickGuideModal
+          open={guideOpen}
+          onClose={() => setGuideOpen(false)}
+          onCreatePolity={() => {
+            setGuideOpen(false);
+            setForm({ kind: POLITY_KIND, entityId: null });
+          }}
         />
-      )}
-
-      <QuickGuideModal
-        open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        onCreatePolity={() => {
-          setGuideOpen(false);
-          setForm({ kind: POLITY_KIND, entityId: null });
-        }}
-      />
-    </div>
+      </div>
+    </MotionConfig>
   );
 };
 

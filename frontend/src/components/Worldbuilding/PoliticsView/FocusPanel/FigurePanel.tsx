@@ -110,7 +110,7 @@ export const FigurePanel = ({
           <button
             type="button"
             onClick={onEdit}
-            className="text-[10px] text-primary transition-colors hover:underline"
+            className="text-xs font-medium text-primary transition-colors hover:underline"
           >
             编辑
           </button>
@@ -134,7 +134,7 @@ export const FigurePanel = ({
                 type="button"
                 onClick={() => characterRef && onNavigateToEntity(characterRef)}
                 data-testid="figure-open-character"
-                className="ml-auto text-[10px] text-primary transition-colors hover:underline"
+                className="ml-auto text-xs font-medium text-primary transition-colors hover:underline"
               >
                 打开角色档案
               </button>
@@ -151,14 +151,14 @@ export const FigurePanel = ({
                 ))}
               </div>
             ) : (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 种族 / 体系摘要在角色模块维护，政治侧只读取名称
               </span>
             )}
           </div>
         ) : (
-          <div className="space-y-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
-            <div className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+          <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+            <div className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               该政治人物尚未绑定全局角色
             </div>
@@ -166,11 +166,11 @@ export const FigurePanel = ({
               <button
                 type="button"
                 onClick={() => setCharacterPickerOpen(true)}
-                className="rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30"
+                className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
                 绑定角色
               </button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 其余政治身份与任职仍可正常维护
               </span>
             </div>
@@ -235,7 +235,7 @@ export const FigurePanel = ({
               <button
                 type="button"
                 onClick={onEdit}
-                className="text-[10px] text-primary transition-colors hover:underline"
+                className="text-xs font-medium text-primary transition-colors hover:underline"
               >
                 添加任职
               </button>
@@ -256,23 +256,23 @@ export const FigurePanel = ({
                 <button
                   type="button"
                   onClick={() => openEdgeCard(office.band.edgeId)}
-                  className="flex w-full flex-wrap items-center gap-1.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-accent/30"
+                  className="flex w-full flex-wrap items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-accent/20"
                 >
-                  <span className="text-[11px] text-foreground">
+                  <span className="text-sm text-foreground">
                     {office.band.officeTitle || '职位未标注'}
                   </span>
                   {office.ref ? (
-                    <span className="text-[10px] text-muted-foreground">{office.label}</span>
+                    <span className="text-xs text-muted-foreground">{office.label}</span>
                   ) : (
-                    <span className="text-[10px] text-destructive">{office.label}</span>
+                    <span className="text-xs text-destructive">{office.label}</span>
                   )}
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {timeRangeText(office.band.start, office.band.end)}
                   </span>
                   {office.band.isPrimary ? (
                     <span className={`${chipClass} border-primary/40 text-primary`}>主要</span>
                   ) : null}
-                  <span className="ml-auto text-[10px] text-primary">编辑边</span>
+                  <span className="ml-auto text-xs font-medium text-primary">编辑边</span>
                 </button>
                 {editingEdgeId === office.band.edgeId && editingEdge ? (
                   <EdgeCard
@@ -288,15 +288,15 @@ export const FigurePanel = ({
           </div>
         )}
         {detail.offices.length > 0 ? (
-          <div className="flex items-center gap-1 px-1 pt-1 text-[10px] text-muted-foreground">
-            <Sparkles className="h-3 w-3" aria-hidden="true" />
+          <div className="flex items-center gap-1.5 px-2 pt-1.5 text-xs text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             任职区间与职位存在边上，编辑边即编辑任期（§3.8.2）
           </div>
         ) : null}
       </SectionBlock>
       ) : (
         <SectionBlock id={sectionDomId(entity.id, 'tenure')} title="任职带">
-          <div className="space-y-0.5 text-[11px] text-muted-foreground">
+          <div className="space-y-1 text-sm text-muted-foreground">
             <div>任职 {detail.offices.length} 条</div>
             <div>速写档只显示任职计数：职位与任期明细在结构档及以上开放（升级到结构档）。</div>
           </div>

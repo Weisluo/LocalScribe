@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import {
   BookOpen,
   LayoutGrid,
@@ -19,6 +20,7 @@ import {
   Search,
   SearchX,
   SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -292,14 +294,14 @@ export const RacesView = ({
     registry.get(id)?.label ?? FALLBACK_LINK_LABELS[id] ?? id;
 
   const renderRelationTable = (title: string, types: string[], direction: string) => (
-    <div className="space-y-1">
-      <div className="text-[11px] font-medium text-foreground">{title}</div>
-      <ul className="space-y-0.5">
+    <div className="space-y-1.5">
+      <div className="text-sm font-semibold text-foreground">{title}</div>
+      <ul className="space-y-1">
         {types.map((id) => (
-          <li key={id} className="flex items-center gap-2 text-[11px]">
+          <li key={id} className="flex items-center gap-2 text-xs">
             <span className="min-w-0 flex-1 truncate text-foreground">{linkTypeLabel(id)}</span>
             <span className="shrink-0 text-muted-foreground">{direction}</span>
-            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{id}</span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">{id}</span>
           </li>
         ))}
       </ul>
@@ -331,11 +333,11 @@ export const RacesView = ({
 
   const renderEmptyState = () => {
     if (races.isLoading) {
-      return <div className="p-4 text-xs text-muted-foreground">加载中...</div>;
+      return <div className="text-sm text-muted-foreground">加载中...</div>;
     }
     if (races.nodes.length === 0) {
       return (
-        <div className="space-y-3 p-2">
+        <div className="space-y-4">
           <QuickStart
             title="3 分钟最小可用路径"
             description="必填只有名称 / 一句话 / 代表色，其余字段可后补。"
@@ -391,12 +393,12 @@ export const RacesView = ({
 
   const renderBody = () => {
     if (races.isError) {
-      return <div className="p-4 text-xs text-destructive">种族数据加载失败</div>;
+      return <div className="text-sm text-destructive">种族数据加载失败</div>;
     }
     if (filtered.length === 0) return renderEmptyState();
     if (layout === 'lineage') {
       return (
-        <div className="h-full overflow-y-auto p-1" data-testid="races-lineage">
+        <div className="h-full overflow-y-auto" data-testid="races-lineage">
           {races.lineage.degraded ? (
             <LineageFallback
               lineage={races.lineage}
@@ -439,51 +441,72 @@ export const RacesView = ({
   };
 
   return (
-    <div data-testid="races-view" data-layout={layout} className="flex h-full min-h-0 flex-col gap-2">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <BookOpen className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          <h1 className="text-sm font-semibold text-foreground">
-            {races.terms.term('atlas', '图鉴')}
-          </h1>
+    <MotionConfig reducedMotion="user">
+      <div data-testid="races-view" data-layout={layout} className="flex h-full min-h-0 flex-col">
+        <header className="flex flex-wrap items-center gap-3 px-6 py-4 bg-gradient-to-b from-background via-background/95 to-background/90 backdrop-blur-md border-b border-border/20">
+          <div className="flex shrink-0 items-center gap-2">
+            <BookOpen className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <h1 className="text-base font-semibold tracking-tight text-foreground">
+              {races.terms.term('atlas', '图鉴')}
+            </h1>
+          </div>
 
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索名称 / 一句话 / 标签（按 / 聚焦）"
-              aria-label="搜索种族"
-              className="w-56 rounded-md border border-border/50 bg-background py-1 pl-7 pr-2 text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20"
-            />
+          <div className="w-80">
+            <div className="relative group">
+              <Search
+                className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
+                aria-hidden="true"
+              />
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="搜索名称 / 一句话 / 标签（按 / 聚焦）"
+                aria-label="搜索种族"
+                className="w-full rounded-xl border border-border/40 bg-muted/30 py-2 pl-10 pr-9 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
+              />
+              <AnimatePresence>
+                {search && (
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => setSearch('')}
+                    aria-label="清除搜索"
+                    className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           <div
             role="tablist"
             aria-label="图鉴 / 血缘视图切换"
-            className="flex items-center gap-0.5 rounded-md border border-border/50 p-0.5"
+            className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
           >
-            <button
+            <motion.button
               type="button"
               role="tab"
               aria-selected={layout === 'atlas'}
               onClick={() => setLayout('atlas')}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                 layout === 'atlas'
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
             >
-              <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
               {races.terms.term('atlas', '图鉴')}
-            </button>
+            </motion.button>
             {races.canUseLineage && (
-              <button
+              <motion.button
                 type="button"
                 role="tab"
                 aria-selected={layout === 'lineage'}
@@ -491,49 +514,53 @@ export const RacesView = ({
                   setLayout('lineage');
                   setVisitedLineage(true);
                 }}
-                className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
                   layout === 'lineage'
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-background text-primary shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
                 }`}
               >
-                <Network className="h-3.5 w-3.5" aria-hidden="true" />
+                <Network className="h-4 w-4" aria-hidden="true" />
                 {races.terms.term('lineage', '血缘树')}
-              </button>
+              </motion.button>
             )}
           </div>
 
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {COMPLEXITY_LABELS[level]}档 · {COMPLEXITY_DESCRIPTIONS[level]}
           </span>
 
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-2">
             {level !== 'sketch' && (
-              <button
+              <motion.button
                 type="button"
                 onClick={() => setConfigOpen(true)}
-                className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
-                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
                 模块配置
-              </button>
+              </motion.button>
             )}
-            <button
+            <motion.button
               type="button"
               onClick={openCreateRace}
-              className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               {races.terms.term('newRace', '新建种族')}
-            </button>
+            </motion.button>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
           <div
             role="group"
             aria-label="类型筛选"
-            className="flex flex-wrap items-center gap-1"
+            className="flex flex-wrap items-center gap-2"
             data-testid="kind-filter"
           >
             {kindTabs.map((tab) => (
@@ -542,10 +569,10 @@ export const RacesView = ({
                 type="button"
                 aria-pressed={kindFilter === tab.id}
                 onClick={() => setKindFilter(tab.id)}
-                className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
                   kindFilter === tab.id
-                    ? 'border-primary/50 bg-primary/10 text-primary'
-                    : 'border-border/50 text-muted-foreground hover:text-foreground'
+                    ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                    : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                 }`}
               >
                 {tab.label}
@@ -553,14 +580,16 @@ export const RacesView = ({
             ))}
           </div>
 
-          <div className="ml-auto flex items-center gap-1" data-testid="sort-switch">
-            <span className="text-[10px] text-muted-foreground">排序</span>
+          <div className="ml-auto flex items-center gap-2" data-testid="sort-switch">
+            <span className="text-xs text-muted-foreground">排序</span>
             <button
               type="button"
               aria-pressed={sort === 'name'}
               onClick={() => setSort('name')}
-              className={`rounded-md px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
-                sort === 'name' ? 'bg-primary/15 text-primary' : 'text-muted-foreground'
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
+                sort === 'name'
+                  ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                  : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
               }`}
             >
               名称
@@ -569,87 +598,89 @@ export const RacesView = ({
               type="button"
               aria-pressed={sort === 'updated'}
               onClick={() => setSort('updated')}
-              className={`rounded-md px-2 py-0.5 text-[11px] transition-colors motion-reduce:transition-none ${
-                sort === 'updated' ? 'bg-primary/15 text-primary' : 'text-muted-foreground'
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
+                sort === 'updated'
+                  ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                  : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
               }`}
             >
               最近编辑
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
-        <div className="min-h-0 flex-1 overflow-hidden">{renderBody()}</div>
-        {selectedNode && (
-          <div className="max-h-[70vh] min-h-0 w-full overflow-hidden lg:h-full lg:max-h-none lg:w-[420px] lg:shrink-0">
-            <RaceDetail
-              key={selectedNode.id}
-              worldId={worldId}
-              node={selectedNode}
-              config={races.config}
-              races={races}
-              onBack={() => setSelectedId(null)}
-              onNavigateToEntity={onNavigateToEntity}
-              onEdit={openEdit}
-              onAddSubrace={(parent) => setSubraceForm({ open: true, node: null, parent })}
-              onSelectNode={setSelectedId}
-              onDelete={handleDelete}
-            />
+        <div className="flex min-h-0 flex-1 flex-col gap-3 px-6 py-6 lg:flex-row">
+          <div className="min-h-0 flex-1 overflow-hidden">{renderBody()}</div>
+          {selectedNode && (
+            <div className="max-h-[70vh] min-h-0 w-full overflow-hidden lg:h-full lg:max-h-none lg:w-[420px] lg:shrink-0">
+              <RaceDetail
+                key={selectedNode.id}
+                worldId={worldId}
+                node={selectedNode}
+                config={races.config}
+                races={races}
+                onBack={() => setSelectedId(null)}
+                onNavigateToEntity={onNavigateToEntity}
+                onEdit={openEdit}
+                onAddSubrace={(parent) => setSubraceForm({ open: true, node: null, parent })}
+                onSelectNode={setSelectedId}
+                onDelete={handleDelete}
+              />
+            </div>
+          )}
+        </div>
+
+        <RaceFormModal
+          open={raceForm.open}
+          config={races.config}
+          kinds={races.kinds}
+          node={raceForm.node}
+          onClose={() => setRaceForm({ open: false, node: null })}
+          onSubmit={submitRaceForm}
+        />
+
+        <SubraceFormModal
+          open={subraceForm.open}
+          config={races.config}
+          parent={subraceForm.parent}
+          node={subraceForm.node}
+          onClose={() => setSubraceForm({ open: false, node: null, parent: null })}
+          onSubmit={submitSubraceForm}
+        />
+
+        <EdgeMetaModal
+          open={edgeLink !== null}
+          worldId={worldId}
+          link={edgeLink}
+          config={races.config}
+          resolveName={races.refs.resolveName}
+          onClose={() => setEdgeLink(null)}
+        />
+
+        <RaceConfigPanel
+          open={configOpen}
+          onClose={() => setConfigOpen(false)}
+          config={races.config}
+          rawConfig={configPanel.raw ?? undefined}
+          onSave={configPanel.save}
+        />
+
+        <Modal
+          isOpen={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          title="关联说明"
+          size="lg"
+        >
+          <div className="space-y-4" data-testid="races-link-help">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              关联一律存 WorldLink，增删改在详情右栏的关联面板完成；类型取自契约 §4 注册表。
+            </p>
+            {renderRelationTable('出链（种族指向其他模块）', RACES_OUTGOING_LINK_TYPES, '出链')}
+            {renderRelationTable('入链（其他模块指向种族）', RACES_INCOMING_LINK_TYPES, '入链')}
           </div>
-        )}
+        </Modal>
       </div>
-
-      <RaceFormModal
-        open={raceForm.open}
-        config={races.config}
-        kinds={races.kinds}
-        node={raceForm.node}
-        onClose={() => setRaceForm({ open: false, node: null })}
-        onSubmit={submitRaceForm}
-      />
-
-      <SubraceFormModal
-        open={subraceForm.open}
-        config={races.config}
-        parent={subraceForm.parent}
-        node={subraceForm.node}
-        onClose={() => setSubraceForm({ open: false, node: null, parent: null })}
-        onSubmit={submitSubraceForm}
-      />
-
-      <EdgeMetaModal
-        open={edgeLink !== null}
-        worldId={worldId}
-        link={edgeLink}
-        config={races.config}
-        resolveName={races.refs.resolveName}
-        onClose={() => setEdgeLink(null)}
-      />
-
-      <RaceConfigPanel
-        open={configOpen}
-        onClose={() => setConfigOpen(false)}
-        config={races.config}
-        rawConfig={configPanel.raw ?? undefined}
-        onSave={configPanel.save}
-      />
-
-      <Modal
-        isOpen={helpOpen}
-        onClose={() => setHelpOpen(false)}
-        title="关联说明"
-        size="lg"
-      >
-        <div className="space-y-3" data-testid="races-link-help">
-          <p className="text-[11px] text-muted-foreground">
-            关联一律存 WorldLink，增删改在详情右栏的关联面板完成；类型取自契约 §4 注册表。
-          </p>
-          {renderRelationTable('出链（种族指向其他模块）', RACES_OUTGOING_LINK_TYPES, '出链')}
-          {renderRelationTable('入链（其他模块指向种族）', RACES_INCOMING_LINK_TYPES, '入链')}
-        </div>
-      </Modal>
-    </div>
+    </MotionConfig>
   );
 };
 

@@ -35,7 +35,7 @@ import { useRosterSave } from './useRosterSave';
 
 /** 列宽在此集中定义，表头与各形态行共用（组织 40px / 人物 32px 用同一套左列） */
 export const PolityRowHeader = () => (
-  <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/40 bg-card/95 px-2 py-1 text-[10px] font-medium text-muted-foreground backdrop-blur">
+  <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border/40 bg-card/95 px-2 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
     <span className="w-4 shrink-0" aria-hidden="true" />
     <span className="w-5 shrink-0" aria-hidden="true" />
     <span className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -180,7 +180,7 @@ export const PolityRow = ({
           onClick={onToggleExpand}
           aria-expanded={expanded}
           aria-label={expanded ? `收起 ${polity.name} 的下属` : `展开 ${polity.name} 的下属`}
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
         >
           {expanded ? (
             <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -219,7 +219,7 @@ export const PolityRow = ({
               type="button"
               onClick={() => void commitName()}
               aria-label="完成名称编辑"
-              className="rounded p-0.5 text-primary hover:bg-primary/10"
+              className="rounded-lg p-1 text-primary transition-colors hover:bg-primary/10"
             >
               <Check className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -230,12 +230,12 @@ export const PolityRow = ({
               type="button"
               onClick={onOpen}
               title={`${polity.name}（点击打开详情）`}
-              className="min-w-0 truncate text-left text-xs font-semibold text-foreground hover:text-primary"
+              className="min-w-0 truncate text-left text-base font-semibold text-foreground transition-colors hover:text-primary"
             >
               {polity.name}
             </button>
             {row.terminal && (
-              <span className="shrink-0 rounded-full border border-border/60 px-1 text-[9px] text-muted-foreground">
+              <span className="shrink-0 rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                 已终结
               </span>
             )}
@@ -245,7 +245,7 @@ export const PolityRow = ({
 
       <span className="hidden w-20 shrink-0 sm:block">
         {levels.length === 0 ? (
-          <span className="text-[10px] text-muted-foreground" title="还没有等级定义">
+          <span className="text-xs text-muted-foreground" title="还没有等级定义">
             {UNSET_LABEL}
           </span>
         ) : (
@@ -254,7 +254,7 @@ export const PolityRow = ({
             disabled={!canEdit || saving}
             onChange={(event) => void save(polity.id, { level: event.target.value })}
             aria-label={`${polity.name} 等级`}
-            className="w-full rounded border border-border/50 bg-background px-1 py-0.5 text-[11px]"
+            className="w-full rounded-lg border border-border/40 bg-muted/30 px-1.5 py-1 text-xs text-foreground transition-colors focus:border-primary/40 focus:outline-none"
           >
             <option value="">{UNSET_LABEL}</option>
             {levels.map((def) => (
@@ -268,7 +268,7 @@ export const PolityRow = ({
 
       <span className="w-20 shrink-0">
         {statuses.length === 0 ? (
-          <span className="text-[10px] text-muted-foreground" title="还没有状态定义">
+          <span className="text-xs text-muted-foreground" title="还没有状态定义">
             {UNSET_LABEL}
           </span>
         ) : (
@@ -277,8 +277,8 @@ export const PolityRow = ({
             disabled={!canEdit || saving}
             onChange={(event) => void save(polity.id, { status: event.target.value })}
             aria-label={`${polity.name} 状态`}
-            className={`w-full rounded border border-border/50 bg-background px-1 py-0.5 text-[11px] ${
-              statusDef ? toneTextClass(statusDef.color) : ''
+            className={`w-full rounded-lg border border-border/40 bg-muted/30 px-1.5 py-1 text-xs transition-colors focus:border-primary/40 focus:outline-none ${
+              statusDef ? toneTextClass(statusDef.color) : 'text-foreground'
             }`}
           >
             <option value="">{UNSET_LABEL}</option>
@@ -299,46 +299,46 @@ export const PolityRow = ({
               value={dateInputValue(meta.time?.start)}
               onChange={(event) => commitTime('start', event.target.value)}
               aria-label={`${polity.name} 存续起点`}
-              className="w-[4.75rem] rounded border border-border/50 bg-background px-1 py-0.5 text-[10px]"
+              className="w-[4.75rem] rounded-lg border border-border/40 bg-muted/30 px-1 py-1 text-xs"
             />
             <input
               type="date"
               value={dateInputValue(meta.time?.end)}
               onChange={(event) => commitTime('end', event.target.value)}
               aria-label={`${polity.name} 存续终点`}
-              className="w-[4.75rem] rounded border border-border/50 bg-background px-1 py-0.5 text-[10px]"
+              className="w-[4.75rem] rounded-lg border border-border/40 bg-muted/30 px-1 py-1 text-xs"
             />
           </span>
         ) : (
-          <span className="block truncate text-[10px] text-muted-foreground" title={formatTimeSpan(meta.time)}>
+          <span className="block truncate text-xs text-muted-foreground" title={formatTimeSpan(meta.time)}>
             {formatTimeSpan(meta.time)}
           </span>
         )}
       </span>
 
-      <span className="hidden w-20 shrink-0 truncate text-[10px] text-foreground lg:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs text-foreground lg:block">
         {meta.governmentFormLabel || ORPHAN_LABEL}
       </span>
 
       {/* 地图未接入：首府只读展示，不给入口（§6.7） */}
-      <span className="hidden w-20 shrink-0 truncate text-[10px] text-foreground xl:block">
+      <span className="hidden w-20 shrink-0 truncate text-xs text-foreground xl:block">
         {meta.capitalLabel || ORPHAN_LABEL}
       </span>
 
-      <span className="hidden w-8 shrink-0 text-right text-[10px] text-muted-foreground sm:block">
+      <span className="hidden w-8 shrink-0 text-right text-xs text-muted-foreground sm:block">
         {row.satelliteCount}
       </span>
-      <span className="hidden w-8 shrink-0 text-right text-[10px] text-muted-foreground sm:block">
+      <span className="hidden w-8 shrink-0 text-right text-xs text-muted-foreground sm:block">
         {row.figureCount}
       </span>
-      <span className="w-16 shrink-0 text-right text-[10px] text-muted-foreground">
+      <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
         出{row.counts.out}/入{row.counts.in}
       </span>
-      <span className="hidden w-28 shrink-0 truncate text-[10px] text-muted-foreground xl:block">
+      <span className="hidden w-28 shrink-0 truncate text-xs text-muted-foreground xl:block">
         {formatUpdatedAt(polity.updated_at)}
       </span>
 
-      <span className="flex w-24 shrink-0 items-center justify-end gap-0.5">
+      <span className="flex w-24 shrink-0 items-center justify-end gap-1">
         <button
           type="button"
           onClick={() => {
@@ -348,7 +348,7 @@ export const PolityRow = ({
           disabled={!canEdit}
           aria-label={`行内编辑 ${polity.name}`}
           title="行内编辑名称与存续时间"
-          className="rounded p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground disabled:opacity-40"
         >
           <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
@@ -357,7 +357,7 @@ export const PolityRow = ({
           onClick={onOpen}
           aria-label={`打开 ${polity.name}`}
           title="打开聚焦详情"
-          className="rounded p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
         >
           <SquareArrowOutUpRight className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
@@ -367,7 +367,7 @@ export const PolityRow = ({
           disabled={!canEdit}
           aria-label={`编辑 ${polity.name} 完整表单`}
           title="完整表单（详情字段）"
-          className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+          className="rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground disabled:opacity-40"
         >
           表单
         </button>

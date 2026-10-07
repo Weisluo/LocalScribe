@@ -19,11 +19,20 @@ import {
   ATLAS_NODE_MIN_WIDTH,
   ATLAS_NODE_WIDTH,
 } from '../config';
-import { DIM_NODE_CLASS, TERMINAL_NODE_CLASS, chipClass } from '../tone';
+import { DIM_NODE_CLASS, TERMINAL_NODE_CLASS } from '../tone';
 import type { AtlasNodeView } from '../hooks/politicsTypes';
 import type { AtlasBox, AtlasLod } from './atlasLayout';
 import { FigureStrip } from './FigureStrip';
 import { OrganizationCluster } from './OrganizationCluster';
+
+/**
+ * 画布节点徽章：节点是**固定尺寸**的可视化盒（atlasLayout 的 width/maxWidth/height + overflow-hidden），
+ * 所以徽章沿用画布密集位刻度（10px + 紧凑内边距），不走 DOM 内容的 `chipClass`（text-xs + px-3 py-1）。
+ * 理由：后者会让单个徽章宽于节点卡内宽（158 - 2*10 ≈ 138px），被 overflow-hidden 水平裁切；
+ * 这与 LaneRow 轴刻度、缎带 SVG 文字保留 10px 是同一口径（ui_style_alignment §3.2「计数徽章 / 密集位」）。
+ */
+const NODE_BADGE_CLASS =
+  'inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] leading-tight transition-colors motion-reduce:transition-none';
 
 /**
  * LevelDef.color -> 安全的内联色（§4.1「等级色」）：只接受 #rgb / #rrggbb / rgb()/hsl()，
@@ -131,8 +140,8 @@ export const PolityNode = ({
         onOpen(node.polity.id);
       }}
       style={{ left: box.x, top: box.y, width, minWidth: ATLAS_NODE_MIN_WIDTH[tier], maxWidth: ATLAS_NODE_MAX_WIDTH[tier], height: box.height }}
-      className={`absolute flex cursor-pointer flex-col gap-1 overflow-hidden rounded-xl border bg-card/95 p-2 text-left shadow-sm transition-[opacity,box-shadow,border-color] duration-200 motion-reduce:transition-none ${
-        focused ? 'border-primary ring-2 ring-primary/60' : 'border-amber-600/40 hover:border-primary/60'
+      className={`absolute flex cursor-pointer flex-col gap-1 overflow-hidden rounded-xl border bg-card/95 p-2.5 text-left shadow-sm transition-[opacity,box-shadow,border-color] duration-300 motion-reduce:transition-none ${
+        focused ? 'border-primary ring-2 ring-primary/60' : 'border-amber-600/40 hover:border-primary/25 hover:shadow-lg'
       } ${marked ? 'border-dashed border-primary' : ''} ${node.terminal ? TERMINAL_NODE_CLASS : ''} ${
         dimmed ? DIM_NODE_CLASS : ''
       }`}
@@ -160,17 +169,18 @@ export const PolityNode = ({
                 }
               }}
               onBlur={() => void commitRename()}
-              className="w-full rounded border border-border/60 bg-background px-1 py-0.5 text-[12px] font-semibold text-foreground focus:border-primary focus:outline-none"
+              className="w-full rounded-lg border border-border/60 bg-background px-2 py-1 text-sm font-semibold text-foreground focus:border-primary focus:outline-none"
             />
           ) : (
-            <div className={`truncate font-semibold text-foreground ${compact ? 'text-[11px]' : 'text-[12px]'}`}>
+            <div className={`truncate leading-tight text-foreground ${compact ? 'text-sm font-medium' : 'text-base font-semibold'}`}>
               {node.polity.name}
             </div>
           )}
           <div className="flex flex-wrap items-center gap-1 pt-0.5">
-            {/* 等级色只覆盖描边 / 文字色：底色仍是低饱和衬底，light / dark 都可读 */}
+            {/* 等级色只覆盖描边 / 文字色：底色仍是低饱和衬底，light / dark 都可读。
+                三个徽章都加 nowrap：flex 收缩会把 CJK chip 压到 min-content（单字）后内部逐字换行 */}
             <span
-              className={`${chipClass} border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300`}
+              className={`${NODE_BADGE_CLASS} border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300`}
               data-testid="atlas-level-badge"
               data-level-color={levelColor ?? ''}
               style={levelColor ? { borderColor: levelColor, color: levelColor } : undefined}
@@ -179,7 +189,7 @@ export const PolityNode = ({
             </span>
             {legacy && (
               <span
-                className={`${chipClass} border-dashed border-slate-500/50 bg-slate-500/10 text-slate-700 dark:text-slate-300`}
+                className={`${NODE_BADGE_CLASS} border-dashed border-slate-500/50 bg-slate-500/10 text-slate-700 dark:text-slate-300`}
                 data-testid="atlas-legacy-badge"
                 title="回填迁移写入的旧数据：只读，编辑入口已关闭"
               >
@@ -188,7 +198,7 @@ export const PolityNode = ({
             )}
             {statusLabel && (
               <span
-                className={`${chipClass} border-border/60 bg-muted/30 text-muted-foreground`}
+                className={`${NODE_BADGE_CLASS} border-border/60 bg-muted/30 text-muted-foreground`}
                 data-testid="atlas-status-badge"
               >
                 状态 {statusLabel}
@@ -206,22 +216,22 @@ export const PolityNode = ({
               event.stopPropagation();
               setEditing(true);
             }}
-            className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-primary motion-reduce:transition-none"
+            className="shrink-0 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-primary motion-reduce:transition-none"
           >
-            <Pencil className="h-3 w-3" aria-hidden="true" />
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         )}
       </div>
 
       {!compact && (government || capital) && (
-        <div className="space-y-0.5 text-[10px] text-muted-foreground">
+        <div className="space-y-0.5 text-xs leading-tight text-muted-foreground">
           {government && <div className="truncate">政体 {government}</div>}
           {/* 地图未接入：首府只显示文字标签，不提供地图入口（§6.7） */}
           {capital && <div className="truncate">首府 {capital}</div>}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-1 text-xs leading-tight text-muted-foreground">
         <span>卫星 {node.satellites.length}</span>
         <span>·</span>
         <span>人物 {node.figures.length}</span>

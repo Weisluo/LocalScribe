@@ -82,7 +82,7 @@ export const Emblem = ({
       data-testid="race-emblem"
       data-emblem-icon={icon ?? ''}
       style={{ backgroundColor: color }}
-      className={`inline-flex shrink-0 items-center justify-center rounded-lg ${foregroundOf(color)} ${SIZE_CLASS[size]} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ring-inset ring-white/10 ${foregroundOf(color)} ${SIZE_CLASS[size]} ${className}`}
       aria-hidden="true"
     >
       {icon ? (

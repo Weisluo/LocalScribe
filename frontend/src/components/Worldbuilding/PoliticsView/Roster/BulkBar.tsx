@@ -51,11 +51,11 @@ export const BulkBar = ({
   return (
     <div
       data-testid="roster-bulk-bar"
-      className="flex flex-wrap items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-2 py-1"
+      className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/40 bg-primary/5 px-3 py-2"
     >
-      <span className="text-[11px] font-medium text-foreground">已选 {selectedCount} 项</span>
+      <span className="text-sm font-medium text-foreground">已选 {selectedCount} 项</span>
 
-      <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         等级
         <select
           value={levelPick}
@@ -84,7 +84,7 @@ export const BulkBar = ({
         </select>
       </label>
 
-      <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         状态
         <select
           value={statusPick}
@@ -113,7 +113,7 @@ export const BulkBar = ({
         </select>
       </label>
 
-      <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         时间平移
         <input
           type="number"
@@ -133,20 +133,20 @@ export const BulkBar = ({
           if (!Number.isFinite(parsed) || parsed === 0) return;
           onShiftDays(parsed);
         }}
-        className="rounded border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30 disabled:opacity-50"
+        className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
       >
         应用平移
       </button>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         （{UNSET_LABEL}的值不会被覆盖；无法解析的写法保留原样）
       </span>
 
       <button
         type="button"
         onClick={onClear}
-        className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+        className="ml-auto flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
       >
-        <X className="h-3 w-3" aria-hidden="true" />
+        <X className="h-3.5 w-3.5" aria-hidden="true" />
         清空选择
       </button>
     </div>

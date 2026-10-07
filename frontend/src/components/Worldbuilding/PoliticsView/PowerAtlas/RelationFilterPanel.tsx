@@ -78,7 +78,7 @@ export const RelationFilterPanel = ({
       role="group"
       aria-label="关系层"
       data-testid="atlas-relation-filter"
-      className="absolute right-2 top-2 z-30 w-60 space-y-1.5 rounded-lg border border-border/60 bg-popover/95 p-2 shadow-lg"
+      className="absolute right-2 top-2 z-30 w-64 space-y-2 rounded-2xl border border-border/50 bg-popover/95 p-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-1.5">
         <span className={sectionTitleClass}>关系层</span>
@@ -86,9 +86,9 @@ export const RelationFilterPanel = ({
           type="button"
           aria-label="关闭关系层"
           onClick={onClose}
-          className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+          className="ml-auto rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
-          <X className="h-3 w-3" aria-hidden="true" />
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
 
@@ -98,48 +98,48 @@ export const RelationFilterPanel = ({
         return (
           <label
             key={layer.id}
-            className="flex cursor-pointer items-center gap-1.5 text-[11px] text-foreground"
+            className="flex cursor-pointer items-center gap-1.5 text-xs text-foreground"
           >
             <input
               type="checkbox"
               checked={checked}
               aria-label={`显示关系类型 ${layer.label}`}
               onChange={(event) => onToggleType(layer.id, event.target.checked)}
-              className="h-3 w-3"
+              className="h-3.5 w-3.5"
             />
             <span className="w-14 shrink-0">{layer.label}</span>
             <LineSample lineStyle={layer.lineStyle} tone={layer.color} />
             <span className="ml-auto flex items-center gap-1 text-muted-foreground">
-              {Icon && <Icon className="h-3 w-3" aria-hidden="true" />}
-              <code className="text-[9px]">{layer.icon}</code>
+              {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+              <code className="text-[10px]">{layer.icon}</code>
             </span>
           </label>
         );
       })}
 
-      <div className="flex items-center gap-1.5 border-t border-border/40 pt-1.5 text-[11px] text-foreground">
+      <div className="flex items-center gap-1.5 border-t border-border/30 pt-2 text-xs text-foreground">
         <input
           id="atlas-ribbon-toggle"
           type="checkbox"
           checked={showRibbons}
           aria-label="显示条约缎带"
           onChange={(event) => onToggleRibbons(event.target.checked)}
-          className="h-3 w-3"
+          className="h-3.5 w-3.5"
         />
         <label htmlFor="atlas-ribbon-toggle" className="cursor-pointer">
           条约
         </label>
         <LineSample lineStyle={TREATY_RIBBON_STYLE.lineStyle} tone={TREATY_RIBBON_STYLE.color} />
         <span className="flex items-center gap-1 text-muted-foreground">
-          <RibbonIcon className="h-3 w-3" aria-hidden="true" />
-          <code className="text-[9px]">{TREATY_RIBBON_STYLE.icon}</code>
+          <RibbonIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          <code className="text-[10px]">{TREATY_RIBBON_STYLE.icon}</code>
         </span>
         <button
           type="button"
           onClick={onOpenTreatyBook}
-          className="ml-auto flex items-center gap-1 rounded px-1 text-[10px] text-muted-foreground transition-colors hover:text-primary motion-reduce:transition-none"
+          className="ml-auto flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-primary motion-reduce:transition-none"
         >
-          <Compass className="h-3 w-3" aria-hidden="true" />
+          <Compass className="h-3.5 w-3.5" aria-hidden="true" />
           条约簿 {treatyCount}
         </button>
       </div>
@@ -154,33 +154,33 @@ export const RelationFilterPanel = ({
           return (
             <label
               key={definition.id}
-              className="flex cursor-pointer items-center gap-1.5 text-[11px] text-foreground"
+              className="flex cursor-pointer items-center gap-1.5 text-xs text-foreground"
             >
               <input
                 type="checkbox"
                 checked={customEnabled.has(definition.id)}
                 aria-label={`显示自定义关系 ${definition.label}`}
                 onChange={(event) => onToggleCustom(definition.id, event.target.checked)}
-                className="h-3 w-3"
+                className="h-3.5 w-3.5"
               />
               <span className="w-14 shrink-0 truncate">{definition.label}</span>
               <LineSample lineStyle="dashed" tone={definition.color ?? 'slate'} />
               <span className="ml-auto flex items-center gap-1 text-muted-foreground">
-                {Icon && <Icon className="h-3 w-3" aria-hidden="true" />}
-                <code className="text-[9px]">{definition.icon ?? 'link-2'}</code>
+                {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+                <code className="text-[10px]">{definition.icon ?? 'link-2'}</code>
               </span>
             </label>
           );
         })
       )}
 
-      <label className="flex cursor-pointer items-center gap-1.5 border-t border-border/40 pt-1.5 text-[11px] text-foreground">
+      <label className="flex cursor-pointer items-center gap-1.5 border-t border-border/30 pt-2 text-xs text-foreground">
         <input
           type="checkbox"
           checked={onlyRelated}
           aria-label="仅看与选中节点相关的关系"
           onChange={(event) => onToggleOnlyRelated(event.target.checked)}
-          className="h-3 w-3"
+          className="h-3.5 w-3.5"
         />
         仅看与选中节点相关
       </label>

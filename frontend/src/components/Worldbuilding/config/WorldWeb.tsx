@@ -120,26 +120,26 @@ export const WorldWeb = ({
         role="dialog"
         aria-modal="true"
         aria-label="世界脉络"
-        className="relative z-10 flex h-[88vh] w-[92vw] max-w-[1400px] flex-col rounded-lg border border-border bg-background shadow-lg"
+        className="relative z-10 flex h-[88vh] w-[92vw] max-w-[1400px] flex-col rounded-2xl border border-border/50 bg-card/60 shadow-lg backdrop-blur-md"
       >
-        <div className="flex items-center gap-3 border-b border-border/60 px-5 py-3">
+        <div className="flex items-center gap-3 border-b border-border/30 px-5 py-4">
           <Maximize2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <h2 className="text-sm font-semibold text-foreground">世界脉络</h2>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             只读总览 · 实体 {graph.nodes.length} · 关联 {graph.edges.length}
           </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="关闭世界脉络"
-            className="ml-auto rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+            className="ml-auto rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-5 py-2">
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border/30 px-5 py-3">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
             <Filter className="h-3.5 w-3.5" aria-hidden="true" />
             筛选
           </span>
@@ -153,10 +153,10 @@ export const WorldWeb = ({
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleModule(module)}
-                className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none ${
                   active
-                    ? 'border-primary/50 bg-primary/15 text-primary'
-                    : 'border-border/60 text-muted-foreground hover:bg-accent/20'
+                    ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                    : 'border-border/40 text-muted-foreground hover:border-border/70 hover:bg-accent/5 hover:text-foreground'
                 }`}
               >
                 {moduleLabel(module)}
@@ -169,7 +169,7 @@ export const WorldWeb = ({
             onChange={(event) =>
               setFilters((previous) => ({ ...previous, kind: event.target.value }))
             }
-            className="rounded-md border border-border/50 bg-background px-2 py-1 text-[11px]"
+            className="rounded-xl border border-border/40 bg-muted/30 px-2.5 py-1.5 text-xs transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             <option value="">全部 kind</option>
             {kindOptions.map((kind) => (
@@ -184,7 +184,7 @@ export const WorldWeb = ({
             onChange={(event) =>
               setFilters((previous) => ({ ...previous, linkType: event.target.value }))
             }
-            className="rounded-md border border-border/50 bg-background px-2 py-1 text-[11px]"
+            className="rounded-xl border border-border/40 bg-muted/30 px-2.5 py-1.5 text-xs transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             <option value="">全部关联类型</option>
             {(registryQuery.data ?? []).map((definition) => (
@@ -201,7 +201,7 @@ export const WorldWeb = ({
             onChange={(event) =>
               setFilters((previous) => ({ ...previous, timeStart: event.target.value }))
             }
-            className="w-20 rounded-md border border-border/50 bg-background px-2 py-1 text-[11px]"
+            className="w-20 rounded-xl border border-border/40 bg-muted/30 px-2.5 py-1.5 text-xs transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
           <input
             type="text"
@@ -211,9 +211,9 @@ export const WorldWeb = ({
             onChange={(event) =>
               setFilters((previous) => ({ ...previous, timeEnd: event.target.value }))
             }
-            className="w-20 rounded-md border border-border/50 bg-background px-2 py-1 text-[11px]"
+            className="w-20 rounded-xl border border-border/40 bg-muted/30 px-2.5 py-1.5 text-xs transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           />
-          <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={!filters.hideIsolated}
@@ -226,14 +226,14 @@ export const WorldWeb = ({
             />
             显示孤立节点
           </label>
-          <span className="ml-auto text-[11px] text-muted-foreground">
+          <span className="ml-auto text-xs text-muted-foreground">
             当前 {filtered.nodes.length} 节点 / {filtered.edges.length} 关联
           </span>
         </div>
 
         {degrade.degraded && (
           <div
-            className="flex items-center gap-2 border-b border-border/60 bg-amber-500/10 px-5 py-1.5 text-[11px] text-amber-700 dark:text-amber-300"
+            className="flex items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-5 py-2 text-xs text-amber-700 dark:text-amber-300"
             data-testid="world-web-degraded"
           >
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -252,24 +252,24 @@ export const WorldWeb = ({
             </div>
           ) : degrade.degraded ? (
             <div className="space-y-4" data-testid="world-web-matrix">
-              <table className="w-full border-collapse text-[11px]">
+              <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="text-left text-muted-foreground">
-                    <th className="border-b border-border/60 py-1 pr-2 font-medium">模块</th>
-                    <th className="border-b border-border/60 py-1 pr-2 font-medium">实体</th>
-                    <th className="border-b border-border/60 py-1 pr-2 font-medium">孤立</th>
-                    <th className="border-b border-border/60 py-1 pr-2 font-medium">关联</th>
+                    <th className="border-b border-border/30 py-1.5 pr-2 font-medium">模块</th>
+                    <th className="border-b border-border/30 py-1.5 pr-2 font-medium">实体</th>
+                    <th className="border-b border-border/30 py-1.5 pr-2 font-medium">孤立</th>
+                    <th className="border-b border-border/30 py-1.5 pr-2 font-medium">关联</th>
                   </tr>
                 </thead>
                 <tbody>
                   {matrix.map((row) => (
                     <tr key={row.module}>
-                      <td className="border-b border-border/30 py-1 pr-2">
+                      <td className="border-b border-border/20 py-1.5 pr-2">
                         {moduleLabel(row.module)}
                       </td>
-                      <td className="border-b border-border/30 py-1 pr-2">{row.nodes}</td>
-                      <td className="border-b border-border/30 py-1 pr-2">{row.isolated}</td>
-                      <td className="border-b border-border/30 py-1 pr-2">
+                      <td className="border-b border-border/20 py-1.5 pr-2">{row.nodes}</td>
+                      <td className="border-b border-border/20 py-1.5 pr-2">{row.isolated}</td>
+                      <td className="border-b border-border/20 py-1.5 pr-2">
                         {countByModule.get(row.module)?.total ?? row.edges}
                       </td>
                     </tr>
@@ -278,17 +278,17 @@ export const WorldWeb = ({
               </table>
 
               <div>
-                <div className="mb-1 text-[11px] font-medium text-foreground">推荐关联</div>
+                <div className="mb-1.5 text-sm font-semibold text-foreground">推荐关联</div>
                 {recommendations.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     暂无可推荐的同类型实体对。
                   </p>
                 ) : (
-                  <ul className="space-y-1">
+                  <ul className="space-y-1.5">
                     {recommendations.map((item) => (
                       <li
                         key={`${refKey(item.a.ref)}|${refKey(item.b.ref)}`}
-                        className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1 text-[11px]"
+                        className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/50 px-3 py-2 text-xs shadow-sm"
                       >
                         <span className="text-foreground">{item.a.name}</span>
                         <span className="text-muted-foreground">与</span>
@@ -297,7 +297,7 @@ export const WorldWeb = ({
                         <button
                           type="button"
                           onClick={() => onNavigate(item.a.ref)}
-                          className="ml-auto rounded-md border border-border px-2 py-0.5 text-[10px] transition-colors hover:bg-accent/20"
+                          className="ml-auto rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
                         >
                           打开
                         </button>
@@ -397,7 +397,7 @@ export const WorldWeb = ({
           )}
         </div>
 
-        <div className="flex items-center gap-3 border-t border-border/60 px-5 py-2 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-3 border-t border-border/30 bg-muted/20 px-5 py-3 text-xs text-muted-foreground">
           <span>节点按模块着色、按关联数定大小；边按关联类型色与线型区分。</span>
           <span>超过 {WEB_NODE_LIMIT} 节点自动降级为模块矩阵与推荐关联。</span>
           <span className="ml-auto">只读：此处不提供图编辑能力。</span>

@@ -236,19 +236,19 @@ export const TimeBrush = ({
       ref={rootRef}
       role="group"
       aria-label="时间刷"
-      className="border-t border-border/60 bg-card/50 px-2 py-1.5"
+      className="rounded-2xl border border-border/50 bg-card/40 px-4 py-3.5 shadow-sm backdrop-blur-sm"
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onKeyDown={onKeyDown}
     >
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         <MoveHorizontal
-          className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400"
+          className="h-4 w-4 text-muted-foreground"
           aria-hidden="true"
         />
-        <span className="text-[11px] font-medium text-foreground">时间刷</span>
-        <span className="text-[10px] tabular-nums text-muted-foreground" data-testid="economy-window-label">
+        <span className="text-sm font-semibold text-foreground">时间刷</span>
+        <span className="text-xs tabular-nums text-muted-foreground" data-testid="economy-window-label">
           {windowText}
         </span>
         <button
@@ -258,7 +258,7 @@ export const TimeBrush = ({
           disabled={reducedMotion}
           title={reducedMotion ? '系统偏好减少动效：已停用自动播放' : '播放（空格）'}
           onClick={onTogglePlay}
-          className="ml-auto flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 disabled:opacity-50 motion-reduce:transition-none"
+          className="ml-auto flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50 motion-reduce:transition-none"
         >
           {playing ? (
             <Pause className="h-3 w-3" aria-hidden="true" />
@@ -271,7 +271,7 @@ export const TimeBrush = ({
           type="button"
           data-testid="economy-timebrush-reset"
           onClick={onReset}
-          className="flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+          className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
           <RotateCcw className="h-3 w-3" aria-hidden="true" />
           复位
@@ -279,11 +279,11 @@ export const TimeBrush = ({
       </div>
 
       {!timeline ? (
-        <p className="mt-1 text-[11px] text-muted-foreground" data-testid="economy-timebrush-empty">
+        <p className="mt-2 text-sm text-muted-foreground" data-testid="economy-timebrush-empty">
           还没有时间记录：先加一个周期，或给实体写上时间。
         </p>
       ) : !view.anchored ? (
-        <p className="mt-1 text-[11px] text-muted-foreground" data-testid="economy-timebrush-unanchored">
+        <p className="mt-2 text-sm text-muted-foreground" data-testid="economy-timebrush-unanchored">
           时间未锚定：现有时间写法无法比较，不画刻度。可写成「312 年」这样的前缀数字，或补 timeOrder 锚点。
           {view.unanchored > 0 ? `（未锚定 ${view.unanchored} 项）` : ''}
         </p>
@@ -294,7 +294,7 @@ export const TimeBrush = ({
             tabIndex={0}
             role="group"
             aria-label="时间窗口轨道"
-            className="relative mt-1 h-12 select-none rounded border border-border/50 bg-background/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+            className="relative mt-2 h-12 select-none rounded-xl border border-border/40 bg-background/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
             onPointerDown={onTrackPointerDown}
             onDoubleClick={onDoubleClick}
           >
@@ -321,7 +321,7 @@ export const TimeBrush = ({
                     style={{ left: `${phase.left}%`, width: `${phase.width}%` }}
                   />
                 ))}
-                <span className="relative block truncate px-1 text-[9px] leading-4 text-cyan-900 dark:text-cyan-100">
+                <span className="relative block truncate px-1 text-[10px] leading-4 text-cyan-900 dark:text-cyan-100">
                   {cycle.label}
                 </span>
               </div>
@@ -350,7 +350,7 @@ export const TimeBrush = ({
               aria-valuemax={100}
               aria-valuenow={Math.round(view.window.left)}
               aria-valuetext={startText}
-              className="absolute top-0 h-full w-3 -translate-x-1/2 cursor-ew-resize rounded-sm border border-cyan-600/70 bg-cyan-500/30 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+              className="absolute top-0 h-full w-3 -translate-x-1/2 cursor-ew-resize rounded-md border border-cyan-600/70 bg-cyan-500/30 transition-colors duration-200 hover:bg-cyan-500/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 motion-reduce:transition-none"
               style={{ left: `${view.window.left}%` }}
               onPointerDown={(event) => beginDrag('start', event)}
               onKeyDown={onHandleKeyDown('start')}
@@ -365,18 +365,18 @@ export const TimeBrush = ({
               aria-valuemax={100}
               aria-valuenow={Math.min(100, Math.round(view.window.left + view.window.width))}
               aria-valuetext={endText}
-              className="absolute top-0 h-full w-3 -translate-x-1/2 cursor-ew-resize rounded-sm border border-cyan-600/70 bg-cyan-500/30 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+              className="absolute top-0 h-full w-3 -translate-x-1/2 cursor-ew-resize rounded-md border border-cyan-600/70 bg-cyan-500/30 transition-colors duration-200 hover:bg-cyan-500/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 motion-reduce:transition-none"
               style={{ left: `${Math.min(100, view.window.left + view.window.width)}%` }}
               onPointerDown={(event) => beginDrag('end', event)}
               onKeyDown={onHandleKeyDown('end')}
             />
           </div>
 
-          <div className="relative mt-0.5 h-4">
+          <div className="relative mt-1 h-4">
             {view.ticks.map((tick) => (
               <span
                 key={`tick-${tick.anchor}`}
-                className="absolute -translate-x-1/2 text-[9px] tabular-nums text-muted-foreground"
+                className="absolute -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
                 style={{ left: `${tick.percent}%` }}
               >
                 {tick.label}
@@ -384,19 +384,19 @@ export const TimeBrush = ({
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] text-muted-foreground">
+          <div className="mt-1.5 flex flex-wrap items-center gap-3">
+            <span className="text-xs text-muted-foreground/70">
               拖动两端过滤节点 / 边 / 指标；双击吸附边界；Shift + 拖动平移；[ ] 微调；空格播放
             </span>
             {view.unanchored > 0 && (
-              <span className="text-[10px] text-muted-foreground" data-testid="economy-timebrush-unanchored-items">
+              <span className="text-xs text-muted-foreground" data-testid="economy-timebrush-unanchored-items">
                 时间未锚定 {view.unanchored} 项：排在同段末尾并标注
               </span>
             )}
           </div>
 
           {view.emptyWindow && (
-            <p className="mt-0.5 text-[11px] text-muted-foreground" data-testid="economy-empty-window">
+            <p className="mt-2 text-sm text-muted-foreground" data-testid="economy-empty-window">
               此段无记录：窗口内没有任何时代、周期或事件，不显示 0。可放宽窗口或复位到全时段。
             </p>
           )}

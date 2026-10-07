@@ -695,25 +695,25 @@ export const Roster = ({
               type="button"
               onClick={item.onToggle}
               aria-expanded={item.open}
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground"
+              className="flex items-center gap-2 text-xs font-semibold text-foreground transition-colors hover:text-primary"
             >
               <Shield
                 className={
                   item.id === 'unattached'
-                    ? 'h-3 w-3 text-amber-600 dark:text-amber-300'
-                    : 'h-3 w-3 text-red-600 dark:text-red-300'
+                    ? 'h-3.5 w-3.5 text-amber-600 dark:text-amber-300'
+                    : 'h-3.5 w-3.5 text-red-600 dark:text-red-300'
                 }
                 aria-hidden="true"
               />
               {item.label}（{item.count}）
             </button>
           ) : (
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
-              <Landmark className="h-3 w-3 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+            <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Landmark className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" aria-hidden="true" />
               {item.label}（{item.count}）
             </span>
           )}
-          <span className="truncate text-[10px] text-muted-foreground">{item.hint}</span>
+          <span className="truncate text-xs text-muted-foreground">{item.hint}</span>
         </div>
       );
     }
@@ -821,7 +821,7 @@ export const Roster = ({
   if (nothingVisible) {
     return (
       <div
-        className="flex h-full min-h-0 flex-col overflow-y-auto p-3"
+        className="flex h-full min-h-0 flex-col overflow-y-auto px-6 py-6"
         data-testid="politics-roster"
       >
         {filtered ? (
@@ -852,36 +852,36 @@ export const Roster = ({
   const virtualRows = virtual.enabled ? virtual.items : listItems;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-1.5" data-testid="politics-roster">
-      <div className="flex flex-wrap items-center gap-2 px-1">
-        <span className="text-[11px] text-muted-foreground">
+    <div className="flex h-full min-h-0 flex-col gap-2" data-testid="politics-roster">
+      <div className="flex flex-wrap items-center gap-2 px-2">
+        <span className="text-xs text-muted-foreground">
           政权 {visibleBlocks.length} · 独立 / 跨国 {attachedIndependents.length} · 未归属{' '}
           {unattachedIndependents.length} · 人物 {nestedFigureIds.size + orphanFigures.length} · 条约{' '}
           {treaties.length}
         </span>
         {virtual.enabled && (
           <span
-            className="rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+            className="rounded-full border border-border/40 px-2 py-0.5 text-[10px] text-muted-foreground"
             title="名录超过 200 行启用虚拟滚动（按真实行高定位）"
           >
             虚拟滚动 · {listItems.length} 行
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => onCreateKind(POLITY_KIND)}
             disabled={!politics.canWriteEntities}
-            className="flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
-            <Plus className="h-3 w-3" aria-hidden="true" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             新建政权
           </button>
           <button
             type="button"
             onClick={() => onCreateKind(ORGANIZATION_KIND)}
             disabled={!politics.canWriteEntities}
-            className="rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30 disabled:opacity-50"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
           >
             添加组织
           </button>
@@ -889,16 +889,16 @@ export const Roster = ({
             type="button"
             onClick={() => onCreateKind(FIGURE_KIND)}
             disabled={!politics.canWriteEntities}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
           >
-            <Users className="h-3 w-3" aria-hidden="true" />
+            <Users className="h-3.5 w-3.5" aria-hidden="true" />
             关联人物
           </button>
           <button
             type="button"
             onClick={() => onCreateKind(TREATY_KIND)}
             disabled={!politics.canWriteEntities}
-            className="rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30 disabled:opacity-50"
+            className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
           >
             发起条约
           </button>
@@ -949,17 +949,17 @@ export const Roster = ({
               style={{ height: SECTION_HEIGHT }}
               className="flex w-full items-center gap-2 bg-muted/25 px-2 text-left"
             >
-              <Users className="h-3 w-3 shrink-0 text-slate-600 dark:text-slate-300" aria-hidden="true" />
-              <span className="text-[11px] font-semibold text-foreground">
+              <Users className="h-3.5 w-3.5 shrink-0 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+              <span className="text-xs font-semibold text-foreground">
                 人物（{orphanFigures.length}）
               </span>
-              <span className="truncate text-[10px] text-muted-foreground">
+              <span className="truncate text-xs text-muted-foreground">
                 紧凑列表 · 默认折叠 · 只列未在政权下任职的人物
               </span>
             </button>
             {figuresOpen &&
               (orphanFigures.length === 0 ? (
-                <div className="px-3 py-2 text-[10px] text-muted-foreground">
+                <div className="px-4 py-3 text-xs text-muted-foreground">
                   所有人物都已挂在政权下任职。
                 </div>
               ) : (

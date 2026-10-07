@@ -68,7 +68,7 @@ const StairConnector = ({ from, to, edges, linkTypes }: StairConnectorProps) => 
           >
             <span aria-hidden="true" className={LINE_CLASS[edge.type] ?? LINE_CLASS.advances_to} />
             <span
-              className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/60 px-2 py-0.5 text-[10px] text-muted-foreground shadow-sm"
               title={`${source.name} -> ${target.name}`}
             >
               <Icon className="h-3 w-3" aria-hidden="true" />
@@ -234,7 +234,7 @@ export const StairBoard = ({
 
   if (stair.tiers.length === 0) {
     return (
-      <div data-testid="stair-board" data-system-id={system.id} className="space-y-3 p-4">
+      <div data-testid="stair-board" data-system-id={system.id} className="space-y-4 p-4">
         <EmptyState
           compact
           icon={ChevronsUp}
@@ -325,13 +325,14 @@ export const StairBoard = ({
     <div
       data-testid="stair-board"
       data-system-id={system.id}
-      className="p-3"
+      className="p-4"
       onDragEnd={() => setDraggingId(null)}
     >
       <div ref={listRef} className="relative">
+        {/* 竖向轨道：阶梯的层级语义靠这条轨道 + 阶位卡片尺寸差维持，不拉平成同构卡片 */}
         <span
           aria-hidden="true"
-          className="absolute bottom-3 left-4 top-3 w-0.5 bg-border/60"
+          className="absolute bottom-3 left-4 top-3 w-0.5 bg-gradient-to-b from-violet-500/40 via-border/60 to-border/20"
         />
         {/*
           视觉顺序恒为高阶在上：非虚拟路径 DOM 升序 + column-reverse；
@@ -349,7 +350,7 @@ export const StairBoard = ({
         </div>
       </div>
       {canManageTier && (
-        <div className="mt-3">
+        <div className="mt-4">
           <TierBulkInput
             onSubmit={onBulkCreate}
             rankStep={rankStep}

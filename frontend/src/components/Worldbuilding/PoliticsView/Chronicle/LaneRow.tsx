@@ -87,16 +87,18 @@ export const LaneRow = ({
             type="button"
             onClick={onOpen}
             title={`${lane.entity.name}（点击打开详情）`}
-            className="min-w-0 flex-1 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
+            className={`min-w-0 flex-1 truncate text-left text-foreground transition-colors hover:text-primary ${
+              lane.isOrganization ? 'text-sm font-medium' : 'text-base font-semibold'
+            }`}
           >
             {lane.entity.name}
           </button>
-          <span className={`shrink-0 text-[9px] ${toneTextClass(lane.isOrganization ? 'red' : 'gold')}`}>
+          <span className={`shrink-0 text-[10px] ${toneTextClass(lane.isOrganization ? 'red' : 'gold')}`}>
             {lane.isOrganization ? '组织' : levelLabel}
           </span>
-          <span className="shrink-0 truncate text-[9px] text-muted-foreground">{statusLabel}</span>
+          <span className="shrink-0 truncate text-[10px] text-muted-foreground">{statusLabel}</span>
           {lane.terminal && (
-            <span className="shrink-0 rounded-full border border-border/60 px-1 text-[9px] text-muted-foreground">
+            <span className="shrink-0 rounded-full border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
               已终结
             </span>
           )}
@@ -105,7 +107,7 @@ export const LaneRow = ({
             onClick={onToggleAnchors}
             aria-expanded={expanded}
             aria-label={`${lane.entity.name} 的沿革锚点（${anchors.length}）`}
-            className="flex shrink-0 items-center gap-0.5 rounded px-0.5 text-[9px] text-muted-foreground hover:text-foreground"
+            className="flex shrink-0 items-center gap-0.5 rounded-lg px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
           >
             {expanded ? (
               <ChevronDown className="h-3 w-3" aria-hidden="true" />
@@ -116,7 +118,7 @@ export const LaneRow = ({
           </button>
           {tenureBands.length > 0 && (
             <span
-              className="shrink-0 text-[9px] text-slate-600 dark:text-slate-300"
+              className="shrink-0 text-[10px] text-slate-600 dark:text-slate-300"
               title="已叠加核心人物任职带"
             >
               任职 {tenureBands.length}
@@ -144,7 +146,7 @@ export const LaneRow = ({
               title={`存续期 ${rangeLabel}（${statusLabel}）`}
             >
               {segment.width > 12 && (
-                <span className="block truncate px-1 text-[9px] leading-3 text-foreground">
+                <span className="block truncate px-1 text-[10px] leading-3 text-foreground">
                   {statusLabel}
                 </span>
               )}
@@ -218,7 +220,7 @@ export const LaneRow = ({
           ))}
 
           {!scale && (
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
               {anchors.length > 0
                 ? `${NO_TIME_LABEL}：${anchors.length} 个锚点都不可解析，未画在轴上（展开看清单）`
                 : NO_TIME_LABEL}
@@ -227,7 +229,7 @@ export const LaneRow = ({
           {/* 没有可解析时间的锚点不摆到 50% 冒充中段事件：单独成列说明（§4.5.2） */}
           {scale && unplaced.length > 0 && (
             <span
-              className="absolute right-1 top-1 rounded-full border border-dashed border-border/60 px-1 text-[9px] text-muted-foreground"
+              className="absolute right-1 top-1 rounded-full border border-dashed border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground"
               data-testid="chronicle-unplaced-anchors"
               title={unplaced.map((anchor) => `${anchor.label}（${anchorTimeLabel(anchor.time)}）`).join('、')}
             >
@@ -235,7 +237,7 @@ export const LaneRow = ({
             </span>
           )}
           {scale && hiddenCount > 0 && (
-            <span className="absolute right-1 top-1 text-[9px] text-muted-foreground">
+            <span className="absolute right-1 top-1 text-[10px] text-muted-foreground">
               另有 {hiddenCount} 个锚点已叠放
             </span>
           )}
@@ -245,7 +247,7 @@ export const LaneRow = ({
       {expanded && (
         <div className="flex flex-wrap items-center gap-1 py-1 pl-52 pr-2">
           {anchors.length === 0 ? (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               还没有沿革锚点：可在政权详情的沿革段添加，或从历史模块建立关联。
             </span>
           ) : (
@@ -279,7 +281,7 @@ export const LaneRow = ({
           )}
           {lane.anchors.some((anchor) => anchor.source === 'history') &&
             politics.capabilities.historyOverlay && (
-              <span className="flex items-center gap-1 text-[9px] text-amber-700 dark:text-amber-300">
+              <span className="flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300">
                 <Flag className="h-2.5 w-2.5" aria-hidden="true" />
                 历史事件可点击跳转
               </span>

@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MotionConfig, motion } from 'framer-motion';
 import {
   Layers,
   Link2,
@@ -31,6 +32,8 @@ import { useLinkRegistry, toRegistryMap } from '../hooks';
 import { kindLabel } from '../types';
 import { EmptyState } from '../shared/EmptyState';
 import { QuickStart } from '../shared/QuickStart';
+// 动效常量取自 shared/motion.ts（ui_style_alignment §5），本视图不自造另一套曲线
+import { viewItemVariants, viewStagger } from '../shared/motion';
 import { useModuleConfig } from '../shared/useModuleConfig';
 import { Modal } from '@/components/Modals/Modal';
 import {
@@ -501,148 +504,176 @@ export const SystemsView = ({
   }
 
   return (
-    <div data-testid="systems-view" className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex flex-wrap items-center gap-2 border-b border-border/50 px-3 py-2">
-        <button
-          type="button"
-          aria-label={leftOpen ? '折叠体系列表' : '展开体系列表'}
-          onClick={() => setLeftOpen((value) => !value)}
-          className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {leftOpen ? (
-            <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          aria-label={middleOpen ? '折叠中栏' : '展开中栏'}
-          onClick={() => setMiddleOpen((value) => !value)}
-          className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Rows3 className="h-4 w-4" aria-hidden="true" />
-        </button>
-
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold text-foreground">
-            {activeSystem ? activeSystem.name : terms.term('system', '体系')}
-          </h1>
-          {activeSystem?.meta.tagline && (
-            <p className="truncate text-[11px] text-muted-foreground">
-              {activeSystem.meta.tagline}
-            </p>
-          )}
-        </div>
-
-        {!sketch && (
-          <div
-            role="group"
-            aria-label="视图切换"
-            className="ml-2 flex items-center rounded-md border border-border/50 p-0.5"
-          >
-            {SYSTEMS_DISPLAY_MODES.map((mode) => {
-              const Icon = mode === 'stair' ? ListOrdered : ScrollText;
-              const label = mode === 'stair' ? terms.term('stair', '阶梯') : terms.term('codex', '典籍');
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={effectiveMode === mode}
-                  onClick={() => switchMode(mode)}
-                  className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] transition-colors ${
-                    effectiveMode === mode
-                      ? 'bg-primary/15 text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {activeSystem && (
-            <button
-              type="button"
-              onClick={() => openTierForm(null)}
-              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
-            >
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />+ 新建{tierTerm}
-            </button>
-          )}
-          <button
+    <MotionConfig reducedMotion="user">
+      <div data-testid="systems-view" className="flex h-full min-h-0 flex-col bg-background">
+        {/* ui_style_alignment §4.1：根是 flex 列、工具栏本身不滚动，故不带 sticky */}
+        <header className="flex flex-wrap items-center gap-3 px-6 py-4 bg-gradient-to-b from-background via-background/95 to-background/90 backdrop-blur-md border-b border-border/20">
+          <motion.button
             type="button"
-            onClick={() => openSystemForm(null)}
-            className="flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+            aria-label={leftOpen ? '折叠体系列表' : '展开体系列表'}
+            onClick={() => setLeftOpen((value) => !value)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
-            <Plus className="h-3.5 w-3.5" aria-hidden="true" />+ 新建体系
-          </button>
-          {!sketch && (
-            <button
-              type="button"
-              onClick={() => setConfigOpen(true)}
-              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30"
-            >
-              <Settings2 className="h-3.5 w-3.5" aria-hidden="true" />
-              模块配置
-            </button>
-          )}
-          <button
-            type="button"
-            aria-label={rightOpen ? '折叠节点详情' : '展开节点详情'}
-            onClick={() => setRightOpen((value) => !value)}
-            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {rightOpen ? (
-              <PanelRightClose className="h-4 w-4" aria-hidden="true" />
+            {leftOpen ? (
+              <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
             ) : (
-              <PanelRightOpen className="h-4 w-4" aria-hidden="true" />
+              <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />
             )}
-          </button>
-        </div>
-      </header>
+          </motion.button>
 
-      {isError ? (
-        <div className="flex flex-1 items-center justify-center text-xs text-destructive">
-          体系数据加载失败，请稍后重试。
-        </div>
-      ) : systemList.length === 0 ? (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-6">
-          <EmptyState
-            icon={Layers}
-            title={terms.term('emptyTitle', '还没有体系')}
-            description='从"体系名 + 一句话 + 三行阶位"开始'
-            actions={[
-              {
-                label: '+ 新建体系',
-                icon: Plus,
-                onClick: () => openSystemForm(null),
-              },
-              {
-                label: '查看关联说明',
-                icon: Link2,
-                variant: 'secondary',
-                onClick: () => setRelationHelpOpen(true),
-              },
-            ]}
-          />
-          <div className="w-full max-w-md">
-            <QuickStart
-              title="3 分钟最短路径"
-              description="必填只有「名称 + 一句话」；阶位支持多行批量录入；能力、代价、关联全部可后补。"
-              steps={pathSteps}
-            />
+          <motion.button
+            type="button"
+            aria-label={middleOpen ? '折叠中栏' : '展开中栏'}
+            onClick={() => setMiddleOpen((value) => !value)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
+          >
+            <Rows3 className="h-4 w-4" aria-hidden="true" />
+          </motion.button>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-semibold tracking-tight text-foreground">
+              {activeSystem ? activeSystem.name : terms.term('system', '体系')}
+            </h1>
+            {activeSystem?.meta.tagline && (
+              <p className="truncate text-xs text-muted-foreground">
+                {activeSystem.meta.tagline}
+              </p>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1">
-          <aside
-            className={`${leftOpen ? 'flex' : 'hidden'} w-56 shrink-0 flex-col border-r border-border/50`}
+
+          {!sketch && (
+            <div
+              role="group"
+              aria-label="视图切换"
+              className="flex items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
+            >
+              {SYSTEMS_DISPLAY_MODES.map((mode) => {
+                const Icon = mode === 'stair' ? ListOrdered : ScrollText;
+                const label = mode === 'stair' ? terms.term('stair', '阶梯') : terms.term('codex', '典籍');
+                const active = effectiveMode === mode;
+                return (
+                  <motion.button
+                    key={mode}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => switchMode(mode)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
+                      active
+                        ? 'bg-background text-primary shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                    {label}
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            {activeSystem && (
+              <motion.button
+                type="button"
+                onClick={() => openTierForm(null)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />+ 新建{tierTerm}
+              </motion.button>
+            )}
+            {/* §4.3：每个视图只留一个主按钮 */}
+            <motion.button
+              type="button"
+              onClick={() => openSystemForm(null)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />+ 新建体系
+            </motion.button>
+            {!sketch && (
+              <motion.button
+                type="button"
+                onClick={() => setConfigOpen(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
+              >
+                <Settings2 className="h-4 w-4" aria-hidden="true" />
+                模块配置
+              </motion.button>
+            )}
+            <motion.button
+              type="button"
+              aria-label={rightOpen ? '折叠节点详情' : '展开节点详情'}
+              onClick={() => setRightOpen((value) => !value)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
+            >
+              {rightOpen ? (
+                <PanelRightClose className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <PanelRightOpen className="h-4 w-4" aria-hidden="true" />
+              )}
+            </motion.button>
+          </div>
+        </header>
+
+        {isError ? (
+          <div className="flex flex-1 items-center justify-center px-6 text-xs text-destructive">
+            体系数据加载失败，请稍后重试。
+          </div>
+        ) : systemList.length === 0 ? (
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-6 py-12">
+            <EmptyState
+              icon={Layers}
+              title={terms.term('emptyTitle', '还没有体系')}
+              description='从"体系名 + 一句话 + 三行阶位"开始'
+              actions={[
+                {
+                  label: '+ 新建体系',
+                  icon: Plus,
+                  onClick: () => openSystemForm(null),
+                },
+                {
+                  label: '查看关联说明',
+                  icon: Link2,
+                  variant: 'secondary',
+                  onClick: () => setRelationHelpOpen(true),
+                },
+              ]}
+            />
+            <div className="w-full max-w-md">
+              <QuickStart
+                title="3 分钟最短路径"
+                description="必填只有「名称 + 一句话」；阶位支持多行批量录入；能力、代价、关联全部可后补。"
+                steps={pathSteps}
+              />
+            </div>
+          </div>
+        ) : (
+        /* 三栏工作台：首屏以 viewStagger + viewItemVariants 交错入场（三块面板），
+           阶梯 / 典籍内部的行不做交错（ui_style_alignment §5） */
+        <motion.div
+          variants={viewStagger}
+          initial="hidden"
+          animate="visible"
+          className="flex min-h-0 flex-1 gap-4 px-6 py-6"
+        >
+          <motion.aside
+            variants={viewItemVariants}
+            className={`${
+              leftOpen ? 'flex' : 'hidden'
+            } w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm`}
           >
             <SystemList
               systems={filteredSystems}
@@ -660,7 +691,7 @@ export const SystemsView = ({
               className="min-h-0 flex-1"
             />
             {!pathComplete && (
-              <div className="shrink-0 border-t border-border/40 p-2">
+              <div className="shrink-0 border-t border-border/30 p-3">
                 <QuickStart
                   title="3 分钟最短路径"
                   description="按顺序完成即可得到最小可用体系。"
@@ -668,17 +699,22 @@ export const SystemsView = ({
                 />
               </div>
             )}
-          </aside>
+          </motion.aside>
 
-          <main className={`${middleOpen ? 'flex' : 'hidden'} min-w-0 flex-1 flex-col`}>
-            <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1.5">
-              <span className="text-[11px] font-medium text-foreground">
+          <motion.main
+            variants={viewItemVariants}
+            className={`${
+              middleOpen ? 'flex' : 'hidden'
+            } min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm`}
+          >
+            <div className="flex items-center gap-3 border-b border-border/30 px-5 py-4">
+              <span className="text-sm font-semibold text-foreground">
                 {effectiveMode === 'stair'
                   ? `${terms.term('stair', '阶梯')} · ${tiers.length} ${tierTerm}`
                   : `${terms.term('codex', '典籍')} · ${tiers.length} 卷`}
               </span>
               {sketch && (
-                <span className="rounded-full border border-border/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                <span className="rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground">
                   速写档：只读阶梯
                 </span>
               )}
@@ -725,136 +761,142 @@ export const SystemsView = ({
                 />
               )}
             </div>
-          </main>
+          </motion.main>
 
-          <aside
+          <motion.aside
+            variants={viewItemVariants}
             className={`${
               rightOpen ? 'flex' : 'hidden'
-            } fixed inset-x-0 bottom-0 z-30 max-h-[60vh] flex-col overflow-y-auto border-t border-border bg-background lg:static lg:z-auto lg:max-h-none lg:w-80 lg:shrink-0 lg:border-l lg:border-t-0`}
+            } fixed inset-x-0 bottom-0 z-30 max-h-[60vh] flex-col rounded-t-2xl border border-border/50 bg-card/40 shadow-lg backdrop-blur-md lg:static lg:z-auto lg:max-h-none lg:w-80 lg:shrink-0 lg:overflow-hidden lg:rounded-2xl lg:shadow-sm lg:backdrop-blur-sm`}
           >
-            <div className="flex items-center justify-end p-1 lg:hidden">
+            <div className="flex items-center justify-end p-2 lg:hidden">
               <button
                 type="button"
                 aria-label="关闭节点详情"
                 onClick={() => setRightOpen(false)}
-                className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
-            {activeSystem && stair && stairIndex && (
-              <NodeDetail
-                worldId={worldId}
-                system={activeSystem}
-                node={node}
-                stair={stair}
-                stairIndex={stairIndex}
-                config={config}
-                kinds={kinds}
-                refs={refs}
-                linkTypes={linkTypes}
-                counts={counts}
-                codexContent={codexContent}
-                tierTerm={tierTerm}
-                sketch={sketch}
-                canEdit={canEdit}
-                canManageTier
-                onNavigate={onNavigateToEntity}
-                onEdit={openNodeEditor}
-                onDeleteNode={handleDeleteNode}
-                onDeleteLinks={handleDeleteLinks}
-                onAddMember={openMemberForm}
-                onEditSystem={() => openSystemForm(activeSystem)}
-                grantSourcesOf={grantSourcesOf}
-                deleteRequestId={deleteRequestId}
-                onDeleteRequestHandled={() => setDeleteRequestId(null)}
-              />
-            )}
-          </aside>
-        </div>
-      )}
-
-      <SystemFormModal
-        open={systemForm.open}
-        onClose={() => setSystemForm({ open: false, editing: null })}
-        config={config}
-        kinds={kinds}
-        system={systemForm.editing}
-        onSubmit={handleSystemSubmit}
-        isSubmitting={isSaving}
-      />
-
-      <NodeFormModal
-        open={nodeForm.open}
-        onClose={() => setNodeForm({ open: false, editing: null })}
-        mode={nodeFormMode}
-        config={config}
-        kinds={kinds}
-        tierTerm={tierTerm}
-        defaultRank={nextRankOf(tiers, rankStep)}
-        sketch={sketch}
-        editing={nodeForm.editing}
-        presetKind={nodeForm.presetKind}
-        grantFromTierId={nodeForm.grantFromTierId}
-        onSubmitTier={handleTierSubmit}
-        onSubmitMember={handleMemberSubmit}
-        isSubmitting={isSaving}
-      />
-
-      <SystemsConfigPanel
-        open={configOpen}
-        onClose={() => setConfigOpen(false)}
-        config={config}
-        rawConfig={moduleConfig.raw ?? undefined}
-        onSave={moduleConfig.save}
-      />
-
-      <Modal
-        isOpen={relationHelpOpen}
-        onClose={() => setRelationHelpOpen(false)}
-        title="体系关联说明"
-        size="lg"
-      >
-        <div className="space-y-3" data-testid="systems-relation-help">
-          <p className="text-[11px] text-muted-foreground">
-            体系模块只使用契约 §4 白名单内的关联类型；未接入的模块（经济 / 历史 / 种族）入口自动隐藏，
-            通用兜底仍为 core.related_to / core.references。
-          </p>
-          {relationSections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              <div className="text-[11px] font-medium text-foreground">{section.title}</div>
-              <div className="space-y-0.5">
-                {section.ids.map((id) => {
-                  const definition = linkTypes.get(id);
-                  return (
-                    <div
-                      key={id}
-                      className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 px-2 py-1 text-[11px]"
-                    >
-                      <span className="font-mono text-[10px] text-muted-foreground">{id}</span>
-                      <span className="text-foreground">
-                        {definition?.label ?? '（注册表未提供标签）'}
-                      </span>
-                      {definition?.reverse_label && (
-                        <span className="text-muted-foreground">
-                          反向：{definition.reverse_label}
-                        </span>
-                      )}
-                      <span className="ml-auto text-[10px] text-muted-foreground">
-                        {kindRange(definition?.source)} -&gt; {kindRange(definition?.target)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {activeSystem && stair && stairIndex && (
+                <NodeDetail
+                  worldId={worldId}
+                  system={activeSystem}
+                  node={node}
+                  stair={stair}
+                  stairIndex={stairIndex}
+                  config={config}
+                  kinds={kinds}
+                  refs={refs}
+                  linkTypes={linkTypes}
+                  counts={counts}
+                  codexContent={codexContent}
+                  tierTerm={tierTerm}
+                  sketch={sketch}
+                  canEdit={canEdit}
+                  canManageTier
+                  onNavigate={onNavigateToEntity}
+                  onEdit={openNodeEditor}
+                  onDeleteNode={handleDeleteNode}
+                  onDeleteLinks={handleDeleteLinks}
+                  onAddMember={openMemberForm}
+                  onEditSystem={() => openSystemForm(activeSystem)}
+                  grantSourcesOf={grantSourcesOf}
+                  deleteRequestId={deleteRequestId}
+                  onDeleteRequestHandled={() => setDeleteRequestId(null)}
+                />
+              )}
             </div>
-          ))}
-          <p className="text-[10px] text-muted-foreground">
-            关联类型统一来自契约注册表，本模块不新增 link_type；阶位术语「{tierTerm}」可在模块配置中修改。
-          </p>
-        </div>
-      </Modal>
-    </div>
+          </motion.aside>
+        </motion.div>
+        )}
+
+        <SystemFormModal
+          open={systemForm.open}
+          onClose={() => setSystemForm({ open: false, editing: null })}
+          config={config}
+          kinds={kinds}
+          system={systemForm.editing}
+          onSubmit={handleSystemSubmit}
+          isSubmitting={isSaving}
+        />
+
+        <NodeFormModal
+          open={nodeForm.open}
+          onClose={() => setNodeForm({ open: false, editing: null })}
+          mode={nodeFormMode}
+          config={config}
+          kinds={kinds}
+          tierTerm={tierTerm}
+          defaultRank={nextRankOf(tiers, rankStep)}
+          sketch={sketch}
+          editing={nodeForm.editing}
+          presetKind={nodeForm.presetKind}
+          grantFromTierId={nodeForm.grantFromTierId}
+          onSubmitTier={handleTierSubmit}
+          onSubmitMember={handleMemberSubmit}
+          isSubmitting={isSaving}
+        />
+
+        <SystemsConfigPanel
+          open={configOpen}
+          onClose={() => setConfigOpen(false)}
+          config={config}
+          rawConfig={moduleConfig.raw ?? undefined}
+          onSave={moduleConfig.save}
+        />
+
+        <Modal
+          isOpen={relationHelpOpen}
+          onClose={() => setRelationHelpOpen(false)}
+          title="体系关联说明"
+          size="lg"
+        >
+          <div className="space-y-4" data-testid="systems-relation-help">
+            <p className="text-xs text-muted-foreground">
+              体系模块只使用契约 §4 白名单内的关联类型；未接入的模块（经济 / 历史 / 种族）入口自动隐藏，
+              通用兜底仍为 core.related_to / core.references。
+            </p>
+            {relationSections.map((section) => (
+              <div key={section.title} className="space-y-2">
+                <div className="text-xs font-semibold text-foreground">{section.title}</div>
+                <div className="space-y-1">
+                  {section.ids.map((id) => {
+                    const definition = linkTypes.get(id);
+                    return (
+                      <div
+                        key={id}
+                        className="flex flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-muted/20 px-3 py-1.5 text-xs"
+                      >
+                        <span className="rounded-full border border-border/40 bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                          {id}
+                        </span>
+                        <span className="text-foreground">
+                          {definition?.label ?? '（注册表未提供标签）'}
+                        </span>
+                        {definition?.reverse_label && (
+                          <span className="text-muted-foreground">
+                            反向：{definition.reverse_label}
+                          </span>
+                        )}
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {kindRange(definition?.source)} -&gt; {kindRange(definition?.target)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              关联类型统一来自契约注册表，本模块不新增 link_type；阶位术语「{tierTerm}」可在模块配置中修改。
+            </p>
+          </div>
+        </Modal>
+      </div>
+    </MotionConfig>
   );
 };
 

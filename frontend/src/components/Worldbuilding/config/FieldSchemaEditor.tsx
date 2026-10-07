@@ -52,10 +52,10 @@ export const FIELD_TYPE_IDS: CustomFieldType[] = [...CUSTOM_FIELD_TYPES];
 export const FIELD_TYPE_LABELS = CUSTOM_FIELD_TYPE_LABELS;
 
 const FIELD_CLASS =
-  'w-full bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 const INLINE_FIELD_CLASS =
-  'bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 export interface FieldSchemaEditorProps {
   open: boolean;
@@ -227,17 +227,17 @@ export const FieldSchemaEditorPanel = ({
 
   return (
     <div className="space-y-3" data-testid="field-schema-editor" data-module-id={moduleId}>
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1">
         {kinds.map((def) => (
           <button
             key={def.id}
             type="button"
             aria-pressed={resolvedKind === def.id}
             onClick={() => setActiveKind(def.id)}
-            className={`rounded-md px-2.5 py-1 text-[11px] transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none ${
               resolvedKind === def.id
-                ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
+                ? 'bg-background text-primary shadow-sm'
+                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
             }`}
             data-testid="field-kind-tab"
             data-kind-id={def.id}
@@ -249,7 +249,7 @@ export const FieldSchemaEditorPanel = ({
 
       {error && (
         <div
-          className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+          className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
           data-testid="field-editor-error"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -257,14 +257,14 @@ export const FieldSchemaEditorPanel = ({
         </div>
       )}
 
-      <div className="space-y-1" data-testid="field-list">
+      <div className="space-y-2" data-testid="field-list">
         {visible.length === 0 && (
-          <p className="text-[11px] text-muted-foreground">该类型暂无自定义字段。</p>
+          <p className="text-xs text-muted-foreground">该类型暂无自定义字段。</p>
         )}
         {visible.map((field) => (
           <div
             key={field.id}
-            className="space-y-1 rounded-md border border-border/40 p-2"
+            className="space-y-2 rounded-xl border border-border/50 bg-card/40 p-3"
             data-testid="field-row"
             data-field-id={field.id}
             data-field-type={field.type}
@@ -277,7 +277,7 @@ export const FieldSchemaEditorPanel = ({
                 aria-label={`字段名称 ${field.label}`}
                 className={`${INLINE_FIELD_CLASS} w-32`}
               />
-              <span className="font-mono text-[10px] text-muted-foreground">{field.id}</span>
+              <span className="font-mono text-xs text-muted-foreground">{field.id}</span>
               <select
                 value={field.type}
                 onChange={(event) =>
@@ -292,7 +292,7 @@ export const FieldSchemaEditorPanel = ({
                   </option>
                 ))}
               </select>
-              <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={!!field.required}
@@ -318,7 +318,7 @@ export const FieldSchemaEditorPanel = ({
                 type="button"
                 aria-label={`归档字段 ${field.label}`}
                 onClick={() => removeField(field.id)}
-                className="ml-auto flex items-center gap-1 rounded p-0.5 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
+                className="ml-auto flex items-center gap-1 rounded p-0.5 text-xs text-muted-foreground transition-colors hover:text-destructive"
                 data-testid="field-archive"
               >
                 <Archive className="h-3.5 w-3.5" />
@@ -432,17 +432,17 @@ export const FieldSchemaEditorPanel = ({
       </div>
 
       {archived.length > 0 && (
-        <div className="space-y-1 rounded-md border border-border/40 p-2" data-testid="field-archived">
-          <div className="text-[11px] font-medium text-foreground">已归档字段（数据保留）</div>
+        <div className="space-y-2 rounded-xl border border-dashed border-border/40 p-3" data-testid="field-archived">
+          <div className="text-sm font-semibold text-foreground">已归档字段（数据保留）</div>
           {archived.map((field) => (
-            <div key={field.id} className="flex items-center gap-2 text-[11px]">
+            <div key={field.id} className="flex items-center gap-2 text-xs">
               <span className="text-muted-foreground">{field.label}</span>
-              <span className="font-mono text-[10px] text-muted-foreground">{field.id}</span>
+              <span className="font-mono text-xs text-muted-foreground">{field.id}</span>
               <button
                 type="button"
                 aria-label={`恢复字段 ${field.label}`}
                 onClick={() => setFields(resolvedKind, restoreField(fields, field.id))}
-                className="ml-auto flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] transition-colors hover:bg-accent/30"
+                className="ml-auto flex items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-2 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
               >
                 <ArchiveRestore className="h-3 w-3" />
                 恢复
@@ -452,13 +452,13 @@ export const FieldSchemaEditorPanel = ({
         </div>
       )}
 
-      <div className="space-y-1.5 rounded-md border border-border/40 p-2">
+      <div className="space-y-2 rounded-xl border border-border/50 bg-muted/20 p-3">
         <div className="flex items-center justify-between">
-          <div className="text-[11px] font-medium text-foreground">新增字段</div>
+          <div className="text-sm font-semibold text-foreground">新增字段</div>
           <button
             type="button"
             onClick={() => setShowOptions((prev) => !prev)}
-            className="text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent/10 hover:text-foreground"
           >
             {showOptions ? '收起高级属性' : '展开高级属性'}
           </button>
@@ -540,38 +540,38 @@ export const FieldSchemaEditorPanel = ({
           </>
         )}
         <div className="flex items-center justify-between">
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             归档不删数据；实体引用字段只保存 EntityRef，不创建关联；需要时间与备注时请用关联面板。
           </p>
           <button
             type="button"
             onClick={addField}
-            className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20"
             data-testid="field-add"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             添加
           </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
+      <div className="flex items-center justify-end gap-3 border-t border-border/30 pt-3">
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+          className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
           取消
         </button>
         <button
           type="button"
           onClick={() => void handleSave()}
           disabled={saving}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           data-testid="field-schema-save"
         >
-          {saving ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+          {saving ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           保存字段
         </button>
       </div>

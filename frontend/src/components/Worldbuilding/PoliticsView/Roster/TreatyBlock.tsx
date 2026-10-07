@@ -65,17 +65,17 @@ export const TreatyBlock = ({
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
         )}
         <PenLine className={`h-3.5 w-3.5 shrink-0 ${toneTextClass('green')}`} aria-hidden="true" />
-        <span className="text-[11px] font-semibold text-foreground">
+        <span className="text-xs font-semibold text-foreground">
           条约簿（{rows.length}）
         </span>
-        <span className="truncate text-[10px] text-muted-foreground">
+        <span className="truncate text-xs text-muted-foreground">
           次级区块 · 默认折叠 · 不与三个主视图并列
         </span>
       </button>
       <button
         type="button"
         onClick={onOpenTreatyBook}
-        className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30"
+        className="shrink-0 rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
       >
         打开条约簿
       </button>
@@ -83,9 +83,9 @@ export const TreatyBlock = ({
         type="button"
         onClick={onCreate}
         disabled={!canEdit}
-        className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[10px] text-foreground hover:bg-accent/30 disabled:opacity-50"
+        className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
       >
-        <Plus className="h-3 w-3" aria-hidden="true" />
+        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
         发起条约
       </button>
     </div>
@@ -100,12 +100,12 @@ export const TreatyBlock = ({
           actions={canEdit ? [{ label: '发起第一个条约', onClick: onCreate }] : undefined}
         />
       ) : rows.length === 0 ? (
-        <div className="px-3 py-3 text-[11px] text-muted-foreground">
+        <div className="px-4 py-4 text-sm text-muted-foreground">
           没有符合条件的条约（清除顶部筛选后查看全部）。
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="flex min-w-[880px] items-center gap-2 border-b border-border/30 bg-card/60 px-2 py-1 text-[10px] font-medium text-muted-foreground">
+          <div className="flex min-w-[880px] items-center gap-2 border-b border-border/30 bg-card/60 px-2 py-1.5 text-xs font-medium text-muted-foreground">
             <span className="min-w-0 flex-1">名称</span>
             <span className="w-24 shrink-0">类型</span>
             <span className="w-48 shrink-0">缔约方</span>
@@ -133,29 +133,29 @@ export const TreatyBlock = ({
                 <button
                   type="button"
                   onClick={() => onOpen(row.treaty.id)}
-                  className="min-w-0 flex-1 truncate text-left text-[11px] font-medium text-foreground hover:text-primary"
+                  className="min-w-0 flex-1 truncate text-left text-xs font-medium text-foreground transition-colors hover:text-primary"
                 >
                   {row.treaty.name}
                 </button>
-                <span className="w-24 shrink-0 truncate text-[10px] text-muted-foreground" title={typeLabel}>
+                <span className="w-24 shrink-0 truncate text-xs text-muted-foreground" title={typeLabel}>
                   {typeLabel}
                 </span>
-                <span className="w-48 shrink-0 truncate text-[10px] text-foreground" title={row.parties.map((p) => p.label).join('、')}>
+                <span className="w-48 shrink-0 truncate text-xs text-foreground" title={row.parties.map((p) => p.label).join('、')}>
                   {row.parties.length === 0
                     ? '还没有缔约方'
                     : `${row.parties.slice(0, 3).map((p) => p.label).join('、')}${
                         row.parties.length > 3 ? ` 等 ${row.parties.length} 方` : ''
                       }`}
                 </span>
-                <span className="w-24 shrink-0 truncate text-[10px] text-muted-foreground">{effective}</span>
-                <span className={`w-20 shrink-0 truncate text-[10px] ${treatyStatusTextClass(row.status)}`}>
+                <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{effective}</span>
+                <span className={`w-20 shrink-0 truncate text-xs ${treatyStatusTextClass(row.status)}`}>
                   {TREATY_STATUS_LABELS[row.status]}
                 </span>
-                <span className="w-10 shrink-0 text-right text-[10px] text-muted-foreground">{row.termCount}</span>
-                <span className="w-10 shrink-0 text-right text-[10px] text-muted-foreground">
+                <span className="w-10 shrink-0 text-right text-xs text-muted-foreground">{row.termCount}</span>
+                <span className="w-10 shrink-0 text-right text-xs text-muted-foreground">
                   {row.amendmentCount}
                 </span>
-                <span className="w-16 shrink-0 text-right text-[10px] text-muted-foreground">
+                <span className="w-16 shrink-0 text-right text-xs text-muted-foreground">
                   出{row.counts.out}/入{row.counts.in}
                 </span>
                 <span className="flex w-10 shrink-0 justify-end">
@@ -164,7 +164,7 @@ export const TreatyBlock = ({
                     onClick={() => onOpen(row.treaty.id)}
                     aria-label={`打开条约 ${row.treaty.name}`}
                     title="打开条约详情"
-                    className="rounded p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+                    className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
                   >
                     <SquareArrowOutUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>

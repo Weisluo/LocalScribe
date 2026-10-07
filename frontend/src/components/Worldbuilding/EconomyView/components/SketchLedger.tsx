@@ -13,8 +13,10 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowRight, Link2, PenLine } from 'lucide-react';
 
+import { viewItemVariants, viewStagger } from '../../shared';
 import { ECONOMY_VERBS } from '../config';
 import { ChipList } from './ChipList';
 import type {
@@ -175,33 +177,43 @@ export const SketchLedger = ({
   const canLink = !!sourceChip && !!targetChip && sourceChip.id !== targetChip.id && !!verb;
 
   return (
-    <section
+    <motion.section
       data-testid="economy-sketch"
-      className="mx-auto w-full max-w-3xl rounded-lg border border-border/70 bg-card/60 p-3 shadow-sm"
+      initial="hidden"
+      animate="visible"
+      variants={viewItemVariants}
+      className="mx-auto w-full max-w-3xl rounded-2xl border border-border/50 bg-card/40 p-6 shadow-sm backdrop-blur-sm"
     >
-      <header className="flex items-center gap-2 border-b border-border/50 pb-2">
+      <header className="flex items-center gap-2 border-b border-border/30 pb-3">
         <PenLine className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
-        <h2 className="text-xs font-semibold text-foreground">
+        <h2 className="text-base font-semibold tracking-tight text-foreground">
           {term('overviewTitle', '经济速写卡')}
         </h2>
-        <span className="ml-auto font-mono text-[10px] tracking-wide text-muted-foreground">
+        <span className="ml-auto font-mono text-xs tracking-wide text-muted-foreground">
           页 01
         </span>
-        {isSaving ? <span className="text-[10px] text-muted-foreground">保存中…</span> : null}
+        {isSaving ? <span className="text-xs text-muted-foreground">保存中…</span> : null}
       </header>
 
-      <div className="mt-2 space-y-2.5">
+      {/* 首屏字段槽只有 3-5 个，用交错入场；账册行 / 画布 / chip 行不加交错（§5） */}
+      <motion.div
+        className="mt-4 space-y-4"
+        initial="hidden"
+        animate="visible"
+        variants={viewStagger}
+      >
         {fields.map((field) => (
-          <div
+          <motion.div
             key={field.id}
+            variants={viewItemVariants}
             data-testid={`economy-sketch-field-${field.id}`}
-            className="border-l-2 border-green-500/40 pl-2"
+            className="border-l-2 border-green-500/40 pl-4"
           >
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {FIELD_QUESTIONS[field.id] ?? field.label}
             </p>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-              <span className="w-16 shrink-0 text-[11px] text-foreground">{field.label}</span>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className="w-16 shrink-0 text-sm font-medium text-foreground">{field.label}</span>
 
               {field.type === 'chips' ? (
                 <ChipList
@@ -227,7 +239,7 @@ export const SketchLedger = ({
                     onBlur={(event) => commitText(field, event.target.value)}
                     aria-label={field.label}
                     placeholder="自填…"
-                    className="w-56 rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600/60"
+                    className="w-64 rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                   />
                   {field.type === 'select' ? (
                     <datalist id={`economy-sketch-options-${field.id}`}>
@@ -239,30 +251,30 @@ export const SketchLedger = ({
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {verbRows.length > 0 ? (
-        <div className="mt-2 border-t border-border/40 pt-1.5" data-testid="economy-sketch-verb-rows">
-          <p className="text-[10px] text-muted-foreground">
+        <div className="mt-4 border-t border-border/30 pt-3" data-testid="economy-sketch-verb-rows">
+          <p className="text-xs text-muted-foreground">
             已连 {verbRows.length} 条{term('flowWord', '往来')}
           </p>
-          <ul className="mt-0.5 space-y-0.5">
+          <ul className="mt-1.5 space-y-1.5">
             {verbRows.map((row) => (
-              <li key={row.id} className="flex items-center gap-1 text-[11px] text-foreground">
+              <li key={row.id} className="flex items-center gap-2 text-sm text-foreground">
                 <span>{row.fromLabel}</span>
-                <ArrowRight className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-                <span className="rounded-sm border border-border/50 px-1 text-[10px] text-muted-foreground">
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <span className="rounded-full border border-border/40 px-2.5 py-0.5 text-[10px] text-muted-foreground">
                   {row.verbLabel}
                 </span>
-                <ArrowRight className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                 <span>{row.toLabel}</span>
                 {row.raw ? (
                   <button
                     type="button"
                     onClick={row.refine}
-                    className="ml-1 rounded-sm border border-border/50 px-1 text-[10px] text-cyan-700 transition-colors hover:bg-cyan-500/10 motion-reduce:transition-none dark:text-cyan-300"
+                    className="ml-1 rounded-lg border border-border/50 bg-muted/40 px-2.5 py-1 text-xs font-medium text-primary transition-all duration-200 hover:bg-primary/10 motion-reduce:transition-none"
                   >
                     细化
                   </button>
@@ -274,24 +286,24 @@ export const SketchLedger = ({
       ) : null}
 
       {canWrite ? (
-        <div className="mt-2 border-t border-border/40 pt-1.5">
+        <div className="mt-4 border-t border-border/30 pt-3">
           <button
             type="button"
             data-testid="economy-verb-link"
             onClick={() => setVerbOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
           >
-            <Link2 className="h-3 w-3" aria-hidden="true" />
+            <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
             {term('verbLink', '连一句往来')}
           </button>
 
           {verbOpen ? (
             <div
               data-testid="economy-verb-panel"
-              className="mt-1.5 flex flex-wrap items-center gap-1.5 rounded-md border border-border/50 bg-background/60 p-1.5"
+              className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm"
             >
               {allChips.length < 2 ? (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   先写两个关键词，就能把它们连起来。
                 </span>
               ) : (
@@ -300,7 +312,7 @@ export const SketchLedger = ({
                     aria-label="从哪一个"
                     value={verbSource}
                     onChange={(event) => setVerbSource(event.target.value)}
-                    className="rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px]"
+                    className="rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                   >
                     <option value="">从哪一个…</option>
                     {allChips.map((chip) => (
@@ -313,7 +325,7 @@ export const SketchLedger = ({
                     aria-label="怎么来往"
                     value={verbName}
                     onChange={(event) => setVerbName(event.target.value)}
-                    className="rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px]"
+                    className="rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                   >
                     {ECONOMY_VERBS.map((item) => (
                       <option key={item.verb} value={item.verb}>
@@ -325,7 +337,7 @@ export const SketchLedger = ({
                     aria-label="连到哪一个"
                     value={verbTarget}
                     onChange={(event) => setVerbTarget(event.target.value)}
-                    className="rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px]"
+                    className="rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
                   >
                     <option value="">连到哪一个…</option>
                     {allChips.map((chip) => (
@@ -344,7 +356,7 @@ export const SketchLedger = ({
                       setVerbSource('');
                       setVerbTarget('');
                     }}
-                    className="rounded-md bg-green-600 px-2 py-0.5 text-[11px] text-white transition-colors hover:bg-green-700 disabled:opacity-40 motion-reduce:transition-none"
+                    className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-40 motion-reduce:transition-none"
                   >
                     连上
                   </button>
@@ -355,26 +367,26 @@ export const SketchLedger = ({
         </div>
       ) : null}
 
-      <footer className="mt-2 border-t border-border/50 pt-1.5">
-        <p className="text-[11px] text-foreground" data-testid="economy-sketch-progress">
+      <footer className="mt-4 border-t border-border/30 pt-3">
+        <p className="text-sm text-foreground" data-testid="economy-sketch-progress">
           记下 3 项即可成立。当前已写 {filled} 项。
         </p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {foldedParts.length > 0
             ? `另有 ${foldedParts.join('、')}已折叠：升到结构可看${term('flowWord', '往来')}，升到沙盘可看数值。`
             : `没有折叠的${term('flowWord', '往来')}${counts.links > 0 ? `（已连 ${counts.links} 条）` : ''}。`}
         </p>
         {kept ? (
-          <p className="mt-1 text-[10px] text-muted-foreground" data-testid="economy-sketch-kept">
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="economy-sketch-kept">
             就这样先记着；数据一直都在，随时可以展开。
           </p>
         ) : (
-          <div className="mt-1 flex items-center gap-1.5">
+          <div className="mt-3 flex items-center gap-3">
             <button
               type="button"
               data-testid="economy-open-structure"
               onClick={onOpenStructure}
-              className="rounded-md bg-green-600 px-2.5 py-1 text-[11px] text-white transition-colors hover:bg-green-700 motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 motion-reduce:transition-none"
             >
               {term('promoChip', '展开为脉络')}
             </button>
@@ -382,14 +394,14 @@ export const SketchLedger = ({
               type="button"
               data-testid="economy-keep-sketch"
               onClick={() => setKept(true)}
-              className="rounded-md border border-border px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
             >
               {term('keepSketch', '就这样，先记着')}
             </button>
           </div>
         )}
       </footer>
-    </section>
+    </motion.section>
   );
 };
 

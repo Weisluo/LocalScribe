@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState, type KeyboardEvent } from 'react';
+import { motion } from 'framer-motion';
 import { Loader2, Save } from 'lucide-react';
 
 import { Modal } from '@/components/Modals/Modal';
@@ -19,7 +20,7 @@ import { ABILITY_KIND, SYSTEM_KIND, TIER_KIND, type SystemNode } from '../types'
 import type { MemberFormValues, TierFormValues } from '../hooks/useSystems';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-xs text-foreground transition-[border-color,box-shadow] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 /** costFields 的常用键展示名（含义仍由用户定义，不做数值口径） */
 const COST_FIELD_LABELS: Record<string, string> = {
@@ -177,7 +178,7 @@ export const NodeFormModal = ({
       }
     >
       <div
-        className="space-y-3"
+        className="space-y-4"
         data-testid="node-form"
         // 阻止 / j k v n Enter 穿透到 SystemsView 的窗口快捷键；Esc 与 Tab 放行给 Modal 自身
         onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
@@ -185,13 +186,13 @@ export const NodeFormModal = ({
         }}
       >
         {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {error}
           </div>
         )}
 
         <label className="block space-y-1">
-          <span className="text-[11px] font-medium text-foreground">
+          <span className="text-xs font-medium text-foreground">
             {isTierMode ? `${tierTerm}名称` : '节点名称'}{' '}
             <span className="text-destructive">*</span>
           </span>
@@ -208,7 +209,7 @@ export const NodeFormModal = ({
         {isTierMode ? (
           <>
             <label className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+              <span className="text-xs font-medium text-muted-foreground">
                 rank（阶梯顺序唯一依据）
               </span>
               <input
@@ -223,7 +224,7 @@ export const NodeFormModal = ({
             {!sketch && (
               <>
                 <label className="block space-y-1">
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                  <span className="text-xs font-medium text-muted-foreground">
                     分支（主线留空）
                   </span>
                   <input
@@ -236,7 +237,7 @@ export const NodeFormModal = ({
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                  <span className="text-xs font-medium text-muted-foreground">
                     突破条件（简述，长文写进典籍 item）
                   </span>
                   <textarea
@@ -250,7 +251,7 @@ export const NodeFormModal = ({
 
                 {statuses.length > 0 && (
                   <label className="block space-y-1">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                    <span className="text-xs font-medium text-muted-foreground">
                       状态（来自模块配置 StatusDef）
                     </span>
                     <select
@@ -275,23 +276,23 @@ export const NodeFormModal = ({
           <>
             {editing ? (
               <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs font-medium text-muted-foreground">
                   节点类型
                 </span>
                 {/* 编辑态不允许改 kind：WorldLink 端点 kind 在创建时记录，改了会让关联计数落到旧 key */}
                 <div
-                  className={`${FIELD_CLASS} bg-muted/20 text-muted-foreground`}
+                  className="w-full rounded-xl border border-border/40 bg-muted/20 px-3 py-2 text-sm text-muted-foreground"
                   data-testid="member-kind-readonly"
                 >
                   {kindLabel}（{kind}）
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   类型创建后固定，不可修改（改类型会让该节点已有连接的端点类型失效）。
                 </p>
               </div>
             ) : (
               <label className="block space-y-1">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                <span className="text-xs font-medium text-muted-foreground">
                   节点类型
                 </span>
                 <select
@@ -310,7 +311,7 @@ export const NodeFormModal = ({
             )}
 
             <label className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+              <span className="text-xs font-medium text-muted-foreground">
                 摘要
               </span>
               <textarea
@@ -323,7 +324,7 @@ export const NodeFormModal = ({
             </label>
 
             <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-1.5 text-[11px] text-foreground">
+              <label className="flex items-center gap-2 text-xs text-foreground">
                 <input
                   type="checkbox"
                   checked={reusable}
@@ -335,7 +336,7 @@ export const NodeFormModal = ({
             </div>
 
             <label className="block space-y-1">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+              <span className="text-xs font-medium text-muted-foreground">
                 量级（文本描述，不做数值系统）
               </span>
               <input
@@ -350,7 +351,7 @@ export const NodeFormModal = ({
             {kind === 'cost' && (
               <>
                 <label className="block space-y-1">
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                  <span className="text-xs font-medium text-muted-foreground">
                     代价提示（资源 / 时间 / 声誉等文本）
                   </span>
                   <input
@@ -361,7 +362,7 @@ export const NodeFormModal = ({
                     className={FIELD_CLASS}
                   />
                 </label>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   表单字段顺序：{config.costFields && config.costFields.length > 0
                     ? config.costFields
                         .map((field) => COST_FIELD_LABELS[field] ?? field)
@@ -373,7 +374,7 @@ export const NodeFormModal = ({
 
             {!editing && grantFromTierId && (
               kind === ABILITY_KIND ? (
-                <label className="flex items-center gap-1.5 rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-[11px] text-foreground">
+                <label className="flex items-center gap-2 rounded-xl border border-border/40 bg-muted/20 px-3 py-2 text-xs text-foreground">
                   <input
                     type="checkbox"
                     checked={linkGrant}
@@ -384,7 +385,7 @@ export const NodeFormModal = ({
                 </label>
               ) : (
                 // 非能力 kind 不做「自动关联到本阶位」的承诺：契约 §4 里 grants 只能指向 ability
-                <p className="rounded-md border border-border/40 bg-muted/20 px-2 py-1.5 text-[10px] text-muted-foreground">
+                <p className="rounded-xl border border-border/40 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
                   只新建节点，不会自动关联到{tierTerm}：「赋予」只能指向能力节点；
                   需要关联时请在{tierTerm}详情或关联面板手动补充。
                 </p>
@@ -393,27 +394,31 @@ export const NodeFormModal = ({
           </>
         )}
 
-        <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-2">
-          <button
+        <div className="flex items-center justify-end gap-3 border-t border-border/30 pt-3">
+          <motion.button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={pending}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
           >
             {pending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Save className="h-3.5 w-3.5" aria-hidden="true" />
+              <Save className="h-4 w-4" aria-hidden="true" />
             )}
             保存
-          </button>
+          </motion.button>
         </div>
       </div>
     </Modal>

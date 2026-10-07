@@ -37,10 +37,10 @@ import { ECONOMY_CONFIG_DEFAULTS, ECONOMY_LINK_LABELS, SURPLUS_LABELS, stageLabe
 import type { EconomyMetricSample, InspectorPanelProps } from '../types';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-1.5 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
 const Label = ({ children }: { children: ReactNode }) => (
-  <span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/80">{children}</span>
+  <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground/80">{children}</span>
 );
 
 const Chip = ({
@@ -66,7 +66,7 @@ const Chip = ({
     <span
       title={title}
       data-testid={testId}
-      className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] ${toneClass}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] ${toneClass}`}
     >
       {children}
     </span>
@@ -89,16 +89,16 @@ const Section = ({
   <section
     id={`economy-inspector-${id}`}
     data-testid={`economy-inspector-${id}`}
-    className="space-y-1.5 border-t border-border/40 px-3 py-2.5 first:border-t-0"
+    className="space-y-3 border-t border-border/30 px-5 py-4 first:border-t-0"
   >
-    <div className="flex items-center gap-1.5">
-      <h3 className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">{title}</h3>
+    <div className="flex items-center gap-2">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">{title}</h3>
       {typeof count === 'number' && (
-        <span className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground tabular-nums">
+        <span className="rounded-full border border-border/40 px-2 text-[10px] text-muted-foreground tabular-nums">
           {count}
         </span>
       )}
-      {actions ? <div className="ml-auto flex items-center gap-1">{actions}</div> : null}
+      {actions ? <div className="ml-auto flex items-center gap-2">{actions}</div> : null}
     </div>
     {children}
   </section>
@@ -144,10 +144,10 @@ const MetricSparkline = ({
     .filter((value): value is number => value !== null);
 
   if (points.length === 0) {
-    return <p className="text-[10px] text-muted-foreground">无采样（不按 0 处理）</p>;
+    return <p className="text-xs text-muted-foreground">无采样（不按 0 处理）</p>;
   }
   if (values.length === 0) {
-    return <p className="text-[10px] text-muted-foreground">采样值不可用（不按 0 处理）</p>;
+    return <p className="text-xs text-muted-foreground">采样值不可用（不按 0 处理）</p>;
   }
 
   const min = Math.min(...values);
@@ -242,14 +242,14 @@ const MetricSparkline = ({
 const renderEntryContent = (content: Record<string, unknown>): ReactNode => {
   const text = content.text;
   if (typeof text === 'string' && text.trim()) {
-    return <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground">{text}</p>;
+    return <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{text}</p>;
   }
   const rows = Object.entries(content);
-  if (rows.length === 0) return <p className="text-[11px] text-muted-foreground">（空条目）</p>;
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">（空条目）</p>;
   return (
-    <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+    <ul className="space-y-1 text-sm text-muted-foreground">
       {rows.map(([key, value]) => (
-        <li key={key} className="flex gap-1">
+        <li key={key} className="flex gap-2">
           <span className="shrink-0 text-foreground">{key}</span>
           <span className="min-w-0 flex-1 break-words">
             {Array.isArray(value)
@@ -460,11 +460,11 @@ export const InspectorPanel = ({
     <aside
       data-testid="economy-inspector"
       aria-label="实体检查器"
-      className="flex h-full min-h-0 w-full flex-col overflow-y-auto border-l border-border/40 bg-card/30"
+      className="flex h-full min-h-0 w-full flex-col overflow-y-auto rounded-2xl border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm"
     >
-      <header className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
+      <header className="flex items-center gap-3 border-b border-border/30 px-5 py-4">
         <span
-          className="rounded-sm border border-border/60 px-1.5 py-0.5 text-[10px] tracking-[0.08em] text-muted-foreground"
+          className="rounded-full border border-border/40 px-2 py-0.5 text-[10px] tracking-[0.08em] text-muted-foreground"
           title="页角式编号"
         >
           页 01
@@ -479,20 +479,20 @@ export const InspectorPanel = ({
           onClick={onClose}
           aria-label="关闭检查器"
           data-testid="economy-inspector-close"
-          className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+          className="ml-auto rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
         >
-          <X className="h-3.5 w-3.5" aria-hidden="true" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </header>
 
       {!node ? (
-        <div className="px-3 py-3 text-[11px] text-muted-foreground" data-testid="economy-inspector-empty">
+        <div className="px-5 py-5 text-sm leading-relaxed text-muted-foreground" data-testid="economy-inspector-empty">
           未选择实体：在画布或账册里点一行，这里显示它的分户账。
         </div>
       ) : (
         <>
           <Section id="overview" title="概览">
-            <label className="block space-y-0.5">
+            <label className="block space-y-1.5">
               <Label>名称</Label>
               <input
                 type="text"
@@ -509,7 +509,7 @@ export const InspectorPanel = ({
               />
             </label>
 
-            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <Chip tone="primary">{kindText}</Chip>
               <Chip>{stageLabel(node.stage, ECONOMY_CONFIG_DEFAULTS)}</Chip>
               <Chip>等级 {levelText}</Chip>
@@ -527,7 +527,7 @@ export const InspectorPanel = ({
             </div>
 
             {levelDefs.length > 0 && (
-              <div className="flex items-center gap-[3px]" role="img" aria-label={`等级分段：${levelText}`}>
+              <div className="flex items-center gap-1" role="img" aria-label={`等级分段：${levelText}`}>
                 {levelDefs.map((def, index) => (
                   <span
                     key={def.id}
@@ -543,8 +543,8 @@ export const InspectorPanel = ({
             )}
 
             {canWrite && (
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block space-y-0.5">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block space-y-1.5">
                   <Label>等级</Label>
                   <select
                     value={node.level ?? ''}
@@ -562,7 +562,7 @@ export const InspectorPanel = ({
                     ))}
                   </select>
                 </label>
-                <label className="block space-y-0.5">
+                <label className="block space-y-1.5">
                   <Label>状态</Label>
                   <select
                     value={node.status ?? ''}
@@ -583,7 +583,7 @@ export const InspectorPanel = ({
               </div>
             )}
 
-            <label className="block space-y-0.5">
+            <label className="block space-y-1.5">
               <Label>描述</Label>
               <textarea
                 rows={2}
@@ -596,8 +596,8 @@ export const InspectorPanel = ({
               />
             </label>
 
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block space-y-0.5">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block space-y-1.5">
                 <Label>计量单位</Label>
                 <input
                   type="text"
@@ -610,7 +610,7 @@ export const InspectorPanel = ({
                   className={FIELD_CLASS}
                 />
               </label>
-              <label className="block space-y-0.5">
+              <label className="block space-y-1.5">
                 <Label>规模</Label>
                 <input
                   type="number"
@@ -623,7 +623,7 @@ export const InspectorPanel = ({
                   onBlur={saveScale}
                   className={`${FIELD_CLASS} tabular-nums`}
                 />
-                <span className="block text-[10px] text-muted-foreground">
+                <span className="block text-xs text-muted-foreground">
                   {node.scale === undefined || node.scale === null
                     ? '未填（与 0 不同）'
                     : `已填 ${node.scale}`}
@@ -631,7 +631,7 @@ export const InspectorPanel = ({
               </label>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <Chip>出链 {node.counts?.outgoing ?? outgoing.length}</Chip>
               <Chip>入链 {node.counts?.incoming ?? incoming.length}</Chip>
               {node.hasMetrics && <Chip>含指标</Chip>}
@@ -640,7 +640,7 @@ export const InspectorPanel = ({
 
           <Section id="fields" title="字段" count={fieldDefs.length}>
             {fieldDefs.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 该类型没有字段定义：只有名称与描述（可在模块配置里补字段）。
               </p>
             ) : (
@@ -672,12 +672,12 @@ export const InspectorPanel = ({
                     推定 · {SURPLUS_LABELS[incidentSurplus.surplus] ?? '未知'}
                   </Chip>
                 ) : (
-                  <span className="text-[10px] text-muted-foreground">推定标注位</span>
+                  <span className="text-xs text-muted-foreground">推定标注位</span>
                 )
               }
             >
               {applicableMetrics.length === 0 ? (
-                <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Activity className="h-3.5 w-3.5" aria-hidden="true" />
                   还没有指标定义：在模块配置里添加后才有曲线。
                 </p>
@@ -689,12 +689,12 @@ export const InspectorPanel = ({
                     <div
                       key={metric.id}
                       data-testid={`economy-metric-${metric.id}`}
-                      className="space-y-1 rounded-md border border-border/40 bg-card/40 p-1.5"
+                      className="space-y-2 rounded-xl border border-border/50 bg-card/50 p-3 shadow-sm transition-all duration-300 hover:border-primary/25 hover:shadow-lg"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-foreground">{metric.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-foreground">{metric.label}</span>
                         {metric.unit && (
-                          <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
+                          <span className="text-xs text-muted-foreground">{metric.unit}</span>
                         )}
                         <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
                           {samples.length} 个采样
@@ -702,7 +702,7 @@ export const InspectorPanel = ({
                       </div>
                       <MetricSparkline samples={samples} />
                       {samples.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           最近：{sampleText(samples[samples.length - 1])}
                           {typeof samples[samples.length - 1]?.t === 'string'
                             ? ` · ${samples[samples.length - 1].t}`
@@ -742,7 +742,7 @@ export const InspectorPanel = ({
                             onClick={() => addSample(metric.id)}
                             aria-label={`添加 ${metric.label} 采样`}
                             data-testid={`economy-metric-add-${metric.id}`}
-                            className="rounded-md border border-border/60 px-1.5 py-1 text-[10px] text-foreground transition-colors hover:bg-accent/30 motion-reduce:transition-none"
+                            className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 motion-reduce:transition-none"
                           >
                             <Plus className="h-3 w-3" aria-hidden="true" />
                           </button>
@@ -765,13 +765,13 @@ export const InspectorPanel = ({
                 onClick={onLinkChanged}
                 title="重新读取关联"
                 aria-label="刷新关联"
-                className="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none"
+                className="rounded-lg border border-border/50 bg-muted/40 p-2 text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
               >
                 <RefreshCw className="h-3 w-3" aria-hidden="true" />
               </button>
             }
           >
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
               <Chip>出 {node.counts?.outgoing ?? outgoing.length}</Chip>
               <Chip>入 {node.counts?.incoming ?? incoming.length}</Chip>
@@ -785,29 +785,29 @@ export const InspectorPanel = ({
               title="统一关联面板"
             />
 
-            <div className="space-y-1 rounded-md border border-border/40 bg-card/30 p-1.5">
-              <div className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/80">
+            <div className="space-y-2 rounded-xl border border-border/40 bg-card/40 p-3">
+              <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground/80">
                 出入链摘要
               </div>
               {linkGroups.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">暂无关联</p>
+                <p className="text-sm text-muted-foreground">暂无关联</p>
               ) : (
                 linkGroups.map((group) => (
-                  <div key={group.module} className="space-y-0.5">
-                    <div className="text-[10px] text-muted-foreground">
+                  <div key={group.module} className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">
                       {moduleLabel(group.module)}
                     </div>
                     {group.rows.map((row) => {
                       const name = refs.resolveName(row.counterpart);
                       const invalid = refs.isInvalid(row.counterpart);
                       return (
-                        <div key={row.id} className="flex items-center gap-1.5 text-[11px]">
+                        <div key={row.id} className="flex items-center gap-2 text-sm">
                           <span className="shrink-0 text-muted-foreground">{row.label}</span>
                           {invalid ? (
                             <span className="flex min-w-0 items-center gap-1 text-destructive">
                               <TriangleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
                               <span className="truncate">{name}</span>
-                              <span className="shrink-0 text-[10px]">已失效</span>
+                              <span className="shrink-0 text-xs">已失效</span>
                             </span>
                           ) : (
                             <button
@@ -818,11 +818,11 @@ export const InspectorPanel = ({
                               {name}
                             </button>
                           )}
-                          <span className="shrink-0 rounded-full border border-border/60 px-1 text-[9px] text-muted-foreground">
+                          <span className="shrink-0 rounded-full border border-border/60 px-2 text-[10px] text-muted-foreground">
                             {kindDefs.find((def) => def.id === row.counterpart.kind)?.label ??
                               globalKindLabel(row.counterpart.kind)}
                           </span>
-                          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                             {row.out ? '出链' : '入链（到源实体修改）'}
                           </span>
                         </div>
@@ -836,7 +836,7 @@ export const InspectorPanel = ({
 
           <Section id="entries" title="条目" count={nodeEntries.length}>
             {nodeEntries.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 还没有条目：长文、列表、条款都可以放在这里（条目不参与关联）。
               </p>
             ) : (
@@ -844,11 +844,11 @@ export const InspectorPanel = ({
                 <div
                   key={entry.id}
                   data-testid={`economy-entry-${entry.id}`}
-                  className="space-y-1 rounded-md border border-border/40 bg-card/40 p-1.5"
+                  className="space-y-2 rounded-xl border border-border/50 bg-card/50 p-3 shadow-sm transition-all duration-300 hover:border-primary/25 hover:shadow-lg"
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-[11px] text-foreground">{entry.name}</span>
+                    <span className="text-sm text-foreground">{entry.name}</span>
                     {canWrite && (
                       <button
                         type="button"
@@ -857,14 +857,14 @@ export const InspectorPanel = ({
                           const text = entry.content?.text;
                           setEditingEntryText(typeof text === 'string' ? text : '');
                         }}
-                        className="ml-auto rounded px-1 text-[10px] text-primary transition-colors hover:bg-primary/10 motion-reduce:transition-none"
+                        className="ml-auto rounded-lg px-2 py-0.5 text-xs font-medium text-primary transition-all duration-200 hover:bg-primary/10 motion-reduce:transition-none"
                       >
                         编辑
                       </button>
                     )}
                   </div>
                   {editingEntryId === entry.id ? (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <textarea
                         rows={3}
                         value={editingEntryText}
@@ -872,11 +872,11 @@ export const InspectorPanel = ({
                         onChange={(event) => setEditingEntryText(event.target.value)}
                         className={FIELD_CLASS}
                       />
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setEditingEntryId(null)}
-                          className="rounded-md px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/20 motion-reduce:transition-none"
+                          className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
                         >
                           取消
                         </button>
@@ -886,7 +886,7 @@ export const InspectorPanel = ({
                             saveEntry(entry.name, { ...entry.content, text: editingEntryText });
                             setEditingEntryId(null);
                           }}
-                          className="rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground transition-colors hover:bg-primary/90 motion-reduce:transition-none"
+                          className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 motion-reduce:transition-none"
                         >
                           保存
                         </button>
@@ -900,7 +900,7 @@ export const InspectorPanel = ({
             )}
 
             {canWrite && (
-              <div className="space-y-1 rounded-md border border-dashed border-border/50 p-1.5">
+              <div className="space-y-2 rounded-xl border-2 border-dashed border-border/40 p-3">
                 <input
                   type="text"
                   value={entryDraft.name}
@@ -929,7 +929,7 @@ export const InspectorPanel = ({
                       setEntryDraft({ name: '', text: '' });
                     }}
                     disabled={!entryDraft.name.trim()}
-                    className="flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 motion-reduce:transition-none"
+                    className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50 motion-reduce:transition-none"
                   >
                     <Plus className="h-3 w-3" aria-hidden="true" />
                     新增条目
@@ -940,30 +940,30 @@ export const InspectorPanel = ({
           </Section>
 
           {canWrite && (
-            <section className="mt-auto space-y-1 border-t border-border/40 px-3 py-2.5">
+            <section className="mt-auto space-y-2 border-t border-border/30 px-5 py-4">
               {!confirmDelete ? (
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
                   data-testid="economy-inspector-delete"
-                  className="flex items-center gap-1 text-[11px] text-destructive transition-colors hover:underline motion-reduce:transition-none"
+                  className="flex items-center gap-1.5 text-sm text-destructive transition-all duration-200 hover:underline motion-reduce:transition-none"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   删除实体
                 </button>
               ) : (
-                <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-1.5">
-                  <p className="text-[11px] text-foreground">
+                <div className="space-y-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+                  <p className="text-sm leading-relaxed text-foreground">
                     将删除「{node.name}」，并影响 {incident.length} 条关联（出链{' '}
                     {node.counts?.outgoing ?? outgoing.length} / 入链{' '}
                     {node.counts?.incoming ?? incoming.length}）。入链不会从对方实体上被单独拆掉，
                     需要到源实体修改。
                   </p>
-                  <div className="flex justify-end gap-1">
+                  <div className="flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(false)}
-                      className="rounded-md px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/20 motion-reduce:transition-none"
+                      className="rounded-lg border border-border/50 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground motion-reduce:transition-none"
                     >
                       取消
                     </button>
@@ -971,7 +971,7 @@ export const InspectorPanel = ({
                       type="button"
                       onClick={() => void onDeleteEntity(node.id)}
                       data-testid="economy-inspector-delete-confirm"
-                      className="rounded-md bg-destructive px-2 py-0.5 text-[10px] text-destructive-foreground transition-colors hover:bg-destructive/90 motion-reduce:transition-none"
+                      className="rounded-lg bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90 motion-reduce:transition-none"
                     >
                       确认删除
                     </button>

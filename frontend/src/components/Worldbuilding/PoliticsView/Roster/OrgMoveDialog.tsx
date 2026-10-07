@@ -30,11 +30,11 @@ export const OrgMoveDialog = ({
   onConfirm,
 }: OrgMoveDialogProps) => (
   <Modal isOpen={open} onClose={onCancel} title="改变组织归属" size="sm">
-    <div className="space-y-2 text-xs text-foreground" data-testid="org-move-dialog">
+    <div className="space-y-3 text-sm text-foreground" data-testid="org-move-dialog">
       <p className="leading-relaxed">
         把「{orgName}」从「{fromPolityName ?? '无政权归属'}」移到「{toPolityName}」。
       </p>
-      <ul className="list-disc space-y-1 pl-4 text-[11px] text-muted-foreground">
+      <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
         {lines.map((line) => (
           <li key={line}>{line}</li>
         ))}
@@ -44,7 +44,7 @@ export const OrgMoveDialog = ({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:bg-accent/30 disabled:opacity-50"
+          className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
         >
           取消
         </button>
@@ -52,7 +52,7 @@ export const OrgMoveDialog = ({
           type="button"
           onClick={onConfirm}
           disabled={pending}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
         >
           {pending ? '写入中...' : '确认移动'}
         </button>

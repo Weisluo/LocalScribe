@@ -14,3 +14,4 @@ export * from './customFieldModel';
 export * from './CustomFieldRenderer';
 export * from './EmptyState';
 export * from './QuickStart';
+export * from './motion';

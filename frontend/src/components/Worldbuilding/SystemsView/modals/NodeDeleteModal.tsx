@@ -7,6 +7,7 @@
 
 import { AlertTriangle, Loader2, Trash2, Unlink } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
+import { motion } from 'framer-motion';
 
 import { Modal } from '@/components/Modals/Modal';
 import type { SystemNode } from '../types';
@@ -59,20 +60,20 @@ export const NodeDeleteModal = ({
   return (
     <Modal isOpen={open} onClose={onClose} title="删除节点" size="sm">
       <div
-        className="space-y-3"
+        className="space-y-4"
         data-testid="node-delete-form"
         // 阻止 / j k v n Enter 穿透到 SystemsView 的窗口快捷键；Esc 与 Tab 放行给 Modal 自身
         onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
           if (VIEW_SHORTCUT_KEYS.includes(event.key)) event.stopPropagation();
         }}
       >
-        <p className="text-xs text-foreground">
+        <p className="text-sm leading-relaxed text-foreground">
           确认删除「{node?.name ?? ''}」？
         </p>
 
         {references.length > 0 ? (
-          <div className="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+          <div className="space-y-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               该节点被以下对象通过 grants / costs 引用：
             </div>
@@ -80,7 +81,7 @@ export const NodeDeleteModal = ({
               {references.map((reference) => (
                 <li
                   key={reference.linkId}
-                  className="text-[11px] text-foreground"
+                  className="text-xs text-foreground"
                   data-reference-type={reference.type}
                 >
                   {reference.name}
@@ -90,47 +91,53 @@ export const NodeDeleteModal = ({
             </ul>
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             当前没有 grants / costs 引用该节点。
           </p>
         )}
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-2">
-          <button
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/30 pt-3">
+          <motion.button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
           >
             取消
-          </button>
+          </motion.button>
           {references.length > 0 && (
-            <button
+            <motion.button
               type="button"
               disabled={busy !== null}
               onClick={() => void run('links')}
-              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent/30 disabled:opacity-50"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
             >
               {busy === 'links' ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Unlink className="h-3.5 w-3.5" aria-hidden="true" />
+                <Unlink className="h-4 w-4" aria-hidden="true" />
               )}
               仅删关联
-            </button>
+            </motion.button>
           )}
-          <button
+          <motion.button
             type="button"
             disabled={busy !== null}
             onClick={() => void run('node')}
-            className="flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-destructive to-destructive/90 px-4 py-2 text-sm font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-destructive/20 disabled:opacity-50"
           >
             {busy === 'node' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             )}
             仅删除节点
-          </button>
+          </motion.button>
         </div>
       </div>
     </Modal>

@@ -8,8 +8,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { GitBranch, Info, Loader2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { viewSpring } from '../shared/motion';
 
 import type { EntityRef } from '@/services/worldbuildingApi';
 import { useDeleteWorld, useWorlds } from '../hooks/useWorldData';
@@ -197,40 +200,48 @@ export const MigrationContainerPanel = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div
+      <motion.div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
         onClick={() => onResolved?.()}
       />
-      <aside className="relative z-10 flex h-full w-full max-w-xl flex-col border-l border-border bg-background shadow-xl">
-        <header className="flex items-start justify-between border-b border-border/60 px-5 py-3">
+      <motion.aside
+        initial={{ x: 48, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={viewSpring}
+        className="relative z-10 flex h-full w-full max-w-xl flex-col border-l border-border/50 bg-background shadow-lg"
+      >
+        <header className="flex items-start justify-between border-b border-border/30 px-6 py-4">
           <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <h3 className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
               <GitBranch className="h-4 w-4 text-primary" />
               关联归位
             </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               {containerWorld?.name ?? '关联迁移容器'} · 待归位 {links.length} 条
             </p>
           </div>
           <button
             type="button"
             onClick={() => onResolved?.()}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+            className="rounded-lg border border-transparent p-1.5 text-muted-foreground transition-all duration-200 hover:border-border/50 hover:bg-muted/40 hover:text-foreground"
             title="收起面板"
           >
             <X className="h-4 w-4" />
           </button>
         </header>
 
-        <div className="space-y-2 border-b border-border/60 px-5 py-3">
-          <label className="block text-xs text-muted-foreground" htmlFor="migration-target-world">
+        <div className="space-y-3 border-b border-border/30 px-6 py-4">
+          <label className="block text-xs font-medium text-muted-foreground" htmlFor="migration-target-world">
             目标世界
           </label>
           <select
             id="migration-target-world"
             value={explicitTargetId}
             onChange={(event) => setExplicitTargetId(event.target.value)}
-            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            className="w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15"
           >
             <option value="">按端点自动归位（默认，省略 target_world_id）</option>
             {targetWorlds.map((world) => (
@@ -244,7 +255,7 @@ export const MigrationContainerPanel = ({
               type="button"
               onClick={handleToggleAll}
               disabled={links.length === 0}
-              className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground disabled:opacity-50"
+              className="rounded-lg border border-border/50 bg-muted/40 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground disabled:opacity-50"
             >
               {allSelected ? '取消全选' : '全选'}
             </button>
@@ -252,19 +263,19 @@ export const MigrationContainerPanel = ({
               type="button"
               onClick={handleBatchMove}
               disabled={selectedIds.length === 0 || moveMany.isPending}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/90 px-3.5 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-primary/20 disabled:opacity-50"
             >
               {moveMany.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <GitBranch className="h-3.5 w-3.5" />
+                <GitBranch className="h-4 w-4" />
               )}
               批量归位（{selectedIds.length}）
             </button>
           </div>
           {entityIndex.isLoading && links.length > 0 && (
-            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
               正在解析端点实体…
             </p>
           )}
@@ -273,17 +284,19 @@ export const MigrationContainerPanel = ({
         <div className="flex-1 overflow-y-auto">
           {linksQuery.isLoading ? (
             <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
             </div>
           ) : links.length === 0 ? (
-            <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
-              <Info className="mb-2 h-6 w-6 text-muted-foreground/60" />
-              <p className="text-sm text-muted-foreground">容器内已无待归位关联</p>
+            <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border border-border/40 bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5">
+                <Info className="h-5 w-5 text-muted-foreground" />
+              </span>
+              <p className="text-sm font-medium text-foreground">容器内已无待归位关联</p>
             </div>
           ) : (
             groups.map((group) => (
               <section key={group.key}>
-                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/40 bg-card/60 px-5 py-1.5 text-[11px] text-muted-foreground backdrop-blur-sm">
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/30 bg-card/60 px-6 py-2 text-xs text-muted-foreground backdrop-blur-md">
                   <span className="font-medium">
                     {group.legacyRelationType ?? '未标注类型'} · 强度{' '}
                     {group.strength ?? '未标注'}
@@ -311,7 +324,7 @@ export const MigrationContainerPanel = ({
         </div>
 
         {isEmpty && (
-          <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
+          <div className="flex items-center justify-between border-t border-border/30 px-6 py-4">
             <span className="text-xs text-muted-foreground">
               容器已无待归位关联，可以删除空容器
             </span>
@@ -319,18 +332,18 @@ export const MigrationContainerPanel = ({
               type="button"
               onClick={handleDeleteContainer}
               disabled={deleteWorld.isPending}
-              className="flex items-center gap-1.5 rounded-md bg-destructive px-2.5 py-1 text-xs text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-destructive px-3.5 py-1.5 text-sm font-semibold text-destructive-foreground shadow-sm transition-all duration-200 hover:bg-destructive/90 disabled:opacity-50"
             >
               {deleteWorld.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               )}
               删除空容器
             </button>
           </div>
         )}
-      </aside>
+      </motion.aside>
     </div>
   );
 };

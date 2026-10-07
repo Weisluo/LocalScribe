@@ -52,12 +52,13 @@ export const EDGE_STATUS_CLASS: Record<string, string> = {
 };
 
 export const fieldClass =
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
+  'w-full rounded-xl border border-border/40 bg-muted/30 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/40 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/15';
 
-export const labelClass = 'text-[10px] font-medium text-muted-foreground';
+export const labelClass = 'text-xs font-medium text-muted-foreground';
 
 export const sectionTitleClass =
-  'flex items-center gap-1.5 text-[11px] font-semibold text-foreground';
+  'flex items-center gap-2 text-sm font-semibold text-foreground';
 
+/** §4.7 筛选 chip（kind / 状态过滤）：选中 / 未选中两态由调用方补领域色或 primary */
 export const chipClass =
-  'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] transition-colors motion-reduce:transition-none';
+  'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 motion-reduce:transition-none';
