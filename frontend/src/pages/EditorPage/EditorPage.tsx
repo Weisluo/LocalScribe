@@ -69,7 +69,7 @@ export const EditorPage = () => {
   const containerWidthRef = useRef(0);
 
   // 获取所有项目列表（用于切换）
-  const { data: projects } = useQuery({
+  const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => api.get<ProjectResponse[]>('/projects'),
   });
@@ -551,13 +551,44 @@ export const EditorPage = () => {
             <h1 className="text-3xl font-serif font-bold text-foreground mb-2">LocalScribe</h1>
             <p className="text-muted-foreground">你的本地写作工坊</p>
           </div>
-          <button
-            onClick={() => openModal('project')}
-            className="flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/20"
-          >
-            <PlusCircle className="h-5 w-5" />
-            <span className="font-medium">创建第一个项目</span>
-          </button>
+          {/* 没记住当前项目时：区分「一个项目都没有」与「只是没记住」，后者直接列出已有项目 */}
+          {projectsLoading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          ) : projects && projects.length > 0 ? (
+            <div className="w-full max-w-md space-y-2">
+              <p className="text-center text-sm text-muted-foreground">选择一个项目开始</p>
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {projects.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setCurrentProjectId(item.id)}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-4 py-3 text-left transition-all duration-200 hover:border-primary/30 hover:bg-accent/10"
+                  >
+                    <BookOpen className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="flex-1 truncate font-medium text-foreground">{item.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {item.updated_at ? format(new Date(item.updated_at), 'yyyy-MM-dd') : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => openModal('project')}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted/40 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-accent/10 hover:text-foreground"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>新建项目</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => openModal('project')}
+              className="flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg shadow-primary/20"
+            >
+              <PlusCircle className="h-5 w-5" />
+              <span className="font-medium">创建第一个项目</span>
+            </button>
+          )}
         </div>
         <CreateItemModal />
       </div>
