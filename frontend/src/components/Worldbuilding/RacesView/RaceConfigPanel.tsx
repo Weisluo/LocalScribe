@@ -16,15 +16,24 @@ export interface RaceConfigPanelProps {
   onClose: () => void;
   /** 解析后的配置（默认值 + 后端 config），作为草稿初值 */
   config: ModuleConfig;
+  /** 后端原始 config：对象键（fieldSchema / terminology / nodeStyles）增量保存的基底，缺了会丢同级子键 */
+  rawConfig?: ModuleConfig;
   /** 保存补丁（useModuleConfig().save 负责与原始 config 浅合并后 PUT） */
   onSave: (patch: ModuleConfig) => Promise<void>;
 }
 
-export const RaceConfigPanel = ({ open, onClose, config, onSave }: RaceConfigPanelProps) => (
+export const RaceConfigPanel = ({
+  open,
+  onClose,
+  config,
+  rawConfig,
+  onSave,
+}: RaceConfigPanelProps) => (
   <ModuleConfigPanel
     open={open}
     onClose={onClose}
     config={config}
+    rawConfig={rawConfig}
     onSave={onSave}
     builtins={RACE_KINDS}
     maxDepth={RACES_MAX_DEPTH}

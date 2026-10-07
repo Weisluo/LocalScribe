@@ -3,11 +3,12 @@
  *
  * 五部分：
  * 1) 浏览器侧：tests/worldbuilding/harness5.tsx 打成单文件注入真实浏览器，跑经济纯函数
- *    （config 契约、normalize 数值口径、guards 降级与窗口）+ EconomyViewV2 三档 DOM 断言；
+ *    （config 契约、normalize 数值口径、guards 降级与窗口）+ EconomyView 三档 DOM 断言；
  * 2) 静态护栏：link_type 白名单、无 emoji、图标只用 Lucide（含 icon 字面量校验）、
  *    graph/ 纯函数不得引入 React、领域色只有 green / cyan（禁用 Tailwind emerald-*，
  *    且 ECONOMY_PALETTE 与设计文档 §4.7.1 表格逐值相等）；
- * 3) 交付面：EconomyViewV2 文件与导出的冻结清单、WorldbuildingView 按 flag 分支、旧 EconomyView 保留（P6 才删）；
+ * 3) 交付面：EconomyView（P6 由 EconomyViewV2 改名）文件与导出的冻结清单、
+ *    WorldbuildingView 固定渲染新视图（旧经济视图与 feature flag 已在 P6 删除）；
  * 4) 边界：不新增表、经济 API 只有只读 GET、注册表仍是 54 条、不引入图库；
  * 5) gen:types 无漂移：src/types/api.ts 的经济字段与 app/schemas/economy.py 逐字段对齐。
  *
@@ -26,10 +27,10 @@ interface HarnessReport {
 
 /**
  * 精确地板 = harness5.tsx 当前的断言数（删掉任何一条/一组断言都会被这条守卫发现）。
- * 实测 111 条（config 契约 47 + 配置解析 12 + flag 5 + normalize 16 + guards 8
- * + layout 6 + 三档 DOM 9 + 降级 4 + 退化形态 4）；harness5.tsx 断言数变化时必须同步这里。
+ * P6 交接：删掉 feature flag 的 4 条断言（flag 默认关闭 / 可开 / 可关 / 键名固定），
+ * 其余覆盖不变；harness5.tsx 断言数变化时必须同步这里。
  */
-const PHASE5_CHECK_FLOOR = 131;
+const PHASE5_CHECK_FLOOR = 127;
 
 const SRC = path.resolve(FRONTEND_ROOT, 'src');
 const REPO_ROOT = path.resolve(FRONTEND_ROOT, '..');
@@ -47,10 +48,10 @@ const LUCIDE_DTS = path.resolve(FRONTEND_ROOT, 'node_modules/lucide-react/dist/l
  *   只有 `emerald` 这个色名允许用 emerald-* class；`green` 色名必须是 green-*（契约绿 #16A34A）。
  */
 const DOMAIN_COLOR_PATHS = [
-  'components/Worldbuilding/EconomyViewV2/components',
-  'components/Worldbuilding/EconomyViewV2/modals',
-  'components/Worldbuilding/EconomyViewV2/config.ts',
-  'components/Worldbuilding/EconomyViewV2/EconomyView.tsx',
+  'components/Worldbuilding/EconomyView/components',
+  'components/Worldbuilding/EconomyView/modals',
+  'components/Worldbuilding/EconomyView/config.ts',
+  'components/Worldbuilding/EconomyView/EconomyView.tsx',
 ].map((relative) => path.resolve(SRC, relative));
 
 /**
@@ -64,11 +65,13 @@ const DESIGN_DOMAIN_PALETTE = {
   cyan400: { light: '#22D3EE', dark: '#67E8F9' },
 } as const;
 
-/** Phase 5 新增/改动的代码路径（静态验收范围） */
-const PHASE5_PATHS = [
-  'components/Worldbuilding/EconomyViewV2',
-  'utils/featureFlags.ts',
-].map((relative) => path.resolve(SRC, relative));
+/**
+ * Phase 5 代码的静态验收范围（P6 起目录改名为 EconomyView；
+ * utils/featureFlags.ts 已随 P6 删除，flag 由 P6 的静态守卫单独断言「文件不存在」）。
+ */
+const PHASE5_PATHS = ['components/Worldbuilding/EconomyView'].map((relative) =>
+  path.resolve(SRC, relative)
+);
 
 const walk = (target: string): string[] => {
   if (!fs.existsSync(target)) return [];
@@ -122,35 +125,34 @@ const CONTRACT_ECONOMY_LINK_TYPES = [
 
 /** P5 交付面：文件 -> 必须出现的符号 */
 const REQUIRED_DELIVERABLES: [string, string[]][] = [
-  ['components/Worldbuilding/EconomyViewV2/EconomyView.tsx', ['EconomyViewV2']],
-  ['components/Worldbuilding/EconomyViewV2/index.ts', ['EconomyViewV2']],
-  ['components/Worldbuilding/EconomyViewV2/config.ts', ['ECONOMY_CONFIG_DEFAULTS', 'resolveEconomyConfig', 'ECONOMY_VERBS', 'ECONOMY_LAYERS']],
-  ['components/Worldbuilding/EconomyViewV2/types.ts', ['EconomyViewV2Props', 'EconomyVisualModel', 'SketchLedgerProps', 'FlowCanvasProps', 'SandboxOverlayProps', 'DegradeLedgerMatrixProps']],
-  ['components/Worldbuilding/EconomyViewV2/hooks/useEconomyViewState.ts', ['useEconomyViewState']],
-  ['components/Worldbuilding/EconomyViewV2/hooks/useEconomyData.ts', ['useEconomyData']],
-  ['components/Worldbuilding/EconomyViewV2/hooks/useTimeline.ts', ['useTimeline']],
-  ['components/Worldbuilding/EconomyViewV2/graph/layout.ts', ['buildLaneLayout']],
-  ['components/Worldbuilding/EconomyViewV2/graph/normalize.ts', ['buildVisualModel']],
-  ['components/Worldbuilding/EconomyViewV2/graph/guards.ts', ['shouldDegradeMatrix']],
-  ['components/Worldbuilding/EconomyViewV2/components/SketchLedger.tsx', ['SketchLedger']],
-  ['components/Worldbuilding/EconomyViewV2/components/ChipList.tsx', ['ChipList']],
-  ['components/Worldbuilding/EconomyViewV2/components/FlowCanvas.tsx', ['FlowCanvas']],
-  ['components/Worldbuilding/EconomyViewV2/components/GraphNode.tsx', ['GraphNode']],
-  ['components/Worldbuilding/EconomyViewV2/components/GraphEdge.tsx', ['GraphEdge']],
-  ['components/Worldbuilding/EconomyViewV2/components/LedgerList.tsx', ['LedgerList']],
-  ['components/Worldbuilding/EconomyViewV2/components/InspectorPanel.tsx', ['InspectorPanel']],
-  ['components/Worldbuilding/EconomyViewV2/components/SandboxOverlay.tsx', ['SandboxOverlay']],
-  ['components/Worldbuilding/EconomyViewV2/components/StatsPanel.tsx', ['StatsPanel']],
-  ['components/Worldbuilding/EconomyViewV2/components/LayerRail.tsx', ['LayerRail']],
-  ['components/Worldbuilding/EconomyViewV2/components/TimeBrush.tsx', ['TimeBrush']],
-  ['components/Worldbuilding/EconomyViewV2/components/DegradeLedgerMatrix.tsx', ['DegradeLedgerMatrix']],
-  ['components/Worldbuilding/EconomyViewV2/components/EmptyState.tsx', ['EconomyEmptyState']],
-  ['components/Worldbuilding/EconomyViewV2/modals/PromoteChipModal.tsx', ['PromoteChipModal']],
-  ['utils/featureFlags.ts', ['isEconomyViewV2Enabled', 'setEconomyViewV2Enabled']],
+  ['components/Worldbuilding/EconomyView/EconomyView.tsx', ['EconomyView']],
+  ['components/Worldbuilding/EconomyView/index.ts', ['EconomyView']],
+  ['components/Worldbuilding/EconomyView/config.ts', ['ECONOMY_CONFIG_DEFAULTS', 'resolveEconomyConfig', 'ECONOMY_VERBS', 'ECONOMY_LAYERS']],
+  ['components/Worldbuilding/EconomyView/types.ts', ['EconomyViewProps', 'EconomyVisualModel', 'SketchLedgerProps', 'FlowCanvasProps', 'SandboxOverlayProps', 'DegradeLedgerMatrixProps']],
+  ['components/Worldbuilding/EconomyView/hooks/useEconomyViewState.ts', ['useEconomyViewState']],
+  ['components/Worldbuilding/EconomyView/hooks/useEconomyData.ts', ['useEconomyData']],
+  ['components/Worldbuilding/EconomyView/hooks/useTimeline.ts', ['useTimeline']],
+  ['components/Worldbuilding/EconomyView/graph/layout.ts', ['buildLaneLayout']],
+  ['components/Worldbuilding/EconomyView/graph/normalize.ts', ['buildVisualModel']],
+  ['components/Worldbuilding/EconomyView/graph/guards.ts', ['shouldDegradeMatrix']],
+  ['components/Worldbuilding/EconomyView/components/SketchLedger.tsx', ['SketchLedger']],
+  ['components/Worldbuilding/EconomyView/components/ChipList.tsx', ['ChipList']],
+  ['components/Worldbuilding/EconomyView/components/FlowCanvas.tsx', ['FlowCanvas']],
+  ['components/Worldbuilding/EconomyView/components/GraphNode.tsx', ['GraphNode']],
+  ['components/Worldbuilding/EconomyView/components/GraphEdge.tsx', ['GraphEdge']],
+  ['components/Worldbuilding/EconomyView/components/LedgerList.tsx', ['LedgerList']],
+  ['components/Worldbuilding/EconomyView/components/InspectorPanel.tsx', ['InspectorPanel']],
+  ['components/Worldbuilding/EconomyView/components/SandboxOverlay.tsx', ['SandboxOverlay']],
+  ['components/Worldbuilding/EconomyView/components/StatsPanel.tsx', ['StatsPanel']],
+  ['components/Worldbuilding/EconomyView/components/LayerRail.tsx', ['LayerRail']],
+  ['components/Worldbuilding/EconomyView/components/TimeBrush.tsx', ['TimeBrush']],
+  ['components/Worldbuilding/EconomyView/components/DegradeLedgerMatrix.tsx', ['DegradeLedgerMatrix']],
+  ['components/Worldbuilding/EconomyView/components/EmptyState.tsx', ['EconomyEmptyState']],
+  ['components/Worldbuilding/EconomyView/modals/PromoteChipModal.tsx', ['PromoteChipModal']],
 ];
 
 test.describe('Phase 5 经济模块', () => {
-  test('浏览器侧用例：纯函数与 EconomyViewV2 三档 DOM', async ({ page }) => {
+  test('浏览器侧用例：纯函数与 EconomyView 三档 DOM', async ({ page }) => {
     test.setTimeout(300_000);
     await buildPhase5Harness();
     expect(fs.existsSync(PHASE5_HARNESS_PATH), `用例打包失败：${PHASE5_HARNESS_PATH}`).toBe(true);
@@ -296,7 +298,7 @@ test.describe('Phase 5 经济模块', () => {
     ).toEqual([]);
 
     // ② ECONOMY_PALETTE 的 green / cyan 两套 hex 必须等于设计文档表格里的精确值
-    const config = read('components/Worldbuilding/EconomyViewV2/config.ts');
+    const config = read('components/Worldbuilding/EconomyView/config.ts');
     const paletteBlock = /export const ECONOMY_PALETTE = \{([\s\S]*?)\n\}/.exec(config);
     expect(paletteBlock, 'ECONOMY_PALETTE 未解析到（断言会失效）').toBeTruthy();
     const block = paletteBlock?.[1] ?? '';
@@ -315,7 +317,7 @@ test.describe('Phase 5 经济模块', () => {
     expect(block, '领域色不得写成 emerald 的 hex').not.toContain('#10B981');
 
     // ③ 画布线色换算：`green` 色名必须落到 green-*，emerald-* 只能属于 `emerald` 色名
-    const layout = read('components/Worldbuilding/EconomyViewV2/graph/layout.ts');
+    const layout = read('components/Worldbuilding/EconomyView/graph/layout.ts');
     expect(layout, 'green 色名必须用 green-600（§4.7.1）').toContain(
       "green: 'stroke-green-600 dark:stroke-green-400'"
     );
@@ -331,7 +333,7 @@ test.describe('Phase 5 经济模块', () => {
     ).toEqual([]);
   });
 
-  test('交付面齐全 + WorldbuildingView 按 flag 分支且旧 EconomyView 保留', () => {
+  test('交付面齐全 + WorldbuildingView 固定渲染经济视图（旧视图与 flag 已删除）', () => {
     const missing: string[] = [];
     for (const [relative, symbols] of REQUIRED_DELIVERABLES) {
       const absolute = path.resolve(SRC, relative);
@@ -346,28 +348,29 @@ test.describe('Phase 5 经济模块', () => {
     }
     expect(missing, `P5 交付面缺失：\n${missing.join('\n')}`).toEqual([]);
 
+    // P6 交接后：WorldbuildingView 只认改名后的 EconomyView，不再有二选一分支
     const view = read('components/Worldbuilding/WorldbuildingView.tsx');
-    for (const token of [
-      "from './EconomyViewV2'",
-      '<EconomyViewV2',
-      'isEconomyViewV2Enabled',
-      "from './EconomyView'",
-      '<EconomyView ',
-    ]) {
+    for (const token of ["from './EconomyView'", '<EconomyView']) {
       expect(view, `WorldbuildingView 未接入 ${token}`).toContain(token);
     }
-    // 旧 UI 必须保留（P6 才删）：旧 EconomyView 目录仍在
+    for (const legacy of ['EconomyViewV2', 'isEconomyViewV2Enabled']) {
+      expect(view, `P6 后不应再出现 ${legacy}`).not.toContain(legacy);
+    }
+    // 旧 UI 与 feature flag 必须在 P6 删除
     expect(
-      fs.existsSync(path.resolve(SRC, 'components/Worldbuilding/EconomyView/index.tsx')) ||
-        fs.existsSync(path.resolve(SRC, 'components/Worldbuilding/EconomyView.tsx')),
-      'P5 不应删除旧 EconomyView（P6 才删）'
-    ).toBe(true);
+      fs.existsSync(path.resolve(SRC, 'components/Worldbuilding/EconomyView.tsx')),
+      '旧 EconomyView.tsx 必须已删除（P6 全量切换）'
+    ).toBe(false);
+    expect(
+      fs.existsSync(path.resolve(SRC, 'utils/featureFlags.ts')),
+      'utils/featureFlags.ts 必须已删除（P6 删除清单第 2 项）'
+    ).toBe(false);
 
     // 三档共用一套数据的结构证据：graph/normalize + guards 是纯函数，不 import React
     for (const relative of [
-      'components/Worldbuilding/EconomyViewV2/graph/normalize.ts',
-      'components/Worldbuilding/EconomyViewV2/graph/guards.ts',
-      'components/Worldbuilding/EconomyViewV2/graph/layout.ts',
+      'components/Worldbuilding/EconomyView/graph/normalize.ts',
+      'components/Worldbuilding/EconomyView/graph/guards.ts',
+      'components/Worldbuilding/EconomyView/graph/layout.ts',
     ]) {
       const content = read(relative);
       expect(content, `${relative} 不应 import React（保持纯函数可断言）`).not.toMatch(
@@ -376,7 +379,7 @@ test.describe('Phase 5 经济模块', () => {
     }
 
     // 阈值与配置骨架写在可断言的文件里
-    const config = read('components/Worldbuilding/EconomyViewV2/config.ts');
+    const config = read('components/Worldbuilding/EconomyView/config.ts');
     expect(config).toContain('ECONOMY_MATRIX_THRESHOLD = 800');
     expect(config).toContain("CYCLE_KIND = 'custom_cycle'");
     expect(config).toMatch(/ECONOMY_MIN_SKETCH_FIELDS = 3/);
@@ -435,11 +438,14 @@ test.describe('Phase 5 经济模块', () => {
         const isPublished = publishedMigrations.has(relative);
         if (!isPublished) {
           const down = downRevisionOf(file);
-          // 新迁移必须接在已发布链之后（线性历史）
+          // 新迁移必须接在已发布链之后（线性历史）——对所有阶段的迁移都成立
           if (!down || !publishedRevisions.has(down)) {
             tableOffenders.push(`${relative}: 新增迁移未接在已发布链之后（down_revision=${down}）`);
           }
-          if (/create_table\s*\(/.test(content)) {
+          // 「P5 不应建表」只针对 P5 自己的迁移：后续阶段（P6 删表迁移的 downgrade 会重建表）
+          // 不属于 P5 冻结范围，这里按文件名收敛，避免把别阶段的迁移算到 P5 头上。
+          const isP5Migration = /p5|econom/i.test(path.basename(relative));
+          if (isP5Migration && /create_table\s*\(/.test(content)) {
             tableOffenders.push(`${relative}: P5 不应建表`);
           }
         }
@@ -568,8 +574,8 @@ test.describe('Phase 5 经济模块', () => {
       `生成类型缺少后端字段（先重跑 gen:types）：\n${missingInTypes.join('\n')}`
     ).toEqual([]);
 
-    // ③ 视图模型不得手写重复定义：EconomyViewV2/types.ts 必须从生成类型取
-    const viewTypes = read('components/Worldbuilding/EconomyViewV2/types.ts');
+    // ③ 视图模型不得手写重复定义：EconomyView/types.ts 必须从生成类型取
+    const viewTypes = read('components/Worldbuilding/EconomyView/types.ts');
     expect(viewTypes).toContain("components['schemas']['EconomyGraph']");
     expect(viewTypes).toContain("components['schemas']['EconomySummary']");
     expect(viewTypes).toContain("components['schemas']['EconomyEdge']");
@@ -580,7 +586,7 @@ test.describe('Phase 5 经济模块', () => {
   });
 
   test('推荐 kind 骨架只在用户实际用到后写入 config.entityTypes（计划 §6）', () => {
-    const view = read('components/Worldbuilding/EconomyViewV2/EconomyView.tsx');
+    const view = read('components/Worldbuilding/EconomyView/EconomyView.tsx');
     expect(view, '缺少 rememberKind（推荐 kind 骨架的落库入口）').toContain(
       'const rememberKind = useCallback'
     );
@@ -594,7 +600,7 @@ test.describe('Phase 5 经济模块', () => {
       'rememberKind 必须同时挂在新建实体与 chip 展开上（点击后才写入，不预置）'
     ).toBeGreaterThanOrEqual(2);
     // 不预置：config.ts 的出厂骨架里 entityTypes 必须为空数组
-    expect(read('components/Worldbuilding/EconomyViewV2/config.ts')).toMatch(
+    expect(read('components/Worldbuilding/EconomyView/config.ts')).toMatch(
       /entityTypes:\s*\[\s*\]/
     );
   });

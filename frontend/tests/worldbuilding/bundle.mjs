@@ -23,6 +23,21 @@ export const PHASE5_HARNESS_PATH = path.resolve(
   FRONTEND_ROOT,
   'node_modules/.cache/phase5-harness/harness.js'
 );
+/** Phase 6 世界容器（设置 / 备份 / 搜索 / 世界脉络） */
+export const PHASE6_HARNESS_PATH = path.resolve(
+  FRONTEND_ROOT,
+  'node_modules/.cache/phase6-harness/harness.js'
+);
+/** Phase 6 模块配置（子模块管理器 / 字段编辑器 / 模块配置面板） */
+export const PHASE6B_HARNESS_PATH = path.resolve(
+  FRONTEND_ROOT,
+  'node_modules/.cache/phase6b-harness/harness.js'
+);
+/** Phase 6 世界脉络（P6-T8 纯逻辑：图构造 / 降级 / 筛选 / 布局 / 推荐） */
+export const PHASE6W_HARNESS_PATH = path.resolve(
+  FRONTEND_ROOT,
+  'node_modules/.cache/phase6w-harness/harness.js'
+);
 
 const buildHarnessFile = async ({ entry, outFile, name }) => {
   const { build } = await import('vite');
@@ -84,4 +99,25 @@ export const buildPhase5Harness = async () =>
     entry: 'tests/worldbuilding/harness5.tsx',
     outFile: PHASE5_HARNESS_PATH,
     name: 'Phase5Harness',
+  });
+
+export const buildPhase6Harness = async () =>
+  buildHarnessFile({
+    entry: 'tests/worldbuilding/harness6.tsx',
+    outFile: PHASE6_HARNESS_PATH,
+    name: 'Phase6Harness',
+  });
+
+export const buildPhase6bHarness = async () =>
+  buildHarnessFile({
+    entry: 'tests/worldbuilding/harness6b.tsx',
+    outFile: PHASE6B_HARNESS_PATH,
+    name: 'Phase6bHarness',
+  });
+
+export const buildPhase6wHarness = async () =>
+  buildHarnessFile({
+    entry: 'tests/worldbuilding/harness6w.tsx',
+    outFile: PHASE6W_HARNESS_PATH,
+    name: 'Phase6wHarness',
   });

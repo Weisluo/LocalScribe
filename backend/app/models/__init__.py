@@ -27,16 +27,13 @@ from .folder import Folder
 from .note import Note
 from .outline import EventConnection, StoryEvent
 from .project import Project
-from .relation import BidirectionalRelation, WorldLink
+from .relation import WorldLink
 from .worldbuilding import (
     DEFAULT_MODULE_SPECS,
-    CustomWorldviewConfig,
     World,
-    WorldInstance,
     WorldModule,
     WorldModuleItem,
     WorldSubmodule,
-    WorldTemplate,
 )
 
 __all__ = [
@@ -45,14 +42,10 @@ __all__ = [
     "Folder",
     "Note",
     "World",
-    "WorldTemplate",
     "WorldModule",
     "WorldSubmodule",
     "WorldModuleItem",
-    "WorldInstance",
-    "CustomWorldviewConfig",
     "DEFAULT_MODULE_SPECS",
-    "BidirectionalRelation",
     "WorldLink",
     "Character",
     "CharacterAlias",

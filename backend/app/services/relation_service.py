@@ -1,11 +1,10 @@
 """
 跨模块引用系统 - 业务服务层（world_links 适配层）
 
-Phase 1 决策 D1：world_links 承接旧 bidirectional_relations，回填后旧表只读、不双写。
-本模块保留旧 /relations 接口的全部服务签名与返回形状，内部实现改为：
+Phase 1 决策 D1：world_links 承接旧的双向关联表，回填后旧表只读、不双写；
+Phase 6 P6-T11 旧表已删除。本模块保留旧 /relations 接口的全部服务签名与返回形状，内部实现改为：
 - 写入：LinkService.create_link / update_link / delete_link，只写契约 §4 白名单类型
 - 读取：WorldLink -> 旧 RelationResponse（旧名称与旧枚举从 meta 回读，缺失时尽力反查）
-- 旧表 bidirectional_relations 只读，本模块不再插入/更新/删除
 """
 
 from typing import Any, Dict, List, Optional, TypedDict

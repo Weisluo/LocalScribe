@@ -651,7 +651,7 @@ const moduleFixture = (
   submodules: unknown[]
 ) => ({
   id,
-  template_id: WORLD_ID,
+  world_id: WORLD_ID,
   module_type: moduleType,
   name,
   description: null,

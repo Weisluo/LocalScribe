@@ -3,15 +3,16 @@
  * Phase 5 回归用例（浏览器侧，P5-T15 / 验收）
  *
  * 由 tests/worldbuilding/phase5.spec.ts 用 Vite 打成单文件后注入真实浏览器执行，
- * 结果写到 window.__PHASE5_TESTS__。分四类：
+ * 结果写到 window.__PHASE5_TESTS__。分三类：
  * 1) 纯函数：config 契约骨架、normalize 数值口径（规模/流量/盈余/时间窗/多单位）、
  *    guards（降级阈值与 degradeStateOf、推荐关联、时间锚点与 formatAnchor、筛选）、
  *    URL 作用域判定（切世界不读回上一个模块的筛选 / 选中 / 时间窗）；
- * 2) 组件：EconomyViewV2 三档在预置缓存下的 DOM 行为（速写卡、画布 + 账册、沙盘叠加 + 时间刷、
+ * 2) 组件：EconomyView 三档在预置缓存下的 DOM 行为（速写卡、画布 + 账册、沙盘叠加 + 时间刷、
  *    降级矩阵、退化形态 1 实体 0 边 / 1 实体 1 边）；
- * 3) 键盘：1/2/3 切档、L 切布局、Esc 清选择 / 关表单、已 preventDefault 的方向键不重复处理；
- * 4) 开关：feature flag 默认关闭、可开可关。
+ * 3) 键盘：1/2/3 切档、L 切布局、Esc 清选择 / 关表单、已 preventDefault 的方向键不重复处理。
  *
+ * P6 交接：feature flag 与旧经济视图已删除，本用例不再断言「开关可开可关」；
+ * 目录由 EconomyViewV2 改名为 EconomyView，导出名去掉 V2 后缀。
  * 不发任何网络请求：TanStack Query 缓存由 seedEconomy 预置，mutation 不参与断言。
  */
 
@@ -55,12 +56,7 @@ import {
   stageLabel,
   stageOrder,
   validateSketchFields,
-} from '@/components/Worldbuilding/EconomyViewV2/config';
-import {
-  isEconomyViewV2Enabled,
-  setEconomyViewV2Enabled,
-  FEATURE_FLAG_KEYS,
-} from '@/utils/featureFlags';
+} from '@/components/Worldbuilding/EconomyView/config';
 import {
   EDGE_WIDTH_MAX,
   EDGE_WIDTH_MID,
@@ -71,7 +67,7 @@ import {
   nodeSizeScore,
   scaleWeight,
   sizeBucket,
-} from '@/components/Worldbuilding/EconomyViewV2/graph/normalize';
+} from '@/components/Worldbuilding/EconomyView/graph/normalize';
 import {
   anchorOf,
   degradeStateOf,
@@ -81,17 +77,17 @@ import {
   recommendationsOf,
   renderModeOf,
   shouldDegradeMatrix,
-} from '@/components/Worldbuilding/EconomyViewV2/graph/guards';
+} from '@/components/Worldbuilding/EconomyView/graph/guards';
 import {
   ECONOMY_SCOPED_URL_KEYS,
   ECONOMY_URL_KEYS,
   economyUrlScopeMatches,
-} from '@/components/Worldbuilding/EconomyViewV2/hooks/useEconomyViewState';
-import { buildLaneLayout } from '@/components/Worldbuilding/EconomyViewV2/graph/layout';
+} from '@/components/Worldbuilding/EconomyView/hooks/useEconomyViewState';
+import { buildLaneLayout } from '@/components/Worldbuilding/EconomyView/graph/layout';
 import {
-  EconomyViewV2,
+  EconomyView,
   economyKeys,
-} from '@/components/Worldbuilding/EconomyViewV2';
+} from '@/components/Worldbuilding/EconomyView';
 import { worldbuildingKeys } from '@/components/Worldbuilding/hooks/worldQueryKeys';
 import type {
   EconomyEdge,
@@ -100,7 +96,7 @@ import type {
   EconomyNode,
   EconomySummary,
   EconomyTimeline,
-} from '@/components/Worldbuilding/EconomyViewV2/types';
+} from '@/components/Worldbuilding/EconomyView/types';
 import type { LevelDef } from '@/components/Worldbuilding/shared/moduleConfig';
 import type { ComplexityLevel } from '@/services/worldbuildingApi';
 import { ComplexityProvider } from '@/components/common/ComplexitySwitcher';
@@ -431,26 +427,7 @@ const testConfigResolution = () => {
   ]);
 };
 
-// ---------- 3. feature flag ----------
-
-const testFeatureFlag = () => {
-  // page.setContent 是 opaque origin：访问 localStorage 会抛 SecurityError，
-  // 但 featureFlags.ts 自身已做 try/catch + 内存兜底，这里只断言「读 API 不抛错 + 可开可关」。
-  try {
-    const initial = isEconomyViewV2Enabled();
-    eq('flag 默认关闭', initial, false);
-    setEconomyViewV2Enabled(true);
-    eq('flag 可开', isEconomyViewV2Enabled(), true);
-    setEconomyViewV2Enabled(false);
-    eq('flag 可关（回滚可复现）', isEconomyViewV2Enabled(), false);
-  } catch (error) {
-    check('feature flag 读写未抛错', false, String(error));
-  }
-  eq('flag 键名固定（env + localStorage）', [
-    FEATURE_FLAG_KEYS.env,
-    FEATURE_FLAG_KEYS.localStorage,
-  ], ['VITE_WORLD_ECONOMY_VIEW_V2', 'localscribe.featureFlag.worldEconomyViewV2']);
-};
+// ---------- 3. （P6 已删除 feature flag：旧经济视图与开关分支都不复存在） ----------
 
 // ---------- 4. normalize / guards / layout 纯函数（P5-T12/T13/T14 口径） ----------
 
@@ -994,7 +971,7 @@ const worldFixture = () =>
     modules: [
       {
         id: MODULE_ID,
-        template_id: WORLD_ID,
+        world_id: WORLD_ID,
         module_type: 'economy',
         name: '经济',
         description: null,
@@ -1041,7 +1018,7 @@ const mountView = (client: QueryClient, level: 'sketch' | 'structure' | 'sandbox
   mount(
     <QueryClientProvider client={client}>
       <ComplexityProvider value={level}>
-        <EconomyViewV2 worldId={WORLD_ID} moduleId={MODULE_ID} onNavigateToEntity={() => undefined} />
+        <EconomyView worldId={WORLD_ID} moduleId={MODULE_ID} onNavigateToEntity={() => undefined} />
       </ComplexityProvider>
     </QueryClientProvider>
   );
@@ -1195,7 +1172,7 @@ const testDomKeyboard = async () => {
     return (
       <QueryClientProvider client={client}>
         <ComplexityProvider value={level} onChange={setLevel}>
-          <EconomyViewV2 worldId={WORLD_ID} moduleId={MODULE_ID} onNavigateToEntity={() => undefined} />
+          <EconomyView worldId={WORLD_ID} moduleId={MODULE_ID} onNavigateToEntity={() => undefined} />
         </ComplexityProvider>
       </QueryClientProvider>
     );
@@ -1395,7 +1372,6 @@ const run = async () => {
   try {
     testConfigContract();
     testConfigResolution();
-    testFeatureFlag();
     testNormalize();
     testGuards();
     testViewStateScope();

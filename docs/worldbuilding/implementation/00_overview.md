@@ -212,6 +212,34 @@ graph 两条 500 崩溃路径（`meta.time` / `windowStart` 超 `LinkTimeRange` 
 第二个空库，P5 新增测试文件的字母序把它顶到前面才暴露，已改为带进程号的 `LOCALSCRIBE_TEST_DB_<pid>` 幂等复用
 （同时避免并行进程与外部预设变量串库）。
 
+Phase 6 结论（2026-10-09）：P6-T1..T12 落地（T7 为**部分完成**，缺口已登记），DoD 通过；验收实测、偏差登记与
+发布检查清单见 `phase6_global_config_and_cleanup.md` §7.1/§7.2/§9.1/§11。世界观迁移 head 由 `d4e8b1c7a206`
+前进到 `74bd4aa85478`（`wbl_p6_01_drop_legacy_tables`，drop `world_instances` / `worldview_configs` /
+`bidirectional_relations`，downgrade 只重建空表）。要点：世界列表 / 切换 / 空白创建 + 六页世界设置面板
+（基础 / 外观 / 术语 / 历法 / 模块 / 备份）、备份恢复两种模式（`new` / `overwrite`，非空世界覆盖需显式确认）
+与 `WorldImportReport`（id 映射 + 失效引用 + 未知关联类型回落报告 + `schema_version` 门禁）、
+子模块管理器 / 字段编辑器 / 模块配置面板（类型 / 字段 / 等级 / 状态 / 关联类型 / 展示 / 术语）、
+全局搜索（Ctrl/Cmd+K + 中英文限定符 + 最近记录按世界隔离）、世界脉络只读图（800 节点降级为模块矩阵 + 推荐关联）、
+世界观范围内 emoji 清零与 Lucide 统一；旧 `/templates` `/instances` `/worldviews` `/batch/*` 与旧模型、旧表全部退场，
+`world_links` 成为唯一关系来源；`EconomyViewV2/` → `EconomyView/`、feature flag 与 legacy 读取侧投影删除。
+验收：pytest 248 passed（基线 213）、`alembic heads` 唯一 `74bd4aa85478`、flake8 无新增告警（改动文件逐条与 HEAD 对照）、
+tsc 0 error、eslint 0 error（29 warning，均为既有类别）、`vite build` 成功、Playwright 40 passed
+（phase2 6 / phase3 6 / phase4 8 / phase5 8 / phase6 5 / phase6b 3 / phase6w 3 + export 2）、
+harness6 177 条 + harness6b 153 条 + harness6w 63 条断言全过、`backend/app` 与 `frontend/src` 旧标识静态守卫 0 命中
+（清单含 `world_templates`）、临时库「旧库 → head → downgrade -1 → head」往返幂等、`PRAGMA foreign_key_check` 干净，
+且降级重建的旧表外键目标齐备、写入探针可用。
+复审修复（§12，18 组）：迁移 downgrade 曾把 `world_instances` 的外键指回已被 P1 改名的旧表（坏表）；新建 / 恢复为
+新世界后被收敛 effect 覆盖回旧世界；「清理引用」漏 `module` 必 422；导入报告把「未降级」写成「已降级」、把
+`keep_dangling=false` 的丢弃写成「已保留」；「清空世界数据」不清关联；模块 / 子模块计数恒为 0；子模块删除影响面板
+按错键查到 0 条关联；世界设置入口的自定义类型因 `maxDepth=1` 100% 失败；`visibleComplexity` 只写不读、`required`
+无执行口；删除世界后又被选中；三个模块面板漏传 `rawConfig` 会丢同级子键；`WorldTone` 丢未知键；世界脉络降级路径
+O(n²) 推荐与无条件布局；以及若干交互与守卫强度问题。
+明确未实现 / 偏差：无全局详情抽屉与非通用分支的滚动恢复；世界列表未返回每世界实体数；
+未知 `kind` 只报告不降级（与「保留 kind」冲突，取后者）；世界脉络时间筛选按锚点近似；
+经济模块的必填字段只能提示、不能阻断保存（改即写，没有提交动作）；
+`backend/docs/worldbuilding_api.md` 已重写为下架后的 API 面；`docs/cross_module_reference_system.md`
+仍是含旧 DDL 的被取代文档，本阶段未改。
+
 ---
 
 阶段 plan 文件：

@@ -31,6 +31,9 @@ PHASE1_REVISIONS = (
 
 P4_REVISION = "c1f7a4b9e2d3"  # P4-T12 backfill politics
 P5_REVISION = "d4e8b1c7a206"  # P5-T4 backfill economy
+P6_REVISION = "74bd4aa85478"  # P6-T11 drop legacy tables
+
+LEGACY_TABLES = ("world_instances", "worldview_configs", "bidirectional_relations")
 
 
 def test_heads_is_single_and_phase1_is_linear(tmp_path: Path):
@@ -39,26 +42,28 @@ def test_heads_is_single_and_phase1_is_linear(tmp_path: Path):
     config = alembic_config(tmp_path / "unused.db")
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == [P5_REVISION]
+    assert script.get_heads() == [P6_REVISION]
 
     chain = [revision.revision for revision in script.walk_revisions()]
     chain.reverse()
-    assert chain[-8:-2] == list(PHASE1_REVISIONS)
-    assert chain[-9] == PRE_PHASE1_REVISION
-    # P4 / P5 回填迁移基于前一个 head 线性串联（不修改已发布迁移）
-    assert chain[-2] == P4_REVISION
-    assert chain[-1] == P5_REVISION
-    assert chain[-3] == PHASE1_REVISIONS[-1]
+    assert chain[-9:-3] == list(PHASE1_REVISIONS)
+    assert chain[-10] == PRE_PHASE1_REVISION
+    # P4 / P5 / P6 基于前一个 head 线性串联（不修改已发布迁移）
+    assert chain[-3] == P4_REVISION
+    assert chain[-2] == P5_REVISION
+    assert chain[-1] == P6_REVISION
+    assert chain[-4] == PHASE1_REVISIONS[-1]
 
 
 def test_empty_db_upgrade_creates_new_schema(empty_head_db: Path):
-    """空库 upgrade：worlds / world_links / kind / meta / config 全部就位。"""
+    """空库 upgrade：worlds / world_links / kind / meta / config 就位，旧表全部下架。"""
 
     tables = table_names(empty_head_db)
     assert "worlds" in tables
     assert "world_templates" not in tables
     assert "world_links" in tables
-    assert "bidirectional_relations" in tables
+    for legacy in LEGACY_TABLES:
+        assert legacy not in tables
 
     assert "settings" in column_names(empty_head_db, "worlds")
     assert "tone" in column_names(empty_head_db, "worlds")
@@ -116,11 +121,9 @@ def test_legacy_db_upgrade_moves_columns_and_keeps_rows(migrated_legacy_db: Path
     assert "旧标签" in worlds[0]["settings"]
     assert "user-1" in worlds[0]["settings"]
 
-    # 旧表数据保持原样（只读，不删）
-    assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM bidirectional_relations")
-        == 3
-    )
+    # 旧表在 P6-T11 已删除（回填数据都已在 world_links 里可读）
+    for legacy in LEGACY_TABLES:
+        assert legacy not in table_names(migrated_legacy_db)
     assert (
         read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_module_items") == 5
     )
@@ -131,7 +134,7 @@ def test_legacy_db_upgrade_moves_columns_and_keeps_rows(migrated_legacy_db: Path
 
 
 def test_legacy_db_downgrade_restores_legacy_schema_and_data(migrated_legacy_db: Path):
-    """downgrade 回到旧结构：world_templates 与旧列恢复，旧值写回。"""
+    """downgrade 回到旧结构：world_templates 与旧列恢复；P6 只重建空表（不恢复旧数据）。"""
 
     config = alembic_config(migrated_legacy_db)
     command.downgrade(config, PRE_PHASE1_REVISION)
@@ -140,6 +143,17 @@ def test_legacy_db_downgrade_restores_legacy_schema_and_data(migrated_legacy_db:
     assert "world_templates" in tables
     assert "worlds" not in tables
     assert "world_links" not in tables
+    # P6-T11 的 downgrade 仅重建空壳（phase6 plan §8：删表不可逆，回滚只从备份恢复）
+    for legacy in LEGACY_TABLES:
+        assert legacy in tables
+    assert (
+        read_scalar(migrated_legacy_db, "SELECT count(*) FROM bidirectional_relations")
+        == 0
+    )
+    assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_instances") == 0
+    assert (
+        read_scalar(migrated_legacy_db, "SELECT count(*) FROM worldview_configs") == 0
+    )
 
     columns = column_names(migrated_legacy_db, "world_templates")
     for column in ("tags", "is_public", "is_system_template", "created_by"):
@@ -159,41 +173,38 @@ def test_legacy_db_downgrade_restores_legacy_schema_and_data(migrated_legacy_db:
     assert "template_id" in column_names(migrated_legacy_db, "world_modules")
     # P1-MIG-04 补齐的 4 个空模块在 downgrade 时被删除，回到旧库原有的 3 个模块
     assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_modules") == 3
-    assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM bidirectional_relations")
-        == 3
-    )
 
 
-def test_backfill_revision_rerun_does_not_duplicate(migrated_legacy_db: Path):
-    """把版本指针退回 P1-MIG-03 后重新 upgrade：回填必须幂等，不新增行。"""
+def test_backfill_revision_rerun_does_not_duplicate(legacy_db: Path):
+    """把版本指针退回 P1-MIG-03 后重新 upgrade：回填必须幂等，不新增行。
 
-    config = alembic_config(migrated_legacy_db)
+    在 P6 前的 head（P5 回填）上验证：P6-T11 删表后不能再从 head 退回重跑
+    P1-MIG-05/06（旧表已不存在），幂等性只能在旧表仍在的状态下验证。
+    """
+
+    config = alembic_config(legacy_db)
+    command.upgrade(config, P5_REVISION)
+
     before = {
-        "links": read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_links"),
-        "modules": read_scalar(
-            migrated_legacy_db, "SELECT count(*) FROM world_modules"
-        ),
+        "links": read_scalar(legacy_db, "SELECT count(*) FROM world_links"),
+        "modules": read_scalar(legacy_db, "SELECT count(*) FROM world_modules"),
         "configs": read_scalar(
-            migrated_legacy_db,
+            legacy_db,
             "SELECT count(*) FROM world_modules WHERE config IS NOT NULL",
         ),
     }
 
     command.stamp(config, "d5a573ce6f22")
-    command.upgrade(config, "head")
+    command.upgrade(config, P5_REVISION)
 
+    assert read_scalar(legacy_db, "SELECT count(*) FROM world_links") == before["links"]
     assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_links")
-        == before["links"]
-    )
-    assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_modules")
+        read_scalar(legacy_db, "SELECT count(*) FROM world_modules")
         == before["modules"]
     )
     assert (
         read_scalar(
-            migrated_legacy_db,
+            legacy_db,
             "SELECT count(*) FROM world_modules WHERE config IS NOT NULL",
         )
         == before["configs"]

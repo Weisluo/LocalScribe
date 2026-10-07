@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { EventCardProps } from './types';
 import { LEVEL_CONFIG, EVENT_TYPE_CONFIG, animationConfig, cardVariants, getEventTypeConfig, getEventLevelConfig, DEFAULT_EVENT_TYPE_CONFIGS, DEFAULT_LEVEL_CONFIGS } from './config';
 import { CharacterReference } from './CharacterReference';
+import { lucideIcon } from '../shared/lucideIcon';
 import { LinkPanel } from '@/components/common/LinkPanel';
 import { useEntityLinkCounts } from './useEntityLinkCounts';
 import { characterToRef } from '../types';
@@ -24,6 +25,13 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
       || EVENT_TYPE_CONFIG[event.eventType]
     : null;
   const levelConfig = getEventLevelConfig(event.level, levelConfigs || DEFAULT_LEVEL_CONFIGS) || LEVEL_CONFIG[event.level];
+
+  /**
+   * 图标一律是 Lucide 名（契约 §6：禁 emoji），必须渲染成组件而不是打印字符串；
+   * 解析不到时该位置不渲染图标（保持原有条件渲染与布局，不显示裸名字）。
+   */
+  const TypeIcon = lucideIcon(typeConfig?.icon);
+  const EventIcon = lucideIcon(event.icon ?? undefined);
   
   const bgClass = typeConfig ? `bg-gradient-to-br ${typeConfig.gradient}` : levelConfig.bgClass;
   const borderClass = typeConfig ? `border-2 ${typeConfig.border}` : levelConfig.borderClass;
@@ -133,8 +141,16 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <div className={`${titleSize} ${textClass} truncate flex items-center gap-1.5`}>
-              {typeConfig && <span className="text-base">{typeConfig.icon}</span>}
-              {event.icon && !typeConfig && <span className="text-base opacity-70">{event.icon}</span>}
+              {typeConfig && TypeIcon && (
+                <span className="text-base">
+                  <TypeIcon className="h-4 w-4" aria-hidden="true" />
+                </span>
+              )}
+              {event.icon && !typeConfig && EventIcon && (
+                <span className="text-base opacity-70">
+                  <EventIcon className="h-4 w-4" aria-hidden="true" />
+                </span>
+              )}
               <span className="truncate">{event.name}</span>
             </div>
             {event.eventDate && (
@@ -259,24 +275,24 @@ export const EventCard = forwardRef<HTMLDivElement, EventCardProps>(({ event, pr
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-2.5">
           <div className={`${titleSize} ${textClass} flex items-center gap-2.5 flex-wrap`}>
-            {typeConfig && (
+            {typeConfig && TypeIcon && (
               <motion.span 
                 className="text-2xl"
                 initial={{ scale: 0.8, rotate: -10 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.1, ...animationConfig.spring }}
               >
-                {typeConfig.icon}
+                <TypeIcon className="h-6 w-6" aria-hidden="true" />
               </motion.span>
             )}
-            {event.icon && !typeConfig && (
+            {event.icon && !typeConfig && EventIcon && (
               <motion.span 
                 className="text-2xl"
                 initial={{ scale: 0.8, rotate: -10 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.1, ...animationConfig.spring }}
               >
-                {event.icon}
+                <EventIcon className="h-6 w-6" aria-hidden="true" />
               </motion.span>
             )}
             <span className={event.level === 'critical' ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent' : ''}>

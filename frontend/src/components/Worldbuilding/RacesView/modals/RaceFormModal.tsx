@@ -15,6 +15,7 @@ import {
   type EntityTypeDef,
   type ModuleConfig,
 } from '../../shared/moduleConfig';
+import { missingRequiredFields } from '../../shared/customFieldModel';
 import type { RaceFormValues } from '../hooks/useRaces';
 import { RACE_KIND, RACE_KINDS, type RaceNode } from '../types';
 import { RaceFormFields } from './RaceFormFields';
@@ -69,6 +70,12 @@ export const RaceFormModal = ({
     const reason = validateRaceForm(state);
     if (reason) {
       setError(reason);
+      return;
+    }
+    // 自定义字段的必填校验（P6-T4）：与 CustomFieldRenderer 共用同一套纯函数
+    const missing = missingRequiredFields(customFields, state.customFields);
+    if (missing.length) {
+      setError(`必填字段未填写：${missing.join('、')}`);
       return;
     }
     setError(null);

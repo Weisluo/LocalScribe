@@ -8,7 +8,7 @@
 - 角色端点：项目单世界可推导、多世界歧义（character_world_ambiguous）
 - 批量：单事务、同批次对称等价边去重、link_ids 保序去重、
   invalid 携带稳定 code、请求级失败不产生部分写入、模块计数同步
-- 旧 /relations 与 /templates 行为不变
+- 旧 /relations 适配层行为不变（/templates 已在 P6-T10 下架）
 
 说明：契约外 link_type、对称反向边、非对象 meta 的行无法经写入侧 API 造出
 （写入前必过 registry 校验与对称去重），因此用原生 SQL 直接落库来构造这些分支。
@@ -1195,9 +1195,13 @@ def test_legacy_relations_endpoint_unchanged(client, app_db_path):
     assert body["project_id"] == project_id
     assert body["metadata_json"] == {"confidence": 0.9}
 
-    # 旧表不新增写入；world_links 落在该项目唯一世界，meta 保留记账键
+    # 旧表已在 P6-T11 删除（双写面彻底消失）；world_links 落在该项目唯一世界，meta 保留记账键
     assert (
-        _query(app_db_path, "SELECT count(*) AS n FROM bidirectional_relations")[0]["n"]
+        _query(
+            app_db_path,
+            "SELECT count(*) AS n FROM sqlite_master "
+            "WHERE type = 'table' AND name = 'bidirectional_relations'",
+        )[0]["n"]
         == 0
     )
     rows = _query(
@@ -1222,28 +1226,3 @@ def test_legacy_relations_endpoint_unchanged(client, app_db_path):
     listed = client.get(f"{RELATIONS}/project/{project_id}")
     assert listed.status_code == 200, listed.text
     assert [item["id"] for item in listed.json()] == [body["id"]]
-
-
-def test_legacy_templates_endpoint_unchanged(client):
-    project_id = _create_project(client, "P2-T12 旧模板项目")
-
-    created = client.post(
-        f"{API}/templates",
-        json={"name": "旧模板", "project_id": project_id, "is_public": True},
-    )
-    assert created.status_code == 200, created.text
-    body = created.json()
-    assert body["name"] == "旧模板"
-    assert body["project_id"] == project_id
-    assert body["is_public"] is True
-    assert body["module_count"] == 0
-
-    listed = client.get(f"{API}/templates", params={"project_id": project_id})
-    assert listed.status_code == 200, listed.text
-    assert [item["id"] for item in listed.json()] == [body["id"]]
-
-    filtered = client.get(
-        f"{API}/templates", params={"project_id": project_id, "is_public": True}
-    )
-    assert filtered.status_code == 200, filtered.text
-    assert [item["id"] for item in filtered.json()] == [body["id"]]

@@ -631,6 +631,7 @@ export const RacesView = ({
         open={configOpen}
         onClose={() => setConfigOpen(false)}
         config={races.config}
+        rawConfig={configPanel.raw ?? undefined}
         onSave={configPanel.save}
       />
 

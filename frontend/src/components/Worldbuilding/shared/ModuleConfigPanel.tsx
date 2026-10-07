@@ -1,11 +1,15 @@
 /**
  * ModuleConfigPanel（Phase 3 P3-T8；契约 §2.7、races_ui_design §7、systems_ui_design §7）
+ * Phase 6 P6-T5：分页收敛为 类型 / 字段 / 等级 / 状态 / 关联类型 / 展示 / 术语（+ 模块专属）。
  *
  * 草稿显式保存：所有编辑只改本地 draft，点「保存」才写回 module.config；校验失败不生效。
- * 覆盖通用键（entityTypes / fieldSchema / statuses / levels / terminology / defaultComplexity /
- * displayMode）与模块专属键（races: relationKinds、emblemPalette、cardFields；
+ * 覆盖通用键（entityTypes / fieldSchema / statuses / levels / linkTypes / terminology /
+ * defaultComplexity / displayMode）与模块专属键（races: relationKinds、emblemPalette、cardFields；
  * systems: tierTerm、rankStep、nodeStyles、costFields）。
  * 未知键不参与编辑但也不会被删除（保存是浅合并补丁）。
+ *
+ * 关联类型页只编辑 module.config.linkTypes：核心注册表条目可以改名 / 改色 / 改图标（存为覆盖项，
+ * 不写回注册表，也不可删除），自定义条目只落在本模块 config，绝不新增契约 §4 之外的 link_type。
  */
 
 import {
@@ -24,14 +28,23 @@ import {
 } from 'lucide-react';
 
 import { Modal } from '@/components/Modals/Modal';
-import type { ComplexityLevel } from '@/services/worldbuildingApi';
+import type { ComplexityLevel, LinkTypeDef } from '@/services/worldbuildingApi';
 import {
+  COMPLEXITY_LABELS,
+  COMPLEXITY_LEVELS,
+  CUSTOM_FIELD_TYPES,
+  CUSTOM_FIELD_TYPE_LABELS,
   CUSTOM_KIND_PREFIX,
+  LINK_TYPE_FALLBACK_ID,
   kindDefsOf,
+  toFieldId,
   toKindId,
+  toLinkTypeId,
+  validateCustomLinkType,
   validateEntityType,
   type CustomFieldDef,
   type CustomFieldType,
+  type CustomLinkTypeDef,
   type EntityTypeDef,
   type LevelDef,
   type ModuleConfig,
@@ -47,42 +60,9 @@ const FIELD_CLASS =
 const INLINE_FIELD_CLASS =
   'bg-background border border-border/50 px-2 py-1 rounded-md text-[11px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20';
 
-const FIELD_TYPES: CustomFieldType[] = [
-  'text',
-  'textarea',
-  'number',
-  'select',
-  'date',
-  'entityRef',
-  'image',
-];
+const FIELD_TYPES = CUSTOM_FIELD_TYPES;
 
-const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
-  text: '单行文本',
-  textarea: '多行文本',
-  number: '数字',
-  select: '选项',
-  date: '日期',
-  entityRef: '实体引用',
-  image: '图片',
-};
-
-/** 由名称生成字段 id（ASCII 字母数字下划线，保留中文标签） */
-const toFieldId = (label: string, taken: string[]): string => {
-  const base =
-    label
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '') || 'field';
-  let candidate = base;
-  let index = 2;
-  while (taken.includes(candidate)) {
-    candidate = `${base}_${index}`;
-    index += 1;
-  }
-  return candidate;
-};
+const FIELD_TYPE_LABELS = CUSTOM_FIELD_TYPE_LABELS;
 
 const asDefs = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
@@ -108,14 +88,108 @@ export interface ModuleConfigPanelProps {
   maxDepth: number;
   /** 模块专属配置段；不传时按 config 里出现的键自动识别 */
   moduleType?: 'races' | 'systems' | string;
+  /** 核心关联类型注册表（只读展示；不传时关联类型页只显示自定义条目） */
+  linkRegistry?: LinkTypeDef[];
+  /** 打开字段编辑器（P6-T4 FieldSchemaEditor）；不传时字段页只保留行内快编 */
+  onManageFields?: (kindId: string) => void;
   /** 额外自定义区（可选；模块专属键已由 moduleType / 自动识别覆盖） */
   extra?: ReactNode;
+  /** 打开时落在哪一页（默认「类型」） */
+  initialTab?: PanelTab;
   title?: string;
 }
 
-type PanelTab = 'types' | 'fields' | 'statuses' | 'terms' | 'module';
+type PanelTab =
+  | 'types'
+  | 'fields'
+  | 'levels'
+  | 'statuses'
+  | 'linkTypes'
+  | 'display'
+  | 'terms'
+  | 'module';
 
-export const ModuleConfigPanel = ({
+/**
+ * 保存补丁构造（纯函数，P6-T5 抽出便于单测）：
+ * 只提交相对打开时基线有变化的键——调用方传进来的 config 是「解析后配置」（已叠加前端默认值），
+ * 全量提交会把 EMBLEM_PALETTE / DEFAULT_NODE_STYLES / cardFields 等预设冻结进 module.config，
+ * 之后前端默认值再改就不生效了。save 是把补丁浅合并回后端原始 config，未改动的键保持原样。
+ * 对象键（fieldSchema / terminology / nodeStyles）按子键差分，只提交新增或有改动的子键；
+ * 子键被删除时整份提交（浅合并没有别的办法删掉旧子键）。
+ */
+export interface ModuleConfigPatchInput {
+  source: ModuleConfig;
+  baseline: ModuleConfig;
+  /** 后端真实存着的 config：对象键要基于它做增量，避免丢掉未编辑的子键 */
+  stored: ModuleConfig;
+  hasRacesKeys: boolean;
+  hasSystemsKeys: boolean;
+}
+
+export const buildModuleConfigPatch = ({
+  source,
+  baseline,
+  stored,
+  hasRacesKeys,
+  hasSystemsKeys,
+}: ModuleConfigPatchInput): ModuleConfig => {
+  const built: ModuleConfig = {
+    entityTypes: asDefs<EntityTypeDef>(source.entityTypes),
+    fieldSchema: source.fieldSchema ?? {},
+    statuses: asDefs<StatusDef>(source.statuses),
+    levels: asDefs<LevelDef>(source.levels),
+    linkTypes: asDefs<CustomLinkTypeDef>(source.linkTypes),
+    terminology: source.terminology ?? {},
+    defaultComplexity: source.defaultComplexity,
+    displayMode: source.displayMode,
+  };
+  if (hasRacesKeys) {
+    built.relationKinds = asDefs<RelationKindDef>(source.relationKinds);
+    built.emblemPalette = asDefs<string>(source.emblemPalette);
+    built.cardFields = asDefs<string>(source.cardFields);
+  }
+  if (hasSystemsKeys) {
+    built.tierTerm = source.tierTerm;
+    built.rankStep = source.rankStep;
+    built.nodeStyles = source.nodeStyles ?? {};
+    built.costFields = asDefs<string>(source.costFields);
+  }
+
+  const patch: ModuleConfig = {};
+  for (const [key, value] of Object.entries(built)) {
+    // undefined 经浅合并会被跳过，没必要写进补丁
+    if (value === undefined) continue;
+    const base = baseline[key];
+    if (isRecord(value)) {
+      const draftRecord = value;
+      const baseRecord = isRecord(base) ? base : {};
+      // 注意：save 是把补丁**浅合并**到后端原始 config（mergeModuleConfig 只做顶层合并），
+      // 所以对象键必须提交「完整的目标对象」——只提交改动子键会把未编辑的同级子键整片抹掉。
+      const storedRecord = isRecord(stored[key]) ? stored[key] : {};
+      const changed: Record<string, unknown> = {};
+      for (const [subKey, subValue] of Object.entries(draftRecord)) {
+        if (!sameJson(subValue, baseRecord[subKey])) changed[subKey] = subValue;
+      }
+      // 用户显式删掉的子键：基线里有、草稿里没有
+      const removedKeys = Object.keys(baseRecord).filter((subKey) => !(subKey in draftRecord));
+      if (Object.keys(changed).length > 0 || removedKeys.length > 0) {
+        const next: Record<string, unknown> = { ...storedRecord, ...changed };
+        for (const subKey of removedKeys) delete next[subKey];
+        patch[key] = next;
+      }
+      continue;
+    }
+    if (!sameJson(value, base)) patch[key] = value;
+  }
+  return patch;
+};
+
+
+/**
+ * 面板正文（不含 Modal 外壳）：SSR / 单测可直接渲染，不必等 Modal 的过渡动画挂载。
+ * 草稿初值同时用 useState 惰性初始化（SSR 无 effect）与 open 效果重置（真实挂载）。
+ */
+export const ModuleConfigPanelBody = ({
   open,
   onClose,
   config,
@@ -124,34 +198,42 @@ export const ModuleConfigPanel = ({
   builtins,
   maxDepth,
   moduleType,
+  linkRegistry,
+  onManageFields,
   extra,
-  title = '模块配置',
+  initialTab,
 }: ModuleConfigPanelProps) => {
-  const [draft, setDraft] = useState<ModuleConfig>({});
-  const [tab, setTab] = useState<PanelTab>('types');
+  /** rawConfig 仅在调用方显式传入时覆盖同名键（通常与 config 同源） */
+  const initialConfig = useMemo<ModuleConfig>(
+    () => ({ ...config, ...(rawConfig ?? {}) }),
+    [config, rawConfig]
+  );
+  const [draft, setDraft] = useState<ModuleConfig>(() => initialConfig);
+  const [tab, setTab] = useState<PanelTab>(initialTab ?? 'types');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 代价字段顺序输入框的原文草稿：直接用数组 join 回写会抹掉正在输入的逗号 */
+  const [costFieldsText, setCostFieldsText] = useState<string | null>(null);
   const wasOpen = useRef(false);
-  /** 打开面板时的配置基线：保存时只提交与它不同的键（见 buildPatch） */
-  const baselineRef = useRef<ModuleConfig>({});
+  /** 打开面板时的配置基线：保存时只提交与它不同的键（见 buildModuleConfigPatch） */
+  const baselineRef = useRef<ModuleConfig>(initialConfig);
   /** 后端真实存着的 config：对象键（fieldSchema/terminology/nodeStyles）要基于它做增量，避免丢掉未编辑的子键 */
-  const storedRef = useRef<ModuleConfig>({});
+  const storedRef = useRef<ModuleConfig>(rawConfig ?? {});
 
   // 只在打开时初始化草稿：避免父组件每次渲染产生的新对象把草稿重置掉
   useEffect(() => {
     if (open && !wasOpen.current) {
-      // rawConfig 仅在调用方显式传入时覆盖同名键（通常与 config 同源）
-      const initial = { ...config, ...(rawConfig ?? {}) };
-      baselineRef.current = initial;
+      baselineRef.current = initialConfig;
       storedRef.current = rawConfig ?? {};
-      setDraft(initial);
+      setDraft(initialConfig);
       setError(null);
       setNotice(null);
-      setTab('types');
+      setTab(initialTab ?? 'types');
+      setCostFieldsText(null);
     }
     wasOpen.current = open;
-  }, [open, config, rawConfig]);
+  }, [open, initialConfig, rawConfig, initialTab]);
 
   const kinds = useMemo(() => kindDefsOf(draft, builtins), [draft, builtins]);
   const builtinIds = useMemo(() => builtins.map((def) => def.id), [builtins]);
@@ -251,7 +333,7 @@ export const ModuleConfigPanel = ({
       label,
       type: newField.type,
       options:
-        newField.type === 'select'
+        newField.type === 'select' || newField.type === 'multiselect'
           ? newField.options
               .split(/[,，]/)
               .map((item) => item.trim())
@@ -370,65 +452,113 @@ export const ModuleConfigPanel = ({
     setNewRelationKind({ id: '', label: '', color: '', lineStyle: 'dashed' });
   };
 
-  // ---- 保存 ----
+  // ---- 关联类型（P6-T5：核心注册表只读 + 自定义类型只落 module.config）----
 
-  /**
-   * 只提交相对打开时基线有变化的键：调用方传进来的 config 是「解析后配置」（已叠加前端默认值），
-   * 全量提交会把 EMBLEM_PALETTE / DEFAULT_NODE_STYLES / cardFields 等预设冻结进 module.config，
-   * 之后前端默认值再改就不生效了。save 是把补丁浅合并回后端原始 config，未改动的键保持原样。
-   * 对象键（fieldSchema / terminology / nodeStyles）按子键差分，只提交新增或有改动的子键；
-   * 子键被删除时整份提交（浅合并没有别的办法删掉旧子键）。
-   */
-  const buildPatch = (source: ModuleConfig, baseline: ModuleConfig): ModuleConfig => {
-    const built: ModuleConfig = {
-      entityTypes: asDefs<EntityTypeDef>(source.entityTypes),
-      fieldSchema: source.fieldSchema ?? {},
-      statuses: asDefs<StatusDef>(source.statuses),
-      levels: asDefs<LevelDef>(source.levels),
-      terminology: source.terminology ?? {},
-      defaultComplexity: source.defaultComplexity,
-      displayMode: source.displayMode,
-    };
-    if (hasRacesKeys) {
-      built.relationKinds = asDefs<RelationKindDef>(source.relationKinds);
-      built.emblemPalette = asDefs<string>(source.emblemPalette);
-      built.cardFields = asDefs<string>(source.cardFields);
+  /** 核心注册表 id：同名条目在 config.linkTypes 里是「覆盖项」，不可删除 */
+  const coreLinkIds = useMemo(
+    () => (linkRegistry ?? []).map((def) => def.id),
+    [linkRegistry]
+  );
+  const coreLinkIdSet = useMemo(() => new Set(coreLinkIds), [coreLinkIds]);
+  /** config.linkTypes 里属于核心覆盖的条目 */
+  const linkOverrides = useMemo(() => {
+    const overrides = new Map<string, CustomLinkTypeDef>();
+    for (const def of asDefs<CustomLinkTypeDef>(draft.linkTypes)) {
+      if (coreLinkIdSet.has(def.id)) overrides.set(def.id, def);
     }
-    if (hasSystemsKeys) {
-      built.tierTerm = source.tierTerm;
-      built.rankStep = source.rankStep;
-      built.nodeStyles = source.nodeStyles ?? {};
-      built.costFields = asDefs<string>(source.costFields);
-    }
+    return overrides;
+  }, [draft.linkTypes, coreLinkIdSet]);
+  /** 用户自定义关联类型（非核心 id） */
+  const customLinkTypes = asDefs<CustomLinkTypeDef>(draft.linkTypes).filter(
+    (def) => !coreLinkIdSet.has(def.id)
+  );
 
-    const patch: ModuleConfig = {};
-    for (const [key, value] of Object.entries(built)) {
-      // undefined 经浅合并会被跳过，没必要写进补丁
-      if (value === undefined) continue;
-      const base = baseline[key];
-      if (isRecord(value)) {
-        const draftRecord = value;
-        const baseRecord = isRecord(base) ? base : {};
-        // 注意：save 是把补丁**浅合并**到后端原始 config（mergeModuleConfig 只做顶层合并），
-        // 所以对象键必须提交「完整的目标对象」——只提交改动子键会把未编辑的同级子键整片抹掉。
-        const storedRecord = isRecord(storedRef.current[key]) ? storedRef.current[key] : {};
-        const changed: Record<string, unknown> = {};
-        for (const [subKey, subValue] of Object.entries(draftRecord)) {
-          if (!sameJson(subValue, baseRecord[subKey])) changed[subKey] = subValue;
-        }
-        // 用户显式删掉的子键：基线里有、草稿里没有
-        const removedKeys = Object.keys(baseRecord).filter((subKey) => !(subKey in draftRecord));
-        if (Object.keys(changed).length > 0 || removedKeys.length > 0) {
-          const next: Record<string, unknown> = { ...storedRecord, ...changed };
-          for (const subKey of removedKeys) delete next[subKey];
-          patch[key] = next;
-        }
-        continue;
-      }
-      if (!sameJson(value, base)) patch[key] = value;
-    }
-    return patch;
+  const setLinkTypes = (next: CustomLinkTypeDef[]) => patchDraft({ linkTypes: next });
+
+  /** 写入或更新一条 linkTypes 条目（核心覆盖与自定义共用同一条通道） */
+  const upsertLinkType = (def: CustomLinkTypeDef) => {
+    const others = asDefs<CustomLinkTypeDef>(draft.linkTypes).filter(
+      (item) => item.id !== def.id
+    );
+    setLinkTypes([...others, def]);
   };
+
+  /** 核心类型改名 / 改色：写覆盖项，不写回注册表 */
+  const updateLinkOverride = (id: string, patch: Partial<CustomLinkTypeDef>) => {
+    const base = linkOverrides.get(id) ?? { id, label: '' };
+    upsertLinkType({ ...base, ...patch, id });
+  };
+
+  /** 撤销核心覆盖：从 config.linkTypes 移除该 id，回到注册表默认 */
+  const resetLinkOverride = (id: string) =>
+    setLinkTypes(asDefs<CustomLinkTypeDef>(draft.linkTypes).filter((item) => item.id !== id));
+
+  const [newLinkType, setNewLinkType] = useState({
+    label: '',
+    reverseLabel: '',
+    icon: '',
+    color: '',
+    directed: true,
+    sourceModule: '',
+    sourceKind: '',
+    targetModule: '',
+    targetKind: '',
+  });
+
+  const addLinkType = () => {
+    const label = newLinkType.label.trim();
+    if (!label) {
+      setError('关联类型标签不能为空');
+      return;
+    }
+    const taken = asDefs<CustomLinkTypeDef>(draft.linkTypes).map((item) => item.id);
+    const def: CustomLinkTypeDef = {
+      id: toLinkTypeId(label, [...taken, ...coreLinkIds]),
+      label,
+      reverseLabel: newLinkType.reverseLabel.trim() || undefined,
+      icon: newLinkType.icon.trim() || undefined,
+      color: newLinkType.color.trim() || undefined,
+      directed: newLinkType.directed,
+      source: {
+        module: newLinkType.sourceModule.trim() || undefined,
+        kind: newLinkType.sourceKind.trim() || undefined,
+      },
+      target: {
+        module: newLinkType.targetModule.trim() || undefined,
+        kind: newLinkType.targetKind.trim() || undefined,
+      },
+    };
+    const reason = validateCustomLinkType(def, {
+      existing: asDefs<CustomLinkTypeDef>(draft.linkTypes),
+      coreIds: coreLinkIds,
+    });
+    if (reason) {
+      setError(reason);
+      return;
+    }
+    upsertLinkType(def);
+    setNewLinkType({
+      label: '',
+      reverseLabel: '',
+      icon: '',
+      color: '',
+      directed: true,
+      sourceModule: '',
+      sourceKind: '',
+      targetModule: '',
+      targetKind: '',
+    });
+    setError(null);
+  };
+
+  const removeLinkType = (id: string, label: string) => {
+    setLinkTypes(asDefs<CustomLinkTypeDef>(draft.linkTypes).filter((item) => item.id !== id));
+    setNotice(
+      `已移除自定义关联类型 ${label}（${id}）：已有该类型关联在界面上回退为「相关」（${LINK_TYPE_FALLBACK_ID}），关联记录与备注保留。`
+    );
+  };
+
+  // ---- 保存 ----
 
   const validateDraft = (source: ModuleConfig): string | null => {
     const customKinds = asDefs<EntityTypeDef>(source.entityTypes).filter(
@@ -449,6 +579,24 @@ export const ModuleConfigPanel = ({
         return `${kind} 存在缺少 id 或名称的字段`;
       }
     }
+    const linkTypes = asDefs<CustomLinkTypeDef>(source.linkTypes);
+    const customIds = linkTypes
+      .filter((def) => !coreLinkIdSet.has(def.id))
+      .map((def) => def.id);
+    if (new Set(customIds).size !== customIds.length) return '关联类型 id 存在重复';
+    for (const def of linkTypes) {
+      if (coreLinkIdSet.has(def.id)) {
+        // 核心覆盖只允许改名 / 改色，不校验 source / target
+        if (!(def.label ?? '').trim()) return `核心关联类型 ${def.id} 的名称不能为空`;
+        continue;
+      }
+      const reason = validateCustomLinkType(def, {
+        existing: linkTypes,
+        coreIds: coreLinkIds,
+        editingId: def.id,
+      });
+      if (reason) return `${def.label || def.id}：${reason}`;
+    }
     return null;
   };
 
@@ -462,7 +610,15 @@ export const ModuleConfigPanel = ({
     setError(null);
     setSaving(true);
     try {
-      await onSave(buildPatch(draft, baselineRef.current));
+      await onSave(
+        buildModuleConfigPatch({
+          source: draft,
+          baseline: baselineRef.current,
+          stored: storedRef.current,
+          hasRacesKeys,
+          hasSystemsKeys,
+        })
+      );
       onClose();
     } catch (saveError) {
       // save 失败（网络 / 后端校验）时面板保持打开，把原因显示在错误框里
@@ -472,35 +628,38 @@ export const ModuleConfigPanel = ({
     }
   };
 
+  // 设计 §5.2 的分页集合：类型、字段、等级、状态、关联类型、展示、术语（+ 模块专属）
   const tabs: { id: PanelTab; label: string }[] = [
     { id: 'types', label: '类型' },
     { id: 'fields', label: '字段' },
-    { id: 'statuses', label: '状态与等级' },
-    { id: 'terms', label: '术语与视图' },
+    { id: 'levels', label: '等级' },
+    { id: 'statuses', label: '状态' },
+    { id: 'linkTypes', label: '关联类型' },
+    { id: 'display', label: '展示' },
+    { id: 'terms', label: '术语' },
     ...(showModuleTab ? [{ id: 'module' as PanelTab, label: '模块专属' }] : []),
   ];
 
   return (
-    <Modal isOpen={open} onClose={onClose} title={title} size="lg">
-      <div className="space-y-3" data-testid="module-config-panel">
-        <div role="tablist" aria-label="配置分区" className="flex flex-wrap gap-1">
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              onClick={() => setTab(item.id)}
-              className={`rounded-md px-2.5 py-1 text-[11px] transition-colors ${
-                tab === item.id
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-3" data-testid="module-config-panel">
+      <div role="tablist" aria-label="配置分区" className="flex flex-wrap gap-1">
+        {tabs.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === item.id}
+            onClick={() => setTab(item.id)}
+            className={`rounded-md px-2.5 py-1 text-[11px] transition-colors ${
+              tab === item.id
+                ? 'bg-primary/15 text-primary'
+                : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
         {error && (
           <div
@@ -631,18 +790,30 @@ export const ModuleConfigPanel = ({
 
         {tab === 'fields' && (
           <div className="space-y-2" data-testid="config-fields">
-            <select
-              value={activeFieldKind}
-              onChange={(event) => setFieldKind(event.target.value)}
-              aria-label="选择类型"
-              className={FIELD_CLASS}
-            >
-              {kinds.map((def) => (
-                <option key={def.id} value={def.id}>
-                  {def.label}（{def.id}）
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={activeFieldKind}
+                onChange={(event) => setFieldKind(event.target.value)}
+                aria-label="选择类型"
+                className={FIELD_CLASS}
+              >
+                {kinds.map((def) => (
+                  <option key={def.id} value={def.id}>
+                    {def.label}（{def.id}）
+                  </option>
+                ))}
+              </select>
+              {onManageFields && (
+                <button
+                  type="button"
+                  onClick={() => onManageFields(activeFieldKind)}
+                  className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                  data-testid="config-open-field-editor"
+                >
+                  字段编辑器
+                </button>
+              )}
+            </div>
 
             <div className="space-y-1">
               {fieldsOfKind(activeFieldKind).map((field) => (
@@ -743,139 +914,369 @@ export const ModuleConfigPanel = ({
           </div>
         )}
 
-        {tab === 'statuses' && (
-          <div className="space-y-3" data-testid="config-statuses">
-            <div className="space-y-1">
-              {asDefs<StatusDef>(draft.statuses).map((status) => (
-                <div
-                  key={status.id}
-                  className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
-                >
-                  <span className="text-[11px]">{status.label}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{status.id}</span>
-                  <button
-                    type="button"
-                    aria-label={`删除状态 ${status.label}`}
-                    onClick={() =>
-                      patchDraft({
-                        statuses: asDefs<StatusDef>(draft.statuses).filter(
-                          (item) => item.id !== status.id
-                        ),
-                      })
-                    }
-                    className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-              <div className="flex gap-2">
+        {tab === 'levels' && (
+          <div className="space-y-1" data-testid="config-levels">
+            {asDefs<LevelDef>(draft.levels).map((level) => (
+              <div
+                key={level.id}
+                className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+              >
                 <input
                   type="text"
-                  value={newStatus.label}
-                  onChange={(event) =>
-                    setNewStatus((prev) => ({ ...prev, label: event.target.value }))
-                  }
-                  placeholder="状态名，如 存续"
-                  aria-label="状态名"
-                  className={FIELD_CLASS}
+                  value={level.label}
+                  onChange={(event) => updateLevel(level.id, { label: event.target.value })}
+                  aria-label={`等级名 ${level.label}`}
+                  className={`${INLINE_FIELD_CLASS} w-36`}
                 />
+                <span className="font-mono text-[10px] text-muted-foreground">{level.id}</span>
                 <input
-                  type="text"
-                  value={newStatus.color}
-                  onChange={(event) =>
-                    setNewStatus((prev) => ({ ...prev, color: event.target.value }))
-                  }
-                  placeholder="颜色（可选）"
-                  aria-label="状态颜色"
-                  className={FIELD_CLASS}
+                  type="number"
+                  value={typeof level.rank === 'number' ? level.rank : ''}
+                  onChange={(event) => updateLevel(level.id, { rank: event.target.value })}
+                  placeholder="rank"
+                  aria-label={`等级 rank ${level.label}`}
+                  title="rank 越大权重越高（政治版图按它决定节点尺寸与布局环）"
+                  className={`${INLINE_FIELD_CLASS} w-20`}
                 />
                 <button
                   type="button"
-                  onClick={addStatus}
-                  className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                  aria-label={`删除等级 ${level.label}`}
+                  onClick={() =>
+                    patchDraft({
+                      levels: asDefs<LevelDef>(draft.levels).filter(
+                        (item) => item.id !== level.id
+                      ),
+                    })
+                  }
+                  className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  状态
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
+            ))}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newLevel.label}
+                onChange={(event) =>
+                  setNewLevel((prev) => ({ ...prev, label: event.target.value }))
+                }
+                placeholder="等级名（含义由用户定义）"
+                aria-label="等级名"
+                className={FIELD_CLASS}
+              />
+              <input
+                type="number"
+                value={newLevel.rank}
+                onChange={(event) =>
+                  setNewLevel((prev) => ({ ...prev, rank: event.target.value }))
+                }
+                placeholder={`rank（默认 ${nextLevelRank(asDefs<LevelDef>(draft.levels))}）`}
+                aria-label="等级 rank"
+                className={FIELD_CLASS}
+              />
+              <button
+                type="button"
+                onClick={addLevel}
+                className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                等级
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              等级含义由各模块自行定义（如 超级大国 / 王国 / 城邦），系统不规定档数与语义；
+              rank 越大权重越高。
+            </p>
+          </div>
+        )}
+
+        {tab === 'statuses' && (
+          <div className="space-y-1" data-testid="config-statuses">
+            {asDefs<StatusDef>(draft.statuses).map((status) => (
+              <div
+                key={status.id}
+                className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+              >
+                <span className="text-[11px]">{status.label}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">{status.id}</span>
+                <button
+                  type="button"
+                  aria-label={`删除状态 ${status.label}`}
+                  onClick={() =>
+                    patchDraft({
+                      statuses: asDefs<StatusDef>(draft.statuses).filter(
+                        (item) => item.id !== status.id
+                      ),
+                    })
+                  }
+                  className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newStatus.label}
+                onChange={(event) =>
+                  setNewStatus((prev) => ({ ...prev, label: event.target.value }))
+                }
+                placeholder="状态名，如 存续"
+                aria-label="状态名"
+                className={FIELD_CLASS}
+              />
+              <input
+                type="text"
+                value={newStatus.color}
+                onChange={(event) =>
+                  setNewStatus((prev) => ({ ...prev, color: event.target.value }))
+                }
+                placeholder="颜色（可选）"
+                aria-label="状态颜色"
+                className={FIELD_CLASS}
+              />
+              <button
+                type="button"
+                onClick={addStatus}
+                className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                状态
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              状态用文字徽章加色阶表达（如 存续、已灭亡、流亡），不使用星号或 emoji 拼贴。
+            </p>
+          </div>
+        )}
+
+        {tab === 'linkTypes' && (
+          <div className="space-y-3" data-testid="config-link-types">
+            <div className="space-y-1">
+              <div className="text-[11px] font-medium text-foreground">
+                核心关联类型（后端注册表，只读；可改名 / 改色 / 改图标，不可删除）
+              </div>
+              {(linkRegistry ?? []).length === 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  未提供核心注册表（linkRegistry），仅显示自定义关联类型。
+                </p>
+              )}
+              {(linkRegistry ?? []).map((core) => {
+                const override = linkOverrides.get(core.id);
+                const Icon = lucideIcon(override?.icon ?? core.icon);
+                return (
+                  <div
+                    key={core.id}
+                    className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                    data-testid="config-core-link-type"
+                    data-link-type={core.id}
+                  >
+                    {Icon ? (
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <span
+                        className="h-3.5 w-3.5 rounded-sm border border-border/60"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={override?.label ?? core.label}
+                      aria-label={`关联类型名称 ${core.id}`}
+                      onChange={(event) =>
+                        updateLinkOverride(core.id, { label: event.target.value })
+                      }
+                      className={`${INLINE_FIELD_CLASS} w-28`}
+                    />
+                    <span className="font-mono text-[10px] text-muted-foreground">{core.id}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {core.directed ? '有向' : '对称'}
+                    </span>
+                    <input
+                      type="text"
+                      value={override?.color ?? core.color}
+                      aria-label={`关联类型颜色 ${core.id}`}
+                      onChange={(event) =>
+                        updateLinkOverride(core.id, { color: event.target.value })
+                      }
+                      className={`${INLINE_FIELD_CLASS} w-24`}
+                    />
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className="rounded-full border border-border/50 px-1.5 text-[10px] text-muted-foreground">
+                        核心
+                      </span>
+                      {override && (
+                        <button
+                          type="button"
+                          onClick={() => resetLinkOverride(core.id)}
+                          className="text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          恢复默认
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="space-y-1">
-              {asDefs<LevelDef>(draft.levels).map((level) => (
+              <div className="text-[11px] font-medium text-foreground">自定义关联类型</div>
+              {customLinkTypes.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">尚未登记自定义关联类型。</p>
+              )}
+              {customLinkTypes.map((def) => (
                 <div
-                  key={level.id}
-                  className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                  key={def.id}
+                  className="flex flex-wrap items-center gap-2 rounded-md border border-border/40 px-2 py-1"
+                  data-testid="config-custom-link-type"
+                  data-link-type={def.id}
                 >
-                  <input
-                    type="text"
-                    value={level.label}
-                    onChange={(event) => updateLevel(level.id, { label: event.target.value })}
-                    aria-label={`等级名 ${level.label}`}
-                    className={`${INLINE_FIELD_CLASS} w-36`}
-                  />
-                  <span className="font-mono text-[10px] text-muted-foreground">{level.id}</span>
-                  <input
-                    type="number"
-                    value={typeof level.rank === 'number' ? level.rank : ''}
-                    onChange={(event) => updateLevel(level.id, { rank: event.target.value })}
-                    placeholder="rank"
-                    aria-label={`等级 rank ${level.label}`}
-                    title="rank 越大权重越高（政治版图按它决定节点尺寸与布局环）"
-                    className={`${INLINE_FIELD_CLASS} w-20`}
-                  />
+                  <span className="text-[11px] font-medium text-foreground">{def.label}</span>
+                  <span className="font-mono text-[10px] text-muted-foreground">{def.id}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    源 {def.source?.module ?? '?'}
+                    {def.source?.kind ? `/${def.source.kind}` : ''} · 目标{' '}
+                    {def.target?.module ?? '?'}
+                    {def.target?.kind ? `/${def.target.kind}` : ''}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {def.directed ? '有向' : '对称'}
+                  </span>
                   <button
                     type="button"
-                    aria-label={`删除等级 ${level.label}`}
-                    onClick={() =>
-                      patchDraft({
-                        levels: asDefs<LevelDef>(draft.levels).filter(
-                          (item) => item.id !== level.id
-                        ),
-                      })
-                    }
+                    aria-label={`删除关联类型 ${def.label}`}
+                    onClick={() => removeLinkType(def.id, def.label)}
                     className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
+            </div>
+
+            <div className="space-y-1.5 rounded-md border border-border/40 p-2">
+              <div className="text-[11px] font-medium text-foreground">新增自定义关联类型</div>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={newLevel.label}
+                  value={newLinkType.label}
                   onChange={(event) =>
-                    setNewLevel((prev) => ({ ...prev, label: event.target.value }))
+                    setNewLinkType((prev) => ({ ...prev, label: event.target.value }))
                   }
-                  placeholder="等级名（含义由用户定义）"
-                  aria-label="等级名"
+                  placeholder="标签，如 结盟"
+                  aria-label="关联类型标签"
                   className={FIELD_CLASS}
                 />
                 <input
-                  type="number"
-                  value={newLevel.rank}
+                  type="text"
+                  value={newLinkType.reverseLabel}
                   onChange={(event) =>
-                    setNewLevel((prev) => ({ ...prev, rank: event.target.value }))
+                    setNewLinkType((prev) => ({ ...prev, reverseLabel: event.target.value }))
                   }
-                  placeholder={`rank（默认 ${nextLevelRank(asDefs<LevelDef>(draft.levels))}）`}
-                  aria-label="等级 rank"
+                  placeholder="反向标签（可选）"
+                  aria-label="关联类型反向标签"
+                  className={FIELD_CLASS}
+                />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newLinkType.sourceModule}
+                  onChange={(event) =>
+                    setNewLinkType((prev) => ({ ...prev, sourceModule: event.target.value }))
+                  }
+                  placeholder="源模块，如 politics"
+                  aria-label="关联类型源模块"
+                  className={FIELD_CLASS}
+                />
+                <input
+                  type="text"
+                  value={newLinkType.sourceKind}
+                  onChange={(event) =>
+                    setNewLinkType((prev) => ({ ...prev, sourceKind: event.target.value }))
+                  }
+                  placeholder="源 kind（可选）"
+                  aria-label="关联类型源 kind"
+                  className={FIELD_CLASS}
+                />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newLinkType.targetModule}
+                  onChange={(event) =>
+                    setNewLinkType((prev) => ({ ...prev, targetModule: event.target.value }))
+                  }
+                  placeholder="目标模块，如 polity"
+                  aria-label="关联类型目标模块"
+                  className={FIELD_CLASS}
+                />
+                <input
+                  type="text"
+                  value={newLinkType.targetKind}
+                  onChange={(event) =>
+                    setNewLinkType((prev) => ({ ...prev, targetKind: event.target.value }))
+                  }
+                  placeholder="目标 kind（可选）"
+                  aria-label="关联类型目标 kind"
+                  className={FIELD_CLASS}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={newLinkType.directed}
+                    aria-label="关联类型有向"
+                    onChange={(event) =>
+                      setNewLinkType((prev) => ({ ...prev, directed: event.target.checked }))
+                    }
+                    className="h-3 w-3"
+                  />
+                  有向
+                </label>
+                <input
+                  type="text"
+                  value={newLinkType.icon}
+                  onChange={(event) =>
+                    setNewLinkType((prev) => ({ ...prev, icon: event.target.value }))
+                  }
+                  placeholder="Lucide 图标名，如 handshake"
+                  aria-label="关联类型图标"
+                  className={FIELD_CLASS}
+                />
+                <input
+                  type="text"
+                  value={newLinkType.color}
+                  onChange={(event) =>
+                    setNewLinkType((prev) => ({ ...prev, color: event.target.value }))
+                  }
+                  placeholder="颜色 token 或 hex"
+                  aria-label="关联类型颜色"
                   className={FIELD_CLASS}
                 />
                 <button
                   type="button"
-                  onClick={addLevel}
-                  className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] transition-colors hover:bg-accent/30"
+                  onClick={addLinkType}
+                  className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  等级
+                  添加
                 </button>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                自定义关联类型只写入本模块 config.linkTypes，不写入后端注册表；必须声明方向、标签与
+                源 / 目标范围。删除后既有该类型关联回退为「相关」（{LINK_TYPE_FALLBACK_ID}）并保留备注。
+              </p>
             </div>
           </div>
         )}
 
-        {tab === 'terms' && (
-          <div className="space-y-3" data-testid="config-terms">
+        {tab === 'display' && (
+          <div className="space-y-3" data-testid="config-display">
             <div className="flex gap-2">
               <label className="flex-1 space-y-0.5">
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
@@ -886,11 +1287,14 @@ export const ModuleConfigPanel = ({
                   onChange={(event) =>
                     patchDraft({ defaultComplexity: event.target.value as ComplexityLevel })
                   }
+                  aria-label="默认复杂度"
                   className={FIELD_CLASS}
                 >
-                  <option value="sketch">速写</option>
-                  <option value="structure">结构</option>
-                  <option value="sandbox">沙盘</option>
+                  {COMPLEXITY_LEVELS.map((level) => (
+                    <option key={level} value={level}>
+                      {COMPLEXITY_LABELS[level]}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="flex-1 space-y-0.5">
@@ -902,11 +1306,19 @@ export const ModuleConfigPanel = ({
                   value={draft.displayMode ?? ''}
                   onChange={(event) => patchDraft({ displayMode: event.target.value })}
                   placeholder="如 atlas / stair"
+                  aria-label="默认视图"
                   className={FIELD_CLASS}
                 />
               </label>
             </div>
+            <p className="text-[10px] text-muted-foreground">
+              默认复杂度只决定新实体的起始披露档位，不影响已有数据；降档隐藏、升档恢复。
+            </p>
+          </div>
+        )}
 
+        {tab === 'terms' && (
+          <div className="space-y-3" data-testid="config-terms">
             <div className="space-y-1">
               {Object.entries(draft.terminology ?? {}).map(([key, value]) => (
                 <div
@@ -969,6 +1381,9 @@ export const ModuleConfigPanel = ({
                   术语
                 </button>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                术语只影响显示与导出文案；模块级术语优先于世界级，稳定 id 不变。
+              </p>
             </div>
           </div>
         )}
@@ -1198,16 +1613,18 @@ export const ModuleConfigPanel = ({
               </span>
               <input
                 type="text"
-                value={asDefs<string>(draft.costFields).join(', ')}
+                value={costFieldsText ?? asDefs<string>(draft.costFields).join(', ')}
                 aria-label="代价字段顺序"
-                onChange={(event) =>
+                onChange={(event) => {
+                  const text = event.target.value;
+                  setCostFieldsText(text);
                   patchDraft({
-                    costFields: event.target.value
+                    costFields: text
                       .split(/[,，]/)
                       .map((item) => item.trim())
                       .filter(Boolean),
-                  })
-                }
+                  });
+                }}
                 className={FIELD_CLASS}
               />
             </div>
@@ -1235,6 +1652,11 @@ export const ModuleConfigPanel = ({
           </button>
         </div>
       </div>
-    </Modal>
   );
 };
+
+export const ModuleConfigPanel = (props: ModuleConfigPanelProps) => (
+  <Modal isOpen={props.open} onClose={props.onClose} title={props.title ?? '模块配置'} size="lg">
+    <ModuleConfigPanelBody {...props} />
+  </Modal>
+);

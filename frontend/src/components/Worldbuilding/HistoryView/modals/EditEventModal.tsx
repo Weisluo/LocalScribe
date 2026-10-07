@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Modal } from '@/components/Modals/Modal';
+import { lucideIcon } from '../../shared/lucideIcon';
 import { EditEventModalProps, EventLevel, EventType } from '../types';
 import { LEVEL_CONFIG, EVENT_TYPE_CONFIG } from '../config';
 
@@ -10,7 +11,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
   const [level, setLevel] = useState<EventLevel>('normal');
   const [eventDate, setEventDate] = useState('');
   const [eventEndDate, setEventEndDate] = useState('');
-  const [icon, setIcon] = useState('📜');
+  const [icon, setIcon] = useState('scroll-text');
   const [eraId, setEraId] = useState<string | undefined>();
   const [eventType, setEventType] = useState<EventType | undefined>(undefined);
 
@@ -21,7 +22,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
       setLevel(event.level);
       setEventDate(event.eventDate || '');
       setEventEndDate(event.eventEndDate || '');
-      setIcon(event.icon || '📜');
+      setIcon(event.icon || 'scroll-text');
       setEraId(event.eraId);
       setEventType(event.eventType);
     }
@@ -94,6 +95,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
             </button>
             {(Object.keys(EVENT_TYPE_CONFIG) as EventType[]).map((t) => {
               const typeConfig = EVENT_TYPE_CONFIG[t];
+              const TypeIcon = lucideIcon(typeConfig.icon);
               return (
                 <button
                   key={t}
@@ -106,7 +108,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
                   }`}
                   title={typeConfig.description}
                 >
-                  <span>{typeConfig.icon}</span>
+                  {TypeIcon && <TypeIcon className="h-3.5 w-3.5" aria-hidden="true" />}
                   <span className="hidden sm:inline">{typeConfig.labelCn}</span>
                 </button>
               );
@@ -146,7 +148,7 @@ export const EditEventModal = ({ isOpen, onClose, onSubmit, event, eras, isLoadi
             type="text"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            placeholder="emoji图标"
+            placeholder="Lucide 图标名，如 scroll-text"
             className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-[border-color,box-shadow]"
           />
         </div>

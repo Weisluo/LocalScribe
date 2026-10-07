@@ -25,6 +25,8 @@ export interface PoliticsConfigPanelProps {
   open: boolean;
   onClose: () => void;
   config: ModuleConfig;
+  /** 后端原始 config：对象键增量保存的基底，缺了会丢未编辑的同级子键 */
+  rawConfig?: ModuleConfig;
   onSave: (patch: ModuleConfig) => Promise<void>;
 }
 
@@ -157,12 +159,14 @@ export const PoliticsConfigPanel = ({
   open,
   onClose,
   config,
+  rawConfig,
   onSave,
 }: PoliticsConfigPanelProps) => (
   <ModuleConfigPanel
     open={open}
     onClose={onClose}
     config={config}
+    rawConfig={rawConfig}
     onSave={onSave}
     builtins={POLITICS_BUILTIN_KINDS}
     maxDepth={POLITICS_MAX_ORG_DEPTH}

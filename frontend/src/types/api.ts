@@ -465,102 +465,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/worldbuilding/templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get World Templates
-         * @description 获取世界模板列表
-         */
-        get: operations["get_world_templates_api_v1_worldbuilding_templates_get"];
-        put?: never;
-        /**
-         * Create World Template
-         * @description 创建新的世界模板
-         */
-        post: operations["create_world_template_api_v1_worldbuilding_templates_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Search World Templates
-         * @description 高级搜索世界模板
-         */
-        post: operations["search_world_templates_api_v1_worldbuilding_templates_search_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/{template_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get World Template
-         * @description 获取特定世界模板的详细信息
-         */
-        get: operations["get_world_template_api_v1_worldbuilding_templates__template_id__get"];
-        /**
-         * Update World Template
-         * @description 更新世界模板
-         */
-        put: operations["update_world_template_api_v1_worldbuilding_templates__template_id__put"];
-        post?: never;
-        /**
-         * Delete World Template
-         * @description 删除世界模板
-         */
-        delete: operations["delete_world_template_api_v1_worldbuilding_templates__template_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/{template_id}/modules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get World Modules
-         * @description 获取世界模板的所有模块
-         */
-        get: operations["get_world_modules_api_v1_worldbuilding_templates__template_id__modules_get"];
-        put?: never;
-        /**
-         * Create World Module
-         * @description 为世界模板创建模块
-         */
-        post: operations["create_world_module_api_v1_worldbuilding_templates__template_id__modules_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/worldbuilding/modules/{module_id}": {
         parameters: {
             query?: never;
@@ -575,11 +479,7 @@ export interface paths {
          */
         put: operations["update_world_module_api_v1_worldbuilding_modules__module_id__put"];
         post?: never;
-        /**
-         * Delete World Module
-         * @description 删除世界模块
-         */
-        delete: operations["delete_world_module_api_v1_worldbuilding_modules__module_id__delete"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -681,284 +581,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/worldbuilding/instances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create World Instance
-         * @deprecated
-         * @description [已弃用] 世界实例概念已取消（D5）：写接口返回 410 并给出迁移指引
-         */
-        post: operations["create_world_instance_api_v1_worldbuilding_instances_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/projects/{project_id}/instances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Project World Instances
-         * @description 获取项目的所有世界实例
-         */
-        get: operations["get_project_world_instances_api_v1_worldbuilding_projects__project_id__instances_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/instances/{instance_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update World Instance
-         * @deprecated
-         * @description [已弃用] 世界实例写接口返回 410（D5）
-         */
-        put: operations["update_world_instance_api_v1_worldbuilding_instances__instance_id__put"];
-        post?: never;
-        /**
-         * Delete World Instance
-         * @deprecated
-         * @description [已弃用] 世界实例写接口返回 410（D5）
-         */
-        delete: operations["delete_world_instance_api_v1_worldbuilding_instances__instance_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/{template_id}/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Export World Template
-         * @description 导出世界模板
-         */
-        get: operations["export_world_template_api_v1_worldbuilding_templates__template_id__export_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import World Template
-         * @description 导入世界模板
-         */
-        post: operations["import_world_template_api_v1_worldbuilding_templates_import_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/{template_id}/export/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Export World Template File
-         * @description 导出世界模板为可下载的 JSON 文件
-         */
-        get: operations["export_world_template_file_api_v1_worldbuilding_templates__template_id__export_file_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/templates/import/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import World Template File
-         * @description 从 JSON 文件导入世界模板
-         */
-        post: operations["import_world_template_file_api_v1_worldbuilding_templates_import_file_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/batch/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Batch Delete World Items
-         * @description 批量删除世界项
-         */
-        post: operations["batch_delete_world_items_api_v1_worldbuilding_batch_delete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/batch/order": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Batch Update Order
-         * @description 批量更新排序
-         */
-        post: operations["batch_update_order_api_v1_worldbuilding_batch_order_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/worldviews": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get All Worldviews
-         * @description 获取所有世界观配置
-         */
-        get: operations["get_all_worldviews_api_v1_worldbuilding_worldviews_get"];
-        put?: never;
-        /**
-         * Create Worldview
-         * @deprecated
-         * @description [已弃用] 世界观预设写接口返回 410（D5）
-         */
-        post: operations["create_worldview_api_v1_worldbuilding_worldviews_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/worldviews/{worldview_type}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Worldview By Type
-         * @description 获取特定世界观配置
-         */
-        get: operations["get_worldview_by_type_api_v1_worldbuilding_worldviews__worldview_type__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/worldviews/{worldview_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update Worldview
-         * @deprecated
-         * @description [已弃用] 世界观预设写接口返回 410（D5）
-         */
-        put: operations["update_worldview_api_v1_worldbuilding_worldviews__worldview_id__put"];
-        post?: never;
-        /**
-         * Delete Worldview
-         * @deprecated
-         * @description [已弃用] 世界观预设写接口返回 410（D5）
-         */
-        delete: operations["delete_worldview_api_v1_worldbuilding_worldviews__worldview_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/worldbuilding/worldviews/{worldview_type}/adaptations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Worldview Adaptations
-         * @description 获取世界观适配规则
-         */
-        get: operations["get_worldview_adaptations_api_v1_worldbuilding_worldviews__worldview_type__adaptations_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/worldbuilding/worlds": {
         parameters: {
             query?: never;
@@ -988,14 +610,39 @@ export interface paths {
         put?: never;
         /**
          * Import World
-         * @description 世界备份恢复：新建世界，实体 id 重新分配并重映射关联端点。
+         * @description 世界备份恢复（P6-T2）：new / overwrite 两种模式 + id 映射与失效引用报告。
          *
-         *     - 关联先整体过一遍契约 §4 校验，非法则整包拒绝（400），不做部分写入
+         *     - 版本：schema_version 高于当前应用支持值时整包拒绝，不做部分写入
+         *     - 关联先整体过一遍契约 §4 校验；未注册的 link_type 回落 core.related_to 并计入报告
          *     - 实体分两遍建立：先全部 submodule 再回填 parent_id，避免备份里子级排在
          *       父级之前时静默丢掉父子关系
          *     - 关联落库统一走 LinkService，沿用 registry 的 directed 与对称边去重
+         *     - 端点 id 不在备份里 => 失效引用：keep_dangling 时保留原 id 作警示引用，否则丢弃
          */
         post: operations["import_world_api_v1_worldbuilding_worlds_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/{world_id}/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create World Module
+         * @description 为已有世界补齐一个模块（P6-T10：取代旧 /templates/{id}/modules 兼容转发）。
+         *
+         *     服务端建世界时已补齐七个模块，这里只处理历史上缺模块的旧世界；
+         *     同一 module_type 已存在时返回 400，不静默覆盖。
+         */
+        post: operations["create_world_module_api_v1_worldbuilding_worlds__world_id__modules_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1016,6 +663,30 @@ export interface paths {
         post?: never;
         /** Delete World */
         delete: operations["delete_world_api_v1_worldbuilding_worlds__world_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/worlds/{world_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Clear World Content
+         * @description 清空世界内的实体与关联，保留世界行、七个模块与模块配置（P6-T2 危险操作）。
+         *
+         *     与覆盖导入里的 `_clear_world_content` 不同：这里**不删模块**，避免顺手抹掉
+         *     module.config（用户配置）。前端「世界设置 → 备份 → 清空世界数据」的口径是
+         *     「模块与配置保留」，因此关联也必须一起清，否则残留的 WorldLink 全部变成失效引用。
+         */
+        delete: operations["clear_world_content_api_v1_worldbuilding_worlds__world_id__content_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2349,13 +2020,18 @@ export interface components {
             /** Relations */
             relations: components["schemas"]["RelationCreate"][];
         };
-        /** Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post */
-        Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post: {
+        /**
+         * BatchUpdateOrderRequest
+         * @description 批量更新排序请求
+         */
+        BatchUpdateOrderRequest: {
             /**
-             * File
-             * @description 要导入的 JSON 文件
+             * Orders
+             * @description 人物ID到排序索引的映射
              */
-            file: string;
+            orders: {
+                [key: string]: number;
+            };
         };
         /** Body_upload_image_api_v1_upload_images_post */
         Body_upload_image_api_v1_upload_images_post: {
@@ -3314,15 +2990,29 @@ export interface components {
             source?: string | null;
         };
         /**
-         * ComplexityLevel
-         * @enum {string}
-         */
-        ComplexityLevel: "simple" | "complex" | "highly_complex";
-        /**
          * ConnectionType
          * @enum {string}
          */
         ConnectionType: "direct" | "branch" | "parallel" | "merge" | "loop" | "jump";
+        /**
+         * DanglingRefEntry
+         * @description 导入时无法归属的关联端点（worldbuilding_ui_design §3.4：失效引用单独列出）
+         */
+        DanglingRefEntry: {
+            /**
+             * Role
+             * @description source / target
+             */
+            role: string;
+            /** Module */
+            module: string;
+            /** Kind */
+            kind: string;
+            /** Id */
+            id: string;
+            /** Link Type */
+            link_type: string;
+        };
         /**
          * DiscoveredRelation
          * @description 发现的潜在关联Schema
@@ -3349,11 +3039,6 @@ export interface components {
             /** Reason */
             reason: string;
         };
-        /**
-         * EconomicSystemType
-         * @enum {string}
-         */
-        EconomicSystemType: "barter" | "feudal" | "mercantile" | "capitalist" | "socialist" | "post_scarcity";
         /**
          * EconomyChip
          * @description 速写关键词 chip；展开后 chip.id 与新实体 id 相同。
@@ -3729,29 +3414,6 @@ export interface components {
             window?: components["schemas"]["EconomyTimeRange"];
             /** Emptyentities */
             emptyEntities?: components["schemas"]["EntityRef"][];
-        };
-        /** EconomyModuleConfig */
-        EconomyModuleConfig: {
-            /**
-             * Entitytypes
-             * @default []
-             */
-            entityTypes: components["schemas"]["WorldviewEconomicEntityType"][];
-            /**
-             * Currencytypes
-             * @default []
-             */
-            currencyTypes: components["schemas"]["WorldviewCurrencyType"][];
-            /**
-             * Resourcetypes
-             * @default []
-             */
-            resourceTypes: components["schemas"]["WorldviewResourceType"][];
-            /**
-             * Trademethods
-             * @default []
-             */
-            tradeMethods: components["schemas"]["WorldviewTradeMethod"][];
         };
         /**
          * EconomyNode
@@ -4181,34 +3843,6 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** HistoryModuleConfig */
-        HistoryModuleConfig: {
-            /**
-             * Timeunit
-             * @default year
-             */
-            timeUnit: string;
-            /**
-             * Eventtypes
-             * @default []
-             */
-            eventTypes: components["schemas"]["WorldviewEventType"][];
-            /**
-             * Erathemes
-             * @default []
-             */
-            eraThemes: components["schemas"]["WorldviewEraTheme"][];
-            /**
-             * Timelinestyle
-             * @default linear
-             */
-            timelineStyle: string;
-            /**
-             * Recordingmethod
-             * @default chronicle
-             */
-            recordingMethod: string;
-        };
         /**
          * KeywordExtractRequest
          * @description 关键词提取请求
@@ -4331,76 +3965,6 @@ export interface components {
             invalid: {
                 [key: string]: string;
             }[];
-        };
-        /**
-         * MagicLevel
-         * @enum {string}
-         */
-        MagicLevel: "none" | "low" | "medium" | "high" | "divine";
-        /** MapModuleConfig */
-        MapModuleConfig: {
-            /**
-             * Maptypes
-             * @default []
-             */
-            mapTypes: string[];
-            /**
-             * Projectionstyles
-             * @default []
-             */
-            projectionStyles: string[];
-        };
-        /** ModuleConfigs */
-        ModuleConfigs: {
-            /**
-             * @default {
-             *       "timeUnit": "year",
-             *       "eventTypes": [],
-             *       "eraThemes": [],
-             *       "timelineStyle": "linear",
-             *       "recordingMethod": "chronicle"
-             *     }
-             */
-            history: components["schemas"]["HistoryModuleConfig"];
-            /**
-             * @default {
-             *       "entityTypes": [],
-             *       "governmentTypes": [],
-             *       "alignmentSystem": "modern",
-             *       "powerStructure": "centralized"
-             *     }
-             */
-            politics: components["schemas"]["PoliticsModuleConfig"];
-            /**
-             * @default {
-             *       "entityTypes": [],
-             *       "currencyTypes": [],
-             *       "resourceTypes": [],
-             *       "tradeMethods": []
-             *     }
-             */
-            economy: components["schemas"]["EconomyModuleConfig"];
-            /**
-             * @default {
-             *       "mapTypes": [],
-             *       "projectionStyles": []
-             *     }
-             */
-            map: components["schemas"]["MapModuleConfig"];
-            /**
-             * @default {
-             *       "raceTypes": [],
-             *       "traitSystems": []
-             *     }
-             */
-            races: components["schemas"]["RacesModuleConfig"];
-            /**
-             * @default {
-             *       "systemTypes": [],
-             *       "customRules": []
-             *     }
-             */
-            systems: components["schemas"]["SystemsModuleConfig"];
         };
         /** MoveFolderRequest */
         MoveFolderRequest: {
@@ -4538,29 +4102,6 @@ export interface components {
              */
             filename: string;
         };
-        /** PoliticsModuleConfig */
-        PoliticsModuleConfig: {
-            /**
-             * Entitytypes
-             * @default []
-             */
-            entityTypes: components["schemas"]["WorldviewPoliticalEntityType"][];
-            /**
-             * Governmenttypes
-             * @default []
-             */
-            governmentTypes: components["schemas"]["WorldviewGovernmentType"][];
-            /**
-             * Alignmentsystem
-             * @default modern
-             */
-            alignmentSystem: string;
-            /**
-             * Powerstructure
-             * @default centralized
-             */
-            powerStructure: string;
-        };
         /** ProjectCreate */
         ProjectCreate: {
             /** Title */
@@ -4623,21 +4164,6 @@ export interface components {
             description?: string | null;
             /** Cover */
             cover?: string | null;
-        };
-        /** RacesModuleConfig */
-        RacesModuleConfig: {
-            /**
-             * Racetypes
-             * @default []
-             */
-            raceTypes: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Traitsystems
-             * @default []
-             */
-            traitSystems: string[];
         };
         /**
          * RawSegmentationResponse
@@ -4991,21 +4517,6 @@ export interface components {
          * @enum {string}
          */
         StrengthType: "strong" | "medium" | "weak";
-        /** SystemsModuleConfig */
-        SystemsModuleConfig: {
-            /**
-             * Systemtypes
-             * @default []
-             */
-            systemTypes: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Customrules
-             * @default []
-             */
-            customRules: string[];
-        };
         /**
          * TargetCharacterInfo
          * @description 目标人物简要信息
@@ -5023,11 +4534,6 @@ export interface components {
              */
             level: string;
         };
-        /**
-         * TechLevel
-         * @enum {string}
-         */
-        TechLevel: "primitive" | "medieval" | "industrial" | "information" | "advanced" | "transcendent";
         /**
          * TextSimilarityRequest
          * @description 文本相似度比较请求
@@ -5117,11 +4623,6 @@ export interface components {
              */
             avg_word_length: number;
         };
-        /**
-         * TimeScale
-         * @enum {string}
-         */
-        TimeScale: "ancient" | "medieval" | "renaissance" | "industrial" | "modern" | "future";
         /**
          * UploadError
          * @description 上传错误响应
@@ -5288,8 +4789,17 @@ export interface components {
         /**
          * WorldExport
          * @description 世界备份（契约 §2.1：世界 JSON 备份 / 恢复，不是模板分发）
+         *
+         *     extra="allow"：备份是用户个人数据的迁移手段，顶层未知键不能被静默丢弃
+         *     （worldview_configuration_system §7「未知字段保留不丢弃」）。
          */
         WorldExport: {
+            /**
+             * Schema Version
+             * @description 备份格式版本（P6-T11）
+             * @default 1
+             */
+            schema_version: number;
             world: components["schemas"]["WorldResponse"];
             /** Modules */
             modules: components["schemas"]["WorldModuleWithItemsV2"][];
@@ -5298,6 +4808,8 @@ export interface components {
              * @default []
              */
             links: components["schemas"]["WorldLinkExportEntry"][];
+        } & {
+            [key: string]: unknown;
         };
         /**
          * WorldImport
@@ -5319,92 +4831,105 @@ export interface components {
             project_id?: string | null;
             /** Name */
             name?: string | null;
+            /**
+             * Schema Version
+             * @description 备份格式版本
+             */
+            schema_version?: number | null;
+            /**
+             * @description new=恢复为新世界；overwrite=覆盖已有世界
+             * @default new
+             */
+            mode: components["schemas"]["WorldImportMode"];
+            /**
+             * Target World Id
+             * @description mode=overwrite 时的目标世界 id
+             */
+            target_world_id?: string | null;
+            /**
+             * Confirm Overwrite
+             * @description 覆盖非空世界必须显式确认（重数据保护）
+             * @default false
+             */
+            confirm_overwrite: boolean;
+            /**
+             * Keep Dangling
+             * @description 端点无法解析时保留为失效引用，而不是丢弃该关联
+             * @default true
+             */
+            keep_dangling: boolean;
+        } & {
+            [key: string]: unknown;
         };
-        /** WorldInstanceCreate */
-        WorldInstanceCreate: {
+        /**
+         * WorldImportMode
+         * @description 世界备份恢复模式（worldbuilding_ui_design §3.4）
+         * @enum {string}
+         */
+        WorldImportMode: "new" | "overwrite";
+        /**
+         * WorldImportReport
+         * @description 世界备份恢复结果（P6-T2：id 映射、失效引用与降级项报告）
+         */
+        WorldImportReport: {
+            world: components["schemas"]["WorldResponse"];
             /**
-             * Name
-             * @description 实例名称
+             * Mode
+             * @default new
              */
-            name: string;
+            mode: string;
             /**
-             * Description
-             * @description 实例描述
+             * Schema Version
+             * @default 1
              */
-            description?: string | null;
+            schema_version: number;
             /**
-             * Custom Data
-             * @description 自定义数据
+             * Entity Count
+             * @default 0
              */
-            custom_data?: {
-                [key: string]: unknown;
-            } | null;
+            entity_count: number;
             /**
-             * Template Id
-             * @description 模板ID
+             * Link Count
+             * @default 0
              */
-            template_id: string;
+            link_count: number;
             /**
-             * Project Id
-             * @description 项目ID
+             * Merged Duplicates
+             * @default 0
              */
-            project_id: string;
-        };
-        /** WorldInstanceResponse */
-        WorldInstanceResponse: {
+            merged_duplicates: number;
             /**
-             * Name
-             * @description 实例名称
+             * Skipped Links
+             * @default 0
              */
-            name: string;
+            skipped_links: number;
             /**
-             * Description
-             * @description 实例描述
+             * Id Map
+             * @default {}
              */
-            description?: string | null;
+            id_map: {
+                [key: string]: string;
+            };
             /**
-             * Custom Data
-             * @description 自定义数据
+             * Dangling Refs
+             * @default []
              */
-            custom_data?: {
-                [key: string]: unknown;
-            } | null;
-            /** Id */
-            id: string;
-            /** Template Id */
-            template_id: string;
-            /** Project Id */
-            project_id: string;
+            dangling_refs: components["schemas"]["DanglingRefEntry"][];
             /**
-             * Created At
-             * Format: date-time
+             * Unknown Kinds
+             * @default []
              */
-            created_at: string;
+            unknown_kinds: string[];
             /**
-             * Updated At
-             * Format: date-time
+             * Unknown Link Types
+             * @default []
              */
-            updated_at: string;
-        };
-        /** WorldInstanceUpdate */
-        WorldInstanceUpdate: {
+            unknown_link_types: string[];
             /**
-             * Name
-             * @description 实例名称
+             * Warnings
+             * @default []
              */
-            name?: string | null;
-            /**
-             * Description
-             * @description 实例描述
-             */
-            description?: string | null;
-            /**
-             * Custom Data
-             * @description 自定义数据
-             */
-            custom_data?: {
-                [key: string]: unknown;
-            } | null;
+            warnings: string[];
         };
         /**
          * WorldLinkCounts
@@ -5724,8 +5249,8 @@ export interface components {
             is_required: boolean;
             /** Id */
             id: string;
-            /** Template Id */
-            template_id: string;
+            /** World Id */
+            world_id: string;
             /**
              * Created At
              * Format: date-time
@@ -5789,85 +5314,6 @@ export interface components {
              */
             is_required?: boolean | null;
         };
-        /** WorldModuleWithItems */
-        WorldModuleWithItems: {
-            /** @description 模块类型 */
-            module_type: components["schemas"]["app__schemas__worldbuilding__ModuleType"];
-            /**
-             * Name
-             * @description 模块名称
-             */
-            name: string;
-            /**
-             * Description
-             * @description 模块描述
-             */
-            description?: string | null;
-            /**
-             * Icon
-             * @description 模块图标
-             */
-            icon?: string | null;
-            /**
-             * Order Index
-             * @description 排序索引
-             * @default 0
-             */
-            order_index: number;
-            /**
-             * Config
-             * @description 模块配置（契约 §2.7，取代 moduleConfig 条目）
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Is Collapsible
-             * @description 是否可折叠
-             * @default true
-             */
-            is_collapsible: boolean;
-            /**
-             * Is Required
-             * @description 是否必需
-             * @default false
-             */
-            is_required: boolean;
-            /** Id */
-            id: string;
-            /** Template Id */
-            template_id: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            /**
-             * Submodule Count
-             * @default 0
-             */
-            submodule_count: number;
-            /**
-             * Item Count
-             * @default 0
-             */
-            item_count: number;
-            /**
-             * Submodules
-             * @default []
-             */
-            submodules: components["schemas"]["WorldSubmoduleResponse"][];
-            /**
-             * Items
-             * @default []
-             */
-            items: components["schemas"]["WorldModuleItemResponse"][];
-        };
         /**
          * WorldModuleWithItemsV2
          * @description 模块（含 config 与嵌套内容），/worlds 详情使用
@@ -5917,8 +5363,8 @@ export interface components {
             is_required: boolean;
             /** Id */
             id: string;
-            /** Template Id */
-            template_id: string;
+            /** World Id */
+            world_id: string;
             /**
              * Created At
              * Format: date-time
@@ -5939,8 +5385,6 @@ export interface components {
              * @default 0
              */
             item_count: number;
-            /** World Id */
-            world_id: string;
             /**
              * Submodules
              * @default []
@@ -6174,204 +5618,12 @@ export interface components {
              */
             parent_id?: string | null;
         };
-        /** WorldTemplateCreate */
-        WorldTemplateCreate: {
-            /**
-             * Name
-             * @description 世界名称
-             */
-            name: string;
-            /**
-             * Description
-             * @description 世界描述
-             */
-            description?: string | null;
-            /**
-             * Cover Image
-             * @description 封面图片 URL
-             */
-            cover_image?: string | null;
-            /**
-             * Tags
-             * @description 标签列表
-             */
-            tags?: string[] | null;
-            /**
-             * Is Public
-             * @default false
-             */
-            is_public: boolean;
-            /**
-             * Is System Template
-             * @default false
-             */
-            is_system_template: boolean;
-            /** Project Id */
-            project_id?: string | null;
-        };
-        /** WorldTemplateExport */
-        WorldTemplateExport: {
-            template: components["schemas"]["WorldTemplateResponse"];
-            /** Modules */
-            modules: components["schemas"]["WorldModuleWithItems"][];
-        };
-        /** WorldTemplateFilter */
-        WorldTemplateFilter: {
-            /** Name */
-            name?: string | null;
-            /** Tags */
-            tags?: string[] | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /** Is System Template */
-            is_system_template?: boolean | null;
-            /** Created By */
-            created_by?: string | null;
-            /** Project Id */
-            project_id?: string | null;
-        };
-        /** WorldTemplateImport */
-        WorldTemplateImport: {
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /** Project Id */
-            project_id?: string | null;
-            /** Modules */
-            modules: components["schemas"]["WorldModuleWithItems"][];
-        };
-        /** WorldTemplateResponse */
-        WorldTemplateResponse: {
-            /**
-             * Name
-             * @description 世界名称
-             */
-            name: string;
-            /**
-             * Description
-             * @description 世界描述
-             */
-            description?: string | null;
-            /**
-             * Cover Image
-             * @description 封面图片 URL
-             */
-            cover_image?: string | null;
-            /**
-             * Tags
-             * @description 标签列表
-             */
-            tags?: string[] | null;
-            /** Id */
-            id: string;
-            /** Is Public */
-            is_public: boolean;
-            /** Is System Template */
-            is_system_template: boolean;
-            /** Project Id */
-            project_id?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            /** Created By */
-            created_by?: string | null;
-            /**
-             * Module Count
-             * @default 0
-             */
-            module_count: number;
-            /**
-             * Instance Count
-             * @default 0
-             */
-            instance_count: number;
-        };
-        /** WorldTemplateUpdate */
-        WorldTemplateUpdate: {
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Cover Image */
-            cover_image?: string | null;
-            /** Tags */
-            tags?: string[] | null;
-            /** Is Public */
-            is_public?: boolean | null;
-            /** Is System Template */
-            is_system_template?: boolean | null;
-            /** Project Id */
-            project_id?: string | null;
-        };
-        /** WorldTemplateWithModules */
-        WorldTemplateWithModules: {
-            /**
-             * Name
-             * @description 世界名称
-             */
-            name: string;
-            /**
-             * Description
-             * @description 世界描述
-             */
-            description?: string | null;
-            /**
-             * Cover Image
-             * @description 封面图片 URL
-             */
-            cover_image?: string | null;
-            /**
-             * Tags
-             * @description 标签列表
-             */
-            tags?: string[] | null;
-            /** Id */
-            id: string;
-            /** Is Public */
-            is_public: boolean;
-            /** Is System Template */
-            is_system_template: boolean;
-            /** Project Id */
-            project_id?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            /** Created By */
-            created_by?: string | null;
-            /**
-             * Module Count
-             * @default 0
-             */
-            module_count: number;
-            /**
-             * Instance Count
-             * @default 0
-             */
-            instance_count: number;
-            /**
-             * Modules
-             * @default []
-             */
-            modules: components["schemas"]["WorldModuleWithItems"][];
-        };
         /**
          * WorldTone
          * @description 世界视觉基调（契约 §2.8）
+         *
+         *     extra="allow"：与 WorldSettings 同口径，未识别的基调键不能被静默丢弃
+         *     （worldview_configuration_system §7「未知字段保留不丢弃」）。
          */
         WorldTone: {
             /**
@@ -6391,6 +5643,8 @@ export interface components {
              * @description sm/md/lg
              */
             radius?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** WorldUpdate */
         WorldUpdate: {
@@ -6451,320 +5705,6 @@ export interface components {
              */
             modules: components["schemas"]["WorldModuleWithItemsV2"][];
         };
-        /** WorldviewAdaptationRule */
-        WorldviewAdaptationRule: {
-            /** Sourcemodule */
-            sourceModule: string;
-            /** Targetmodule */
-            targetModule: string;
-            /** Relationtype */
-            relationType: string;
-            /** Description */
-            description: string;
-            /**
-             * Confidence
-             * @default 0.8
-             */
-            confidence: number;
-        };
-        /** WorldviewAdaptationsResponse */
-        WorldviewAdaptationsResponse: {
-            worldview_type: components["schemas"]["WorldviewType"];
-            module_configs: components["schemas"]["ModuleConfigs"];
-            /** Adaptation Rules */
-            adaptation_rules: components["schemas"]["WorldviewAdaptationRule"][];
-        };
-        /** WorldviewConfigCreate */
-        WorldviewConfigCreate: {
-            type: components["schemas"]["WorldviewType"];
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /** @default medieval */
-            timeScale: components["schemas"]["TimeScale"];
-            /** @default medieval */
-            techLevel: components["schemas"]["TechLevel"];
-            /** @default none */
-            magicLevel: components["schemas"]["MagicLevel"];
-            /** @default complex */
-            politicalComplexity: components["schemas"]["ComplexityLevel"];
-            /** @default feudal */
-            economicSystem: components["schemas"]["EconomicSystemType"];
-            /**
-             * @default {
-             *       "history": {
-             *         "eraThemes": [],
-             *         "eventTypes": [],
-             *         "recordingMethod": "chronicle",
-             *         "timeUnit": "year",
-             *         "timelineStyle": "linear"
-             *       },
-             *       "politics": {
-             *         "alignmentSystem": "modern",
-             *         "entityTypes": [],
-             *         "governmentTypes": [],
-             *         "powerStructure": "centralized"
-             *       },
-             *       "economy": {
-             *         "currencyTypes": [],
-             *         "entityTypes": [],
-             *         "resourceTypes": [],
-             *         "tradeMethods": []
-             *       },
-             *       "map": {
-             *         "mapTypes": [],
-             *         "projectionStyles": []
-             *       },
-             *       "races": {
-             *         "raceTypes": [],
-             *         "traitSystems": []
-             *       },
-             *       "systems": {
-             *         "customRules": [],
-             *         "systemTypes": []
-             *       }
-             *     }
-             */
-            moduleConfigs: components["schemas"]["ModuleConfigs"];
-            /**
-             * @default {
-             *       "primaryColor": "#6366f1",
-             *       "secondaryColor": "#8b5cf6",
-             *       "accentColor": "#f59e0b",
-             *       "backgroundGradient": "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-             *       "fontFamily": "system-ui, sans-serif"
-             *     }
-             */
-            theme: components["schemas"]["WorldviewTheme"];
-            /**
-             * Adaptationrules
-             * @default []
-             */
-            adaptationRules: components["schemas"]["WorldviewAdaptationRule"][];
-            /**
-             * Presets
-             * @default []
-             */
-            presets: components["schemas"]["WorldviewPreset"][];
-        };
-        /** WorldviewConfigResponse */
-        WorldviewConfigResponse: {
-            type: components["schemas"]["WorldviewType"];
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /** @default medieval */
-            timeScale: components["schemas"]["TimeScale"];
-            /** @default medieval */
-            techLevel: components["schemas"]["TechLevel"];
-            /** @default none */
-            magicLevel: components["schemas"]["MagicLevel"];
-            /** @default complex */
-            politicalComplexity: components["schemas"]["ComplexityLevel"];
-            /** @default feudal */
-            economicSystem: components["schemas"]["EconomicSystemType"];
-            /**
-             * @default {
-             *       "history": {
-             *         "eraThemes": [],
-             *         "eventTypes": [],
-             *         "recordingMethod": "chronicle",
-             *         "timeUnit": "year",
-             *         "timelineStyle": "linear"
-             *       },
-             *       "politics": {
-             *         "alignmentSystem": "modern",
-             *         "entityTypes": [],
-             *         "governmentTypes": [],
-             *         "powerStructure": "centralized"
-             *       },
-             *       "economy": {
-             *         "currencyTypes": [],
-             *         "entityTypes": [],
-             *         "resourceTypes": [],
-             *         "tradeMethods": []
-             *       },
-             *       "map": {
-             *         "mapTypes": [],
-             *         "projectionStyles": []
-             *       },
-             *       "races": {
-             *         "raceTypes": [],
-             *         "traitSystems": []
-             *       },
-             *       "systems": {
-             *         "customRules": [],
-             *         "systemTypes": []
-             *       }
-             *     }
-             */
-            moduleConfigs: components["schemas"]["ModuleConfigs"];
-            /**
-             * @default {
-             *       "primaryColor": "#6366f1",
-             *       "secondaryColor": "#8b5cf6",
-             *       "accentColor": "#f59e0b",
-             *       "backgroundGradient": "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-             *       "fontFamily": "system-ui, sans-serif"
-             *     }
-             */
-            theme: components["schemas"]["WorldviewTheme"];
-            /**
-             * Adaptationrules
-             * @default []
-             */
-            adaptationRules: components["schemas"]["WorldviewAdaptationRule"][];
-            /**
-             * Presets
-             * @default []
-             */
-            presets: components["schemas"]["WorldviewPreset"][];
-            /** Id */
-            id: string;
-            /**
-             * Is System
-             * @default false
-             */
-            is_system: boolean;
-            /** Created At */
-            created_at?: string | null;
-            /** Updated At */
-            updated_at?: string | null;
-        };
-        /** WorldviewConfigUpdate */
-        WorldviewConfigUpdate: {
-            /** Name */
-            name?: string | null;
-            /** Description */
-            description?: string | null;
-            timeScale?: components["schemas"]["TimeScale"] | null;
-            techLevel?: components["schemas"]["TechLevel"] | null;
-            magicLevel?: components["schemas"]["MagicLevel"] | null;
-            politicalComplexity?: components["schemas"]["ComplexityLevel"] | null;
-            economicSystem?: components["schemas"]["EconomicSystemType"] | null;
-            moduleConfigs?: components["schemas"]["ModuleConfigs"] | null;
-            theme?: components["schemas"]["WorldviewTheme"] | null;
-            /** Adaptationrules */
-            adaptationRules?: components["schemas"]["WorldviewAdaptationRule"][] | null;
-            /** Presets */
-            presets?: components["schemas"]["WorldviewPreset"][] | null;
-        };
-        /** WorldviewCurrencyType */
-        WorldviewCurrencyType: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-        };
-        /** WorldviewEconomicEntityType */
-        WorldviewEconomicEntityType: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-            /** Icon */
-            icon: string;
-            /** Color */
-            color: string;
-        };
-        /** WorldviewEraTheme */
-        WorldviewEraTheme: {
-            /** Theme */
-            theme: string;
-            /** Label */
-            label: string;
-            /** Color */
-            color: string;
-        };
-        /** WorldviewEventType */
-        WorldviewEventType: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-            /** Icon */
-            icon: string;
-            /** Color */
-            color: string;
-        };
-        /** WorldviewGovernmentType */
-        WorldviewGovernmentType: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-        };
-        /** WorldviewPoliticalEntityType */
-        WorldviewPoliticalEntityType: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-            /** Icon */
-            icon: string;
-            /** Color */
-            color: string;
-        };
-        /** WorldviewPreset */
-        WorldviewPreset: {
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string;
-            /** Icon */
-            icon: string;
-        };
-        /** WorldviewResourceType */
-        WorldviewResourceType: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-        };
-        /** WorldviewTheme */
-        WorldviewTheme: {
-            /**
-             * Primarycolor
-             * @default #6366f1
-             */
-            primaryColor: string;
-            /**
-             * Secondarycolor
-             * @default #8b5cf6
-             */
-            secondaryColor: string;
-            /**
-             * Accentcolor
-             * @default #f59e0b
-             */
-            accentColor: string;
-            /**
-             * Backgroundgradient
-             * @default linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)
-             */
-            backgroundGradient: string;
-            /**
-             * Fontfamily
-             * @default system-ui, sans-serif
-             */
-            fontFamily: string;
-        };
-        /** WorldviewTradeMethod */
-        WorldviewTradeMethod: {
-            /** Type */
-            type: string;
-            /** Label */
-            label: string;
-        };
-        /**
-         * WorldviewType
-         * @enum {string}
-         */
-        WorldviewType: "xianxia" | "historical" | "western" | "modern" | "scifi" | "apocalypse" | "custom";
         /** BatchDeleteRequest */
         app__api__v1__notes__BatchDeleteRequest: {
             /** Ids */
@@ -6780,19 +5720,6 @@ export interface components {
              * @description 要删除的人物ID列表
              */
             ids: string[];
-        };
-        /**
-         * BatchUpdateOrderRequest
-         * @description 批量更新排序请求
-         */
-        app__schemas__character__BatchUpdateOrderRequest: {
-            /**
-             * Orders
-             * @description 人物ID到排序索引的映射
-             */
-            orders: {
-                [key: string]: number;
-            };
         };
         /**
          * RelationType
@@ -6812,24 +5739,6 @@ export interface components {
          * @enum {string}
          */
         app__schemas__relation__RelationType: "causal" | "temporal" | "spatial" | "functional" | "hierarchical" | "dependency";
-        /** BatchDeleteRequest */
-        app__schemas__worldbuilding__BatchDeleteRequest: {
-            /**
-             * Ids
-             * @description 要删除的 ID 列表
-             */
-            ids: string[];
-        };
-        /** BatchUpdateOrderRequest */
-        app__schemas__worldbuilding__BatchUpdateOrderRequest: {
-            /**
-             * Items
-             * @description 排序项列表
-             */
-            items: {
-                [key: string]: unknown;
-            }[];
-        };
         /**
          * ModuleType
          * @enum {string}
@@ -7786,276 +6695,6 @@ export interface operations {
             };
         };
     };
-    get_world_templates_api_v1_worldbuilding_templates_get: {
-        parameters: {
-            query?: {
-                skip?: number;
-                limit?: number;
-                name?: string | null;
-                is_public?: boolean | null;
-                is_system_template?: boolean | null;
-                project_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_world_template_api_v1_worldbuilding_templates_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldTemplateCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    search_world_templates_api_v1_worldbuilding_templates_search_post: {
-        parameters: {
-            query?: {
-                skip?: number;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldTemplateFilter"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_world_template_api_v1_worldbuilding_templates__template_id__get: {
-        parameters: {
-            query?: {
-                include_modules?: boolean;
-            };
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateWithModules"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_world_template_api_v1_worldbuilding_templates__template_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldTemplateUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_world_template_api_v1_worldbuilding_templates__template_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_world_modules_api_v1_worldbuilding_templates__template_id__modules_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldModuleResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_world_module_api_v1_worldbuilding_templates__template_id__modules_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldModuleCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldModuleResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     update_world_module_api_v1_worldbuilding_modules__module_id__put: {
         parameters: {
             query?: never;
@@ -8078,37 +6717,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorldModuleResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_world_module_api_v1_worldbuilding_modules__module_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                module_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -8392,523 +7000,6 @@ export interface operations {
             };
         };
     };
-    create_world_instance_api_v1_worldbuilding_instances_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldInstanceCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldInstanceResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_project_world_instances_api_v1_worldbuilding_projects__project_id__instances_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldInstanceResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_world_instance_api_v1_worldbuilding_instances__instance_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldInstanceUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldInstanceResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_world_instance_api_v1_worldbuilding_instances__instance_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    export_world_template_api_v1_worldbuilding_templates__template_id__export_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateExport"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_world_template_api_v1_worldbuilding_templates_import_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldTemplateImport"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    export_world_template_file_api_v1_worldbuilding_templates__template_id__export_file_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_world_template_file_api_v1_worldbuilding_templates_import_file_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_import_world_template_file_api_v1_worldbuilding_templates_import_file_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldTemplateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    batch_delete_world_items_api_v1_worldbuilding_batch_delete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["app__schemas__worldbuilding__BatchDeleteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    batch_update_order_api_v1_worldbuilding_batch_order_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["app__schemas__worldbuilding__BatchUpdateOrderRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_all_worldviews_api_v1_worldbuilding_worldviews_get: {
-        parameters: {
-            query?: {
-                include_system?: boolean;
-                include_custom?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldviewConfigResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_worldview_api_v1_worldbuilding_worldviews_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldviewConfigCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldviewConfigResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_worldview_by_type_api_v1_worldbuilding_worldviews__worldview_type__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                worldview_type: components["schemas"]["WorldviewType"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldviewConfigResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_worldview_api_v1_worldbuilding_worldviews__worldview_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                worldview_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorldviewConfigUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldviewConfigResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_worldview_api_v1_worldbuilding_worldviews__worldview_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                worldview_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_worldview_adaptations_api_v1_worldbuilding_worldviews__worldview_type__adaptations_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                worldview_type: components["schemas"]["WorldviewType"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorldviewAdaptationsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_worlds_api_v1_worldbuilding_worlds_get: {
         parameters: {
             query?: {
@@ -8995,7 +7086,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorldResponse"];
+                    "application/json": components["schemas"]["WorldImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_world_module_api_v1_worldbuilding_worlds__world_id__modules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorldModuleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorldModuleWithItemsV2"];
                 };
             };
             /** @description Validation Error */
@@ -9079,6 +7205,35 @@ export interface operations {
         };
     };
     delete_world_api_v1_worldbuilding_worlds__world_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                world_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_world_content_api_v1_worldbuilding_worlds__world_id__content_delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -10310,7 +8465,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["app__schemas__character__BatchUpdateOrderRequest"];
+                "application/json": components["schemas"]["BatchUpdateOrderRequest"];
             };
         };
         responses: {

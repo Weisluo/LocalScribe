@@ -385,7 +385,7 @@ export const useEconomyData = ({
         if (chipId) payload.id = chipId;
         const created = await worldbuildingApi.createSubmodule(
           moduleId,
-          payload as Parameters<typeof worldbuildingApi.createSubmodule>[1]
+          payload as unknown as Parameters<typeof worldbuildingApi.createSubmodule>[1]
         );
         invalidateAll();
         return created as unknown as SubmoduleV2;
@@ -460,7 +460,7 @@ export const useEconomyData = ({
           };
           const created = await worldbuildingApi.createItem(
             moduleId,
-            payload as Parameters<typeof worldbuildingApi.createItem>[1]
+            payload as unknown as Parameters<typeof worldbuildingApi.createItem>[1]
           );
           // 后端自生成 id 时把真实 id 写回内容，保证 cycleId 仍可寻址
           if (created?.id && created.id !== cycle.id) {

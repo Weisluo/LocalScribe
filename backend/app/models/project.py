@@ -9,7 +9,6 @@ from . import Base
 
 if TYPE_CHECKING:
     from .character import Character
-    from .relation import BidirectionalRelation
     from .worldbuilding import World
 
 
@@ -51,14 +50,8 @@ class Project(Base):
     notes: Mapped[List["Note"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
-    world_instances: Mapped[List["WorldInstance"]] = relationship(
-        back_populates="project", cascade="all, delete-orphan"
-    )
     worlds: Mapped[List["World"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
-    )
-    relations: Mapped[List["BidirectionalRelation"]] = relationship(
-        back_populates="project", cascade="all, delete-orphan", lazy="select"
     )
     characters: Mapped[List["Character"]] = relationship(
         back_populates="project", cascade="all, delete-orphan", lazy="select"

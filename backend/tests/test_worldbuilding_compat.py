@@ -1,8 +1,8 @@
-"""兼容与 API 测试（Phase 1 P1-T7 / Phase 0 §7 兼容类）
+"""兼容与 API 测试（Phase 1 P1-T7 / Phase 0 §7 兼容类；Phase 6 P6-T10 收尾）
 
-- 旧接口：/templates、/instances、/worldviews 仍可用（写接口 410 指引）
+- 旧接口：/templates、/instances、/worldviews 兼容窗口已结束，一律 404
 - 新接口：/worlds、/worlds/{id}/links、/links/{id}、/link-registry
-- 兼容读写仍落在新结构（worlds / world_links）
+- 保留的模块 / 子模块 / 条目路由（/modules、/submodules、/items）继续可用
 """
 
 from __future__ import annotations
@@ -49,131 +49,128 @@ def create_submodule(client, module_id: str, **payload):
     return response.json()
 
 
-# ---------------------------------------------------------------- 旧接口兼容
+# ------------------------------------------------------ 旧接口下架（P6-T10）
+
+# 兼容窗口在 Phase 6 结束：旧读接口直接 404（不再只读保留）
+LEGACY_GET_ROUTES = (
+    "/templates",
+    "/templates/some-id",
+    "/templates/some-id/modules",
+    "/templates/some-id/export",
+    "/templates/some-id/export/file",
+    "/worldviews",
+    "/worldviews/xianxia",
+    "/worldviews/xianxia/adaptations",
+    "/projects/some-project/instances",
+)
 
 
-def test_legacy_templates_create_and_read_back_old_fields(client):
-    project_id = new_project(client)
+@pytest.mark.parametrize("path", LEGACY_GET_ROUTES)
+def test_legacy_get_routes_are_gone(client, path):
+    """下架后旧读接口一律 404。"""
+
+    assert client.get(f"{WORLD}{path}").status_code == 404
+
+
+LEGACY_WRITE_ROUTES = (
+    ("post", "/templates", {"name": "旧模板", "project_id": "p"}),
+    ("post", "/templates/search", {"project_id": "p"}),
+    ("put", "/templates/some-id", {"name": "改名"}),
+    ("delete", "/templates/some-id", None),
+    ("post", "/templates/import", {"name": "旧模板", "modules": []}),
+    ("post", "/templates/import/file", None),
+    ("post", "/templates/some-id/modules", {"module_type": "history", "name": "历史"}),
+    ("post", "/instances", {"template_id": "x", "project_id": "p", "name": "实例"}),
+    ("put", "/instances/some-id", {"name": "改名"}),
+    ("delete", "/instances/some-id", None),
+    ("post", "/worldviews", {"type": "custom", "name": "自建"}),
+    ("put", "/worldviews/some-id", {"name": "改名"}),
+    ("delete", "/worldviews/some-id", None),
+    ("post", "/batch/delete", {"ids": ["x"]}),
+    ("post", "/batch/order", {"items": [{"id": "x", "order_index": 0}]}),
+)
+
+
+@pytest.mark.parametrize("method,path,body", LEGACY_WRITE_ROUTES)
+def test_legacy_write_routes_are_gone(client, method, path, body):
+    """下架后旧写接口一律 404（不再返回 410 迁移指引）。"""
+
+    request = getattr(client, method)
+    response = (
+        request(f"{WORLD}{path}", json=body)
+        if body is not None
+        else request(f"{WORLD}{path}")
+    )
+    assert (
+        response.status_code == 404
+    ), f"{method.upper()} {path}: {response.status_code}"
+
+
+def test_world_module_delete_route_is_gone(client, world_fixture):
+    """DELETE /modules/{id} 已下架；路径仍需承载 PUT /modules/{id}，因此只剩 405。"""
+
+    history = world_fixture["history_module"]
+    response = client.delete(f"{WORLD}/modules/{history['id']}")
+    # 该路径仍承载 PUT /modules/{id}，所以不是 404 而是 405；这里按文档口径精确锁定
+    assert response.status_code == 405, response.status_code
+    assert (
+        client.get(f"{WORLD}/worlds/{world_fixture['world']['id']}").status_code == 200
+    )
+
+
+def test_surviving_module_structure_routes_still_work(client, world_fixture):
+    """保留的模块 / 子模块 / 条目路由仍可用，模块响应字段是 world_id（不是 template_id）。"""
+
+    world_id = world_fixture["world"]["id"]
+    history = world_fixture["history_module"]
+    assert history["world_id"] == world_id
+    assert "template_id" not in history
+
+    renamed = client.put(f"{WORLD}/modules/{history['id']}", json={"name": "编年"})
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["name"] == "编年"
+    assert renamed.json()["world_id"] == world_id
+
     created = client.post(
-        f"{WORLD}/templates",
-        json={
-            "name": "旧接口世界",
-            "description": "desc",
-            "tags": ["旧标签", "第二个"],
-            "is_public": False,
-            "project_id": project_id,
-        },
+        f"{WORLD}/modules/{history['id']}/submodules",
+        json={"name": "第一纪元", "kind": "era"},
     )
     assert created.status_code in (200, 201), created.text
-    body = created.json()
+    submodule = created.json()
+    assert submodule["module_id"] == history["id"]
 
-    # 旧响应字段一个不少
-    for field in (
-        "id",
-        "name",
-        "description",
-        "cover_image",
-        "tags",
-        "is_public",
-        "is_system_template",
-        "project_id",
-        "created_at",
-        "updated_at",
-        "created_by",
-        "module_count",
-        "instance_count",
-    ):
-        assert field in body, field
-
-    assert body["tags"] == ["旧标签", "第二个"]
-    assert body["is_public"] is False
-    assert body["is_system_template"] is False
-
-    # 列表与详情
-    listed = client.get(f"{WORLD}/templates", params={"project_id": project_id})
+    listed = client.get(f"{WORLD}/modules/{history['id']}/submodules")
     assert listed.status_code == 200
-    assert [item["id"] for item in listed.json()] == [body["id"]]
+    assert [row["id"] for row in listed.json()] == [submodule["id"]]
 
-    detail = client.get(
-        f"{WORLD}/templates/{body['id']}", params={"include_modules": True}
+    resaved = client.put(
+        f"{WORLD}/submodules/{submodule['id']}", json={"name": "第一纪"}
     )
-    assert detail.status_code == 200
-    assert detail.json()["modules"] == []
+    assert resaved.status_code == 200
+    assert resaved.json()["name"] == "第一纪"
 
-    # 新建模块（旧接口）-> 落在 world_modules.world_id
-    module = client.post(
-        f"{WORLD}/templates/{body['id']}/modules",
-        json={"module_type": "history", "name": "历史"},
+    item = client.post(
+        f"{WORLD}/modules/{history['id']}/items",
+        json={"name": "参战方", "content": {"a": "b"}, "submodule_id": submodule["id"]},
     )
-    assert module.status_code in (200, 201), module.text
-    assert module.json()["template_id"] == body["id"]
+    assert item.status_code in (200, 201), item.text
+    item_id = item.json()["id"]
 
-    modules = client.get(f"{WORLD}/templates/{body['id']}/modules")
-    assert modules.status_code == 200
-    assert [item["id"] for item in modules.json()] == [module.json()["id"]]
-
-    # 导出仍然返回 template + modules
-    exported = client.get(f"{WORLD}/templates/{body['id']}/export")
-    assert exported.status_code == 200
-    assert exported.json()["template"]["id"] == body["id"]
-    assert len(exported.json()["modules"]) == 1
-
-    # 更新（含旧字段）后仍能读回
-    updated = client.put(
-        f"{WORLD}/templates/{body['id']}", json={"tags": ["改标签"], "name": "改名世界"}
+    in_submodule = client.get(
+        f"{WORLD}/modules/{history['id']}/items",
+        params={"submodule_id": submodule["id"]},
     )
-    assert updated.status_code == 200
-    assert updated.json()["tags"] == ["改标签"]
-    assert updated.json()["name"] == "改名世界"
+    assert [row["id"] for row in in_submodule.json()] == [item_id]
+    # include_all 缺省时只返回不属于任何子模块的条目
+    assert client.get(f"{WORLD}/modules/{history['id']}/items").json() == []
 
-    # 旧搜索接口按 tags 过滤仍能命中旧值（settings.legacyTemplate）
-    searched = client.post(f"{WORLD}/templates/search", json={"tags": ["改标签"]})
-    assert searched.status_code == 200
-    assert body["id"] in {item["id"] for item in searched.json()}
+    updated_item = client.put(f"{WORLD}/items/{item_id}", json={"name": "主要参战方"})
+    assert updated_item.status_code == 200
+    assert updated_item.json()["name"] == "主要参战方"
 
-    assert client.delete(f"{WORLD}/templates/{body['id']}").status_code == 200
-
-
-def test_legacy_instances_are_read_only_with_guidance(client):
-    project_id = new_project(client)
-
-    listed = client.get(f"{WORLD}/projects/{project_id}/instances")
-    assert listed.status_code == 200
-    assert listed.json() == []
-
-    created = client.post(
-        f"{WORLD}/instances",
-        json={"template_id": "whatever", "project_id": project_id, "name": "实例"},
-    )
-    assert created.status_code == 410
-    assert "worlds" in created.json()["detail"]
-
-    updated = client.put(f"{WORLD}/instances/whatever", json={"name": "改名"})
-    assert updated.status_code == 410
-
-    deleted = client.delete(f"{WORLD}/instances/whatever")
-    assert deleted.status_code == 410
-
-
-def test_legacy_worldviews_read_only_with_guidance(client):
-    listed = client.get(f"{WORLD}/worldviews")
-    assert listed.status_code == 200
-    assert len(listed.json()) >= 6  # 代码内置六套系统预设（只读，不迁移）
-
-    typed = client.get(f"{WORLD}/worldviews/xianxia")
-    assert typed.status_code == 200
-    assert typed.json()["type"] == "xianxia"
-
-    created = client.post(
-        f"{WORLD}/worldviews", json={"type": "custom", "name": "自建"}
-    )
-    assert created.status_code == 410
-
-    updated = client.put(f"{WORLD}/worldviews/whatever", json={"name": "改名"})
-    assert updated.status_code == 410
-
-    deleted = client.delete(f"{WORLD}/worldviews/whatever")
-    assert deleted.status_code == 410
+    assert client.delete(f"{WORLD}/items/{item_id}").status_code == 200
+    assert client.delete(f"{WORLD}/submodules/{submodule['id']}").status_code == 200
+    assert client.get(f"{WORLD}/modules/{history['id']}/submodules").json() == []
 
 
 # ---------------------------------------------------------------- 新接口
@@ -214,9 +211,7 @@ def test_module_update_accepts_partial_payloads(client, world_fixture):
 
     # 只带 config：经济模块懒创建配置走的就是这条路径
     config = {"defaultComplexity": "structure", "metrics": []}
-    updated = client.put(
-        f"{WORLD}/modules/{economy['id']}", json={"config": config}
-    )
+    updated = client.put(f"{WORLD}/modules/{economy['id']}", json={"config": config})
     assert updated.status_code == 200, updated.text
     assert updated.json()["config"] == config
     assert updated.json()["module_type"] == "economy"
@@ -388,6 +383,7 @@ def test_world_export_import_round_trip(client, world_fixture):
     exported = client.get(f"{WORLD}/worlds/{world_id}/export")
     assert exported.status_code == 200
     payload = exported.json()
+    assert payload["schema_version"] == 1
     assert payload["world"]["id"] == world_id
     assert len(payload["modules"]) == 7
     assert len(payload["links"]) == 1
@@ -397,8 +393,15 @@ def test_world_export_import_round_trip(client, world_fixture):
         f"{WORLD}/worlds/import", json={**payload, "project_id": target_project}
     )
     assert imported.status_code == 201, imported.text
-    new_world_id = imported.json()["id"]
+    report = imported.json()
+    assert report["schema_version"] == 1
+    assert report["mode"] == "new"
+    # 1 个子模块 + 1 个条目
+    assert report["entity_count"] == 2
+    assert report["link_count"] == 1
+    new_world_id = report["world"]["id"]
     assert new_world_id != world_id
+    assert event["id"] in report["id_map"]
 
     detail = client.get(f"{WORLD}/worlds/{new_world_id}").json()
     assert len(detail["modules"]) == 7
@@ -545,13 +548,13 @@ def test_world_import_keeps_submodule_parents_regardless_of_order(
     )
     assert imported.status_code == 201, imported.text
 
-    detail = client.get(f"{WORLD}/worlds/{imported.json()['id']}").json()
+    detail = client.get(f"{WORLD}/worlds/{imported.json()['world']['id']}").json()
     by_name = {s["name"]: s for m in detail["modules"] for s in m["submodules"]}
     assert by_name["大战"]["parent_id"] == by_name["第一纪元"]["id"]
 
 
-def test_world_import_rejects_contract_external_link_type(client, world_fixture):
-    """导入的关联必须过契约 §4 校验，且非法时整包拒绝（不产生半成品世界）。"""
+def test_world_import_reports_contract_external_link_type(client, world_fixture):
+    """契约外的 link_type 回落 core.related_to 并计入报告（不再整包拒绝）。"""
 
     world_id = world_fixture["world"]["id"]
     payload = client.get(f"{WORLD}/worlds/{world_id}/export").json()
@@ -572,14 +575,18 @@ def test_world_import_rejects_contract_external_link_type(client, world_fixture)
     response = client.post(
         f"{WORLD}/worlds/import", json={**payload, "project_id": target_project}
     )
-    assert response.status_code == 400, response.text
-    assert "第 1 条关联非法" in response.json()["detail"]
+    assert response.status_code == 201, response.text
+    report = response.json()
+    assert report["unknown_link_types"] == ["history.not_a_registered_type"]
+    assert report["link_count"] == 1
+    assert any("回落" in warning for warning in report["warnings"])
 
-    # 部分写入必须不存在：目标项目下没有新世界
-    assert (
-        client.get(f"{WORLD}/worlds", params={"project_id": target_project}).json()
-        == []
-    )
+    # 端点都在备份里（新生成的两个 uuid 不属于任何实体）→ 失效引用被报告，不丢世界
+    assert report["dangling_refs"]
+    new_world_id = report["world"]["id"]
+    links = client.get(f"{WORLD}/worlds/{new_world_id}/links").json()
+    assert [link["link_type"] for link in links] == ["core.related_to"]
+    assert links[0]["directed"] is False
 
 
 def test_world_import_merges_duplicate_symmetric_edges(client, world_fixture):
@@ -620,8 +627,11 @@ def test_world_import_merges_duplicate_symmetric_edges(client, world_fixture):
         f"{WORLD}/worlds/import", json={**payload, "project_id": target_project}
     )
     assert imported.status_code == 201, imported.text
+    report = imported.json()
+    assert report["merged_duplicates"] == 1
+    assert report["link_count"] == 1
 
-    new_links = client.get(f"{WORLD}/worlds/{imported.json()['id']}/links").json()
+    new_links = client.get(f"{WORLD}/worlds/{report['world']['id']}/links").json()
     assert len(new_links) == 1
     assert new_links[0]["link_type"] == "core.related_to"
     assert new_links[0]["directed"] is False
@@ -632,52 +642,3 @@ def test_world_links_endpoints_404_for_unknown_world(client):
 
     assert client.get(f"{WORLD}/worlds/no-such-world/links").status_code == 404
     assert client.get(f"{WORLD}/worlds/no-such-world/links/counts").status_code == 404
-
-
-def test_legacy_template_is_public_filter_matches_response(client):
-    """旧 /templates 的 is_public 过滤必须与响应字段一致（都读 settings.legacyTemplate）。"""
-
-    project_id = new_project(client)
-    public = client.post(
-        f"{WORLD}/templates",
-        json={"name": "公开世界", "is_public": True, "project_id": project_id},
-    ).json()
-    private = client.post(
-        f"{WORLD}/templates",
-        json={"name": "私有世界", "is_public": False, "project_id": project_id},
-    ).json()
-    assert public["is_public"] is True
-    assert private["is_public"] is False
-
-    listed_public = client.get(
-        f"{WORLD}/templates", params={"project_id": project_id, "is_public": True}
-    ).json()
-    assert [item["id"] for item in listed_public] == [public["id"]]
-
-    searched_public = client.post(
-        f"{WORLD}/templates/search",
-        json={"project_id": project_id, "is_public": True},
-    ).json()
-    assert [item["id"] for item in searched_public] == [public["id"]]
-
-    listed_private = client.get(
-        f"{WORLD}/templates", params={"project_id": project_id, "is_public": False}
-    ).json()
-    assert [item["id"] for item in listed_private] == [private["id"]]
-
-
-def test_legacy_template_system_flag_filter_matches_response(client):
-    """is_system_template 与 is_public 同口径。"""
-
-    project_id = new_project(client)
-    system = client.post(
-        f"{WORLD}/templates",
-        json={"name": "系统模板", "is_system_template": True, "project_id": project_id},
-    ).json()
-    assert system["is_system_template"] is True
-
-    listed = client.get(
-        f"{WORLD}/templates",
-        params={"project_id": project_id, "is_system_template": True},
-    ).json()
-    assert [item["id"] for item in listed] == [system["id"]]

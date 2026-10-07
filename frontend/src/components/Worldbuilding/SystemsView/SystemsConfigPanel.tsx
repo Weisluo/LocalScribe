@@ -50,6 +50,7 @@ export const SystemsConfigPanel = ({
       open={open}
       onClose={onClose}
       config={draftBase}
+      rawConfig={rawConfig}
       onSave={onSave}
       builtins={builtins}
       maxDepth={maxDepth}

@@ -1,24 +1,99 @@
+/**
+ * WorldbuildingView（Phase 6 P6-T1/T2/T6/T7）
+ *
+ * 世界容器：头部（世界切换 / 编辑 / 删除 / 搜索 / 世界脉络 / 设置 / 复杂度）、七个模块标签栏、
+ * 模块内容区，以及跨模块返回栈与面包屑。
+ *
+ * P6 口径：
+ * - 当前世界是真实状态（按项目记忆），不再是「永远 worlds[0]」；列表按 updated_at 倒序。
+ * - 空白创建不携带任何预设内容或世界观类型；旧的分发式概念与文案全部退场。
+ * - 复杂度切换写回 World.settings.complexity（P2 只在会话内）。
+ * - 详情抽屉（各模块自带）在抽屉内跳转时只替换内容：跳转统一走 onNavigateToEntity。
+ * - 经济模块固定渲染新的 EconomyView（旧实现与 feature flag 已在 P6 删除）。
+ */
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { worldbuildingApi, WorldSubmodule, WorldModuleItem, type EntityRef } from '@/services/worldbuildingApi';
+import {
+  worldbuildingApi,
+  type EntityRef,
+  type SubmoduleV2,
+  type ModuleItemV2,
+  type World,
+  type WorldImportMode,
+} from '@/services/worldbuildingApi';
 import { useProjectStore } from '@/stores/projectStore';
-import { Loader2, Plus, ChevronDown, ChevronRight, ChevronLeft, Edit2, Trash2, X, Save, Globe2, Map as MapIcon, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload, GitBranch, AlertTriangle, Package } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Edit2,
+  Trash2,
+  X,
+  Save,
+  Globe2,
+  Map as MapIcon,
+  History,
+  Landmark,
+  Coins,
+  Users,
+  Cpu,
+  Sparkles,
+  type LucideIcon,
+  FileUp,
+  FilePlus,
+  Upload,
+  GitBranch,
+  AlertTriangle,
+  Package,
+  Search,
+  Network,
+  Settings,
+  Check,
+} from 'lucide-react';
 import { HistoryView } from './HistoryView';
 import { EconomyView } from './EconomyView';
-import { EconomyViewV2 } from './EconomyViewV2';
-import { isEconomyViewV2Enabled } from '@/utils/featureFlags';
 import { RacesView } from './RacesView';
 import { SystemsView } from './SystemsView';
 import { PoliticsView } from './PoliticsView';
 import { EmptyState } from './shared';
-import { ComplexityProvider, ComplexitySwitcher, normalizeComplexity, type ComplexityLevel } from '@/components/common/ComplexitySwitcher';
-import { useWorlds, useWorld, useCreateWorld, useUpdateWorld, useDeleteWorld, useWorldBackup } from './hooks/useWorldData';
+import { ComplexityProvider, ComplexitySwitcher, type ComplexityLevel } from '@/components/common/ComplexitySwitcher';
+import {
+  useWorlds,
+  useWorld,
+  useCreateWorld,
+  useUpdateWorld,
+  useDeleteWorld,
+  useWorldBackup,
+} from './hooks/useWorldData';
 import { useLinkCounts } from './hooks/useLinks';
 import { worldbuildingKeys } from './hooks/worldQueryKeys';
 import { useMigrationLinks } from './hooks/useMigrationLinks';
 import { MigrationContainerPanel } from './MigrationContainerPanel';
 import { isMigrationContainer, kindLabel, refKey, sameRef } from './types';
+import {
+  WORLD_COMPLEXITY_OPTIONS,
+  WORLD_PALETTES,
+  WORLD_DEFAULT_COMPLEXITY,
+  buildComplexityPatch,
+  buildWorldCreatePayload,
+  formatWorldDate,
+  normalizeWorldComplexity,
+  readCurrentWorldId,
+  resolveCurrentWorldId,
+  sortWorlds,
+  webEntryDecision,
+  writeCurrentWorldId,
+  type WorldCreateInput,
+  type WorldPalette,
+} from './hooks/worldSettings';
+import { parseBackupText, assertBackupVersion, summarizeImportReport, type ImportReportSummary } from './hooks/worldBackup';
+import { WorldSettingsPanel } from './WorldSettingsPanel';
+import { GlobalSearch } from './config/GlobalSearch';
+import { WorldWeb } from './config/WorldWeb';
 import {
   createBackStack,
   pushFrame,
@@ -115,6 +190,7 @@ const Modal = ({ isOpen, onClose, title, children, showCloseButton = true }: Mod
             <button
               onClick={handleClose}
               className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/20"
+              aria-label="关闭"
             >
               <X className="h-5 w-5" />
             </button>
@@ -131,15 +207,15 @@ const Modal = ({ isOpen, onClose, title, children, showCloseButton = true }: Mod
   );
 };
 
-// 初始选择弹窗
-interface InitialChoiceModalProps {
+/** 欢迎弹窗（无世界时的第一步）：只给「新建世界」与「恢复世界备份」两条路 */
+interface WorldWelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateNew: () => void;
-  onImport: () => void;
+  onRestore: () => void;
 }
 
-const InitialChoiceModal = ({ isOpen, onClose, onCreateNew, onImport }: InitialChoiceModalProps) => {
+const WorldWelcomeModal = ({ isOpen, onClose, onCreateNew, onRestore }: WorldWelcomeModalProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -153,12 +229,8 @@ const InitialChoiceModal = ({ isOpen, onClose, onCreateNew, onImport }: InitialC
     }, 200);
   }, [onClose]);
 
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-      }
-    };
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -168,169 +240,199 @@ const InitialChoiceModal = ({ isOpen, onClose, onCreateNew, onImport }: InitialC
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-    }
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, handleClose]);
+  const choose = (action: () => void) => {
+    action();
+    setIsClosing(true);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setIsClosing(false);
+      setIsVisible(false);
+      // 必须真的关掉自己：只把 isVisible 置 false 时守卫（!isOpen && !isVisible）不成立，
+      // 弹窗会在淡出后原地重现并与新建 / 恢复弹窗叠成双层遮罩
+      onClose();
+    }, 200);
+  };
 
   if (!isOpen && !isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className={`
-          absolute inset-0 bg-black/50 backdrop-blur-sm
-          transition-all duration-200 ease-out
-          ${isClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in duration-200'}
-        `}
-        onClick={handleClose}
-      />
-      <div
-        className={`
-          relative bg-background border border-border rounded-lg shadow-lg w-full max-w-md p-6 z-10
-          transition-all duration-200 ease-out
-          ${isClosing
-            ? 'opacity-0 scale-95'
-            : 'opacity-100 scale-100 animate-in zoom-in-95 fade-in duration-200'
-          }
-        `}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">欢迎使用世界观设定</h3>
-          <button
-            onClick={handleClose}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/20"
-          >
+      <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${isClosing ? 'opacity-0' : 'opacity-100'}`} onClick={handleClose} />
+      <div className={`relative z-10 w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-lg ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-lg font-semibold">欢迎来到你的世界</h3>
+          <button onClick={handleClose} className="rounded-md p-1 text-muted-foreground hover:bg-accent/20" aria-label="关闭">
             <X className="h-5 w-5" />
           </button>
         </div>
-
-        <div className={`
-          transition-all duration-200 ease-out space-y-4
-          ${isClosing ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0 animate-in slide-in-from-bottom-2 fade-in duration-300'}
-        `}>
-          <p className="text-sm text-muted-foreground text-center mb-6">
-            您还没有创建任何世界模板，请选择以下方式开始：
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => {
-                onCreateNew();
-                // 只关闭弹窗，不触发onClose回调
-                setIsClosing(true);
-                if (closeTimerRef.current) {
-                  clearTimeout(closeTimerRef.current);
-                }
-                closeTimerRef.current = setTimeout(() => {
-                  setIsClosing(false);
-                  setIsVisible(false);
-                }, 200);
-              }}
-              className="flex flex-col items-center gap-3 p-6 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <FilePlus className="h-6 w-6 text-primary" />
-              </div>
-              <div className="text-center">
-                <div className="font-medium">命名新建</div>
-                <div className="text-xs text-muted-foreground mt-1">创建全新的世界</div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => {
-                onImport();
-                // 只关闭弹窗，不触发onClose回调
-                setIsClosing(true);
-                if (closeTimerRef.current) {
-                  clearTimeout(closeTimerRef.current);
-                }
-                closeTimerRef.current = setTimeout(() => {
-                  setIsClosing(false);
-                  setIsVisible(false);
-                }, 200);
-              }}
-              className="flex flex-col items-center gap-3 p-6 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <FileUp className="h-6 w-6 text-primary" />
-              </div>
-              <div className="text-center">
-                <div className="font-medium">导入模板</div>
-                <div className="text-xs text-muted-foreground mt-1">从JSON文件导入</div>
-              </div>
-            </button>
-          </div>
+        <p className="mb-6 text-center text-sm text-muted-foreground">
+          这里没有任何预设内容。新建世界后从第一条设定开始，或恢复一份世界备份。
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => choose(onCreateNew)}
+            className="group flex flex-col items-center gap-3 rounded-lg border border-border p-6 transition-all hover:border-primary hover:bg-primary/5"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20">
+              <FilePlus className="h-6 w-6 text-primary" />
+            </span>
+            <span className="text-center">
+              <span className="block font-medium">新建世界</span>
+              <span className="mt-1 block text-xs text-muted-foreground">从空白开始</span>
+            </span>
+          </button>
+          <button
+            onClick={() => choose(onRestore)}
+            className="group flex flex-col items-center gap-3 rounded-lg border border-border p-6 transition-all hover:border-primary hover:bg-primary/5"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20">
+              <FileUp className="h-6 w-6 text-primary" />
+            </span>
+            <span className="text-center">
+              <span className="block font-medium">恢复世界备份</span>
+              <span className="mt-1 block text-xs text-muted-foreground">从 .world.json 恢复</span>
+            </span>
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-// 命名新建弹窗
-interface CreateTemplateModalProps {
+/** 空白创建弹窗（ui_design §3.2）：无世界观类型、无预设内容、无模板措辞 */
+interface BlankWorldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
+  onSubmit: (input: WorldCreateInput) => void;
   isLoading?: boolean;
 }
 
-const CreateTemplateModal = ({ isOpen, onClose, onSubmit, isLoading }: CreateTemplateModalProps) => {
+const BlankWorldModal = ({ isOpen, onClose, onSubmit, isLoading }: BlankWorldModalProps) => {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [palette, setPalette] = useState<WorldPalette>('parchment');
+  const [accent, setAccent] = useState(WORLD_PALETTES[0].accent);
+  const [complexity, setComplexity] = useState<ComplexityLevel>(WORLD_DEFAULT_COMPLEXITY);
 
-  const handleSubmit = () => {
-    if (name.trim()) {
-      onSubmit(name.trim());
+  useEffect(() => {
+    if (isOpen) {
+      setName('');
+      setDescription('');
+      setPalette('parchment');
+      setAccent(WORLD_PALETTES[0].accent);
+      setComplexity(WORLD_DEFAULT_COMPLEXITY);
     }
-  };
+  }, [isOpen]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && name.trim()) {
-      handleSubmit();
-    }
+  const submit = () => {
+    if (!name.trim()) return;
+    onSubmit({ name: name.trim(), description, palette, accent, complexity });
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="创建新世界">
+    <Modal isOpen={isOpen} onClose={onClose} title="新建世界">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">世界名称</label>
+          <label className="mb-2 block text-sm font-medium" htmlFor="new-world-name">
+            世界名称 *
+          </label>
           <input
+            id="new-world-name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && name.trim()) submit();
+            }}
             placeholder="请输入世界名称"
-            className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
             autoFocus
           />
         </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium" htmlFor="new-world-description">
+            一句话描述（可选）
+          </label>
+          <input
+            id="new-world-description"
+            type="text"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="例如：一座靠潮汐历法运转的群岛世界"
+            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <span className="mb-2 block text-sm font-medium">视觉基调（可选，可随时修改）</span>
+          <div className="flex flex-wrap gap-2">
+            {WORLD_PALETTES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={palette === item.id}
+                onClick={() => {
+                  setPalette(item.id);
+                  if (item.id !== 'custom') setAccent(item.accent);
+                }}
+                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors ${
+                  palette === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-border/60 text-muted-foreground hover:bg-accent/20'
+                }`}
+              >
+                <span className="h-3 w-3 rounded-full border border-black/10" style={{ backgroundColor: item.accent }} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">强调色</span>
+            <input
+              type="color"
+              aria-label="强调色"
+              value={/^#[0-9a-f]{6}$/i.test(accent) ? accent : '#B45309'}
+              onChange={(event) => setAccent(event.target.value)}
+              className="h-7 w-9 cursor-pointer rounded"
+            />
+            <span className="text-[11px] text-muted-foreground">{accent}</span>
+          </div>
+        </div>
+
+        <div>
+          <span className="mb-2 block text-sm font-medium">默认复杂度</span>
+          <div className="flex gap-2">
+            {WORLD_COMPLEXITY_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={complexity === option.id}
+                title={option.hint}
+                onClick={() => setComplexity(option.id)}
+                className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+                  complexity === option.id ? 'border-primary bg-primary/10 text-primary' : 'border-border/60 text-muted-foreground hover:bg-accent/20'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="rounded-md border border-border/60 bg-card/30 px-3 py-2 text-[11px] text-muted-foreground">
+          新世界为空，不包含任何预设内容。
+        </p>
+
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
             取消
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={submit}
             disabled={!name.trim() || isLoading}
-            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                创建中...
-              </>
-            ) : (
-              '创建'
-            )}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {isLoading ? '创建中...' : '创建空白世界'}
           </button>
         </div>
       </div>
@@ -338,186 +440,217 @@ const CreateTemplateModal = ({ isOpen, onClose, onSubmit, isLoading }: CreateTem
   );
 };
 
-// 导入模板弹窗
-interface ImportTemplateModalProps {
+/** 恢复备份弹窗（ui_design §3.4）：模式选择 + 显式确认 + 导入报告 */
+interface RestoreBackupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string, file: File) => void;
-  isLoading?: boolean;
+  /** 覆盖目标候选（项目内世界）：entityCount 为 null 表示「列表接口拿不到，未知」 */
+  worlds: { id: string; name: string; linkCount: number; entityCount: number | null }[];
+  currentWorldId?: string | null;
+  isImporting?: boolean;
+  onRestore: (file: File, options: { mode: WorldImportMode; targetWorldId?: string | null; confirmOverwrite: boolean; keepDangling: boolean }) => Promise<ImportReportSummary>;
 }
 
-const ImportTemplateModal = ({ isOpen, onClose, onSubmit, isLoading }: ImportTemplateModalProps) => {
-  const [name, setName] = useState('');
+const RestoreBackupModal = ({ isOpen, onClose, worlds, currentWorldId, isImporting, onRestore }: RestoreBackupModalProps) => {
   const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState('');
+  const [mode, setMode] = useState<WorldImportMode>('new');
+  const [targetWorldId, setTargetWorldId] = useState(currentWorldId ?? '');
+  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+  const [keepDangling, setKeepDangling] = useState(true);
+  const [report, setReport] = useState<ImportReportSummary | null>(null);
+  const [busy, setBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateJson = (content: string): boolean => {
-    try {
-      const data = JSON.parse(content);
-      // 基本验证：检查是否包含必要的字段
-      if (!data.modules || !Array.isArray(data.modules)) {
-        setError('无效的模板文件：缺少modules字段');
-        return false;
-      }
-      setError('');
-      return true;
-    } catch (e) {
-      setError('无效的JSON文件');
-      return false;
-    }
-  };
-
-  const handleFileChange = (selectedFile: File) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    setFile(null);
     setError('');
-    if (selectedFile.type !== 'application/json' && !selectedFile.name.endsWith('.json')) {
-      setError('请选择JSON格式的文件');
+    setMode('new');
+    setTargetWorldId(currentWorldId ?? '');
+    setConfirmOverwrite(false);
+    setKeepDangling(true);
+    setReport(null);
+  }, [isOpen, currentWorldId]);
+
+  const handleFile = async (selected: File) => {
+    setError('');
+    setReport(null);
+    if (selected.type !== 'application/json' && !selected.name.endsWith('.json')) {
+      setError('请选择 .world.json 备份文件');
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (validateJson(content)) {
-        setFile(selectedFile);
-        // 尝试从JSON中读取名称
-        try {
-          const data = JSON.parse(content);
-          // 完整备份（WorldExport）的世界名在 world 段，旧模板文件在顶层
-          const worldName = data?.world?.name ?? data?.name;
-          if (typeof worldName === 'string' && worldName && !name) {
-            setName(worldName);
-          }
-        } catch {
-          // JSON 解析失败，忽略
-        }
-      }
-    };
-    reader.readAsText(selectedFile);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileChange(e.dataTransfer.files[0]);
+    try {
+      const document = parseBackupText(await selected.text());
+      assertBackupVersion(document);
+      setFile(selected);
+    } catch (validationError) {
+      setFile(null);
+      setError((validationError as Error).message);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-  };
-
-  const handleSubmit = () => {
-    if (name.trim() && file) {
-      onSubmit(name.trim(), file);
+  const submit = async () => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const summary = await onRestore(file, {
+        mode,
+        targetWorldId: mode === 'overwrite' ? targetWorldId : null,
+        confirmOverwrite,
+        keepDangling,
+      });
+      setReport(summary);
+    } catch {
+      // 错误已由 hook toast，这里保留弹窗让用户改选模式/确认位
+    } finally {
+      setBusy(false);
     }
   };
+
+  const targetWorld = worlds.find((item) => item.id === targetWorldId) ?? null;
+  // 后端只按「实体或关联」判定非空（worlds.py 的 confirm_overwrite 校验）；实体数只有当前
+  // 世界拿得到，未知（null）时按非空处理，避免少要一次确认后被后端 409
+  const targetNonEmpty = (targetWorld?.linkCount ?? 0) > 0 || targetWorld?.entityCount !== 0;
+  const overwriteNeedsConfirm = mode === 'overwrite' && targetNonEmpty;
+  const overwriteBlocked =
+    mode === 'overwrite' && (!targetWorldId || (targetNonEmpty && !confirmOverwrite));
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="导入世界模板">
+    <Modal isOpen={isOpen} onClose={onClose} title="恢复世界备份">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">世界名称</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="请输入世界名称"
-            className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">模板文件</label>
+          <span className="mb-2 block text-sm font-medium">备份文件</span>
           <div
             onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            className={`
-              border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all
-              ${dragActive
-                ? 'border-primary bg-primary/5'
-                : file
-                  ? 'border-emerald-500 bg-emerald-50/50'
-                  : 'border-border hover:border-primary/50 hover:bg-accent/20'
-              }
-            `}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragActive(false);
+              const dropped = event.dataTransfer.files?.[0];
+              if (dropped) void handleFile(dropped);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragActive(true);
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault();
+              setDragActive(false);
+            }}
+            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-all ${
+              dragActive ? 'border-primary bg-primary/5' : file ? 'border-emerald-500 bg-emerald-50/40' : 'border-border hover:border-primary/50 hover:bg-accent/20'
+            }`}
           >
             <input
               ref={fileInputRef}
               type="file"
               accept=".json,application/json"
-              onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+              onChange={(event) => {
+                const selected = event.target.files?.[0];
+                if (selected) void handleFile(selected);
+              }}
               className="hidden"
             />
             {file ? (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <FileUp className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div className="text-sm font-medium text-emerald-700">{file.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {(file.size / 1024).toFixed(1)} KB
-                </div>
+                <FileUp className="h-5 w-5 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-700">{file.name}</span>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setFile(null);
-                    setError('');
+                    setReport(null);
                   }}
-                  className="text-xs text-destructive hover:underline mt-1"
+                  className="mt-1 text-xs text-destructive hover:underline"
                 >
                   移除文件
                 </button>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Upload className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  点击或拖拽上传JSON文件
-                </div>
-                <div className="text-xs text-muted-foreground/70">
-                  支持从世界观导出功能生成的JSON文件
-                </div>
+                <Upload className="h-5 w-5 text-primary" />
+                <span className="text-sm text-muted-foreground">点击或拖拽上传 .world.json 备份</span>
+                <span className="text-xs text-muted-foreground/70">只接受本应用导出的完整世界备份</span>
               </div>
             )}
           </div>
-          {error && (
-            <div className="text-sm text-destructive mt-2">{error}</div>
-          )}
+          {error && <div className="mt-2 text-sm text-destructive">{error}</div>}
         </div>
 
+        {file && (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="radio" name="restore-mode" checked={mode === 'new'} onChange={() => setMode('new')} />
+              恢复为新世界（默认，在新 id 空间重建）
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="radio" name="restore-mode" checked={mode === 'overwrite'} onChange={() => setMode('overwrite')} />
+              覆盖已有世界
+            </label>
+            {mode === 'overwrite' && (
+              <div className="space-y-2">
+                <select
+                  className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  value={targetWorldId}
+                  onChange={(event) => {
+                    setTargetWorldId(event.target.value);
+                    setConfirmOverwrite(false);
+                  }}
+                  aria-label="覆盖目标世界"
+                >
+                  {worlds.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                {worlds.length === 0 && (
+                  <p className="text-xs text-muted-foreground">项目内还没有世界，无法覆盖恢复；请先恢复为新世界。</p>
+                )}
+                {overwriteNeedsConfirm && (
+                  <label className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
+                    <input
+                      type="checkbox"
+                      checked={confirmOverwrite}
+                      onChange={(event) => setConfirmOverwrite(event.target.checked)}
+                    />
+                    目标世界已有数据（实体 {targetWorld?.entityCount ?? '—'} · 关联 {targetWorld?.linkCount ?? 0}），我确认覆盖并丢弃其现有内容。
+                  </label>
+                )}
+              </div>
+            )}
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={keepDangling} onChange={(event) => setKeepDangling(event.target.checked)} />
+              端点无法解析时保留为失效引用（渲染为警示 chip）
+            </label>
+          </div>
+        )}
+
+        {report && (
+          <div className="space-y-1 rounded-md border border-border/60 bg-card/30 p-3" data-testid="restore-report">
+            <div className="text-xs font-medium">
+              {report.entityCount} 实体 · {report.linkCount} 关联 · id 映射 {report.idMapCount} 条
+            </div>
+            <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+              {report.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            取消
+          <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+            {report ? '关闭' : '取消'}
           </button>
           <button
-            onClick={handleSubmit}
-            disabled={!name.trim() || !file || isLoading || !!error}
-            className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+            onClick={submit}
+            disabled={!file || busy || isImporting || overwriteBlocked}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                导入中...
-              </>
-            ) : (
-              '导入'
-            )}
+            {busy || isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {busy || isImporting ? '恢复中...' : '恢复'}
           </button>
         </div>
       </div>
@@ -525,54 +658,61 @@ const ImportTemplateModal = ({ isOpen, onClose, onSubmit, isLoading }: ImportTem
   );
 };
 
-// 删除确认弹窗
-interface DeleteConfirmModalProps {
+/** 删除世界确认弹窗：必须输入世界名才能启用危险色按钮（ui_design §3.5） */
+interface DeleteWorldModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  templateName: string;
+  worldName: string;
+  entityCount: number;
+  linkCount: number;
+  updatedAt?: string;
   isLoading?: boolean;
 }
 
-const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, templateName, isLoading }: DeleteConfirmModalProps) => {
+const DeleteWorldModal = ({ isOpen, onClose, onConfirm, worldName, entityCount, linkCount, updatedAt, isLoading }: DeleteWorldModalProps) => {
+  const [typed, setTyped] = useState('');
+  useEffect(() => {
+    if (isOpen) setTyped('');
+  }, [isOpen]);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="删除确认">
+    <Modal isOpen={isOpen} onClose={onClose} title="删除世界">
       <div className="space-y-4">
-        <div className="flex items-center gap-3 text-amber-600 bg-amber-50/50 p-3 rounded-lg">
-          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <Trash2 className="h-5 w-5" />
-          </div>
+        <div className="flex items-center gap-3 rounded-lg bg-amber-50/60 p-3 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+          <Trash2 className="h-5 w-5 flex-shrink-0" />
           <div className="text-sm">
-            确定要删除世界模板「<span className="font-medium">{templateName}</span>」吗？
+            确定要删除世界「<span className="font-medium">{worldName}</span>」吗？
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          此操作不可恢复，所有相关的模块、子模块和条目数据都将被永久删除。
-        </p>
+        <ul className="space-y-1 text-xs text-muted-foreground">
+          <li>实体 {entityCount} 个 · 关联 {linkCount} 条</li>
+          <li>最近编辑：{formatWorldDate(updatedAt)}</li>
+          <li>会级联删除全部实体、关联与世界配置，此操作不可恢复。</li>
+        </ul>
+        <div>
+          <label className="mb-2 block text-sm font-medium" htmlFor="delete-world-name">
+            输入世界名称以确认
+          </label>
+          <input
+            id="delete-world-name"
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+            placeholder={worldName}
+            className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
+          />
+        </div>
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            disabled={isLoading}
-            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          >
+          <button onClick={onClose} disabled={isLoading} className="px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50">
             取消
           </button>
           <button
             onClick={onConfirm}
-            disabled={isLoading}
-            className="px-4 py-2 text-sm bg-destructive text-white rounded-lg hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+            disabled={typed !== worldName || isLoading}
+            className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm text-white transition-colors hover:bg-destructive/90 disabled:opacity-40"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                删除中...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4" />
-                删除
-              </>
-            )}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            删除世界
           </button>
         </div>
       </div>
@@ -594,7 +734,7 @@ const TAB_CONFIG: Record<TabType, { label: string; icon: LucideIcon }> = {
 
 const TAB_ORDER: TabType[] = ['map', 'history', 'politics', 'economy', 'races', 'systems', 'special'];
 
-/** 模块图标名（Lucide 名，写入 WorldModule.icon；与后端 DEFAULT_MODULE_SPECS 保持一致） */
+/** 模块图标名（Lucide 名，写入 WorldModule.icon；与后端 DEFAULT_MODULE_SPECS 保持一致，P6 不改） */
 const TAB_ICON_NAMES: Record<TabType, string> = {
   map: 'map',
   history: 'scroll-text',
@@ -625,7 +765,6 @@ const MissingModuleState = ({ tab, isCreating, onCreate }: MissingModuleStatePro
         label: isCreating ? '创建中...' : `创建${TAB_CONFIG[tab].label}模块`,
         onClick: onCreate,
         icon: Plus,
-        // 创建中禁用，避免连点触发两次 POST（后端会以 400「该模块类型已存在」回错）
         disabled: isCreating,
       },
     ]}
@@ -633,7 +772,7 @@ const MissingModuleState = ({ tab, isCreating, onCreate }: MissingModuleStatePro
 );
 
 interface ModuleItemEditorProps {
-  item: WorldModuleItem;
+  item: ModuleItemV2;
   onSave: (data: { name: string; content: Record<string, string> }) => void;
   onDelete: () => void;
   onCancel: () => void;
@@ -641,7 +780,9 @@ interface ModuleItemEditorProps {
 
 const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditorProps) => {
   const [name, setName] = useState(item.name);
-  const [content, setContent] = useState<Record<string, string>>(item.content || {});
+  const [content, setContent] = useState<Record<string, string>>(
+    Object.fromEntries(Object.entries(item.content ?? {}).map(([key, value]) => [key, String(value)]))
+  );
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
 
@@ -654,45 +795,29 @@ const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditor
   };
 
   const handleRemoveField = (key: string) => {
-    const newContent = { ...content };
-    delete newContent[key];
-    setContent(newContent);
-  };
-
-  const handleSave = () => {
-    onSave({ name, content });
+    const next = { ...content };
+    delete next[key];
+    setContent(next);
   };
 
   return (
-    <div className="bg-card border border-border/50 rounded-lg p-4 space-y-4">
+    <div className="space-y-4 rounded-lg border border-border/50 bg-card p-4">
       <div className="flex items-center justify-between">
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="text-lg font-semibold bg-transparent border-b border-border focus:border-primary focus:outline-none px-2 py-1"
+          onChange={(event) => setName(event.target.value)}
+          className="border-b border-border bg-transparent px-2 py-1 text-lg font-semibold focus:border-primary focus:outline-none"
           placeholder="条目名称"
         />
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleSave}
-            className="p-2 hover:bg-accent/50 rounded-lg text-emerald-600 transition-colors"
-            title="保存"
-          >
+          <button onClick={() => onSave({ name, content })} className="rounded-lg p-2 text-emerald-600 transition-colors hover:bg-accent/50" title="保存">
             <Save className="h-4 w-4" />
           </button>
-          <button
-            onClick={onDelete}
-            className="p-2 hover:bg-accent/50 rounded-lg text-destructive transition-colors"
-            title="删除"
-          >
+          <button onClick={onDelete} className="rounded-lg p-2 text-destructive transition-colors hover:bg-accent/50" title="删除">
             <Trash2 className="h-4 w-4" />
           </button>
-          <button
-            onClick={onCancel}
-            className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors"
-            title="取消"
-          >
+          <button onClick={onCancel} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50" title="取消">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -700,52 +825,41 @@ const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditor
 
       <div className="space-y-3">
         {Object.entries(content).map(([key, value]) => (
-          <div key={key} className="flex gap-2 items-start">
-            <div className="flex-1 grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                value={key}
-                disabled
-                className="bg-muted/30 px-3 py-2 rounded-md text-sm font-medium"
-              />
+          <div key={key} className="flex items-start gap-2">
+            <div className="grid flex-1 grid-cols-2 gap-2">
+              <input type="text" value={key} disabled className="rounded-md bg-muted/30 px-3 py-2 text-sm font-medium" />
               <input
                 type="text"
                 value={value}
-                onChange={(e) => setContent({ ...content, [key]: e.target.value })}
-                className="bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none"
+                onChange={(event) => setContent({ ...content, [key]: event.target.value })}
+                className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                 placeholder="内容"
               />
             </div>
-            <button
-              onClick={() => handleRemoveField(key)}
-              className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
-            >
+            <button onClick={() => handleRemoveField(key)} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-destructive">
               <X className="h-4 w-4" />
             </button>
           </div>
         ))}
 
-        <div className="flex gap-2 items-start">
-          <div className="flex-1 grid grid-cols-2 gap-2">
+        <div className="flex items-start gap-2">
+          <div className="grid flex-1 grid-cols-2 gap-2">
             <input
               type="text"
               value={newKey}
-              onChange={(e) => setNewKey(e.target.value)}
-              className="bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none"
+              onChange={(event) => setNewKey(event.target.value)}
+              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
               placeholder="属性名称"
             />
             <input
               type="text"
               value={newValue}
-              onChange={(e) => setNewValue(e.target.value)}
-              className="bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none"
+              onChange={(event) => setNewValue(event.target.value)}
+              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
               placeholder="属性值"
             />
           </div>
-          <button
-            onClick={handleAddField}
-            className="p-2 hover:bg-accent/50 rounded-lg text-primary transition-colors"
-          >
+          <button onClick={handleAddField} className="rounded-lg p-2 text-primary transition-colors hover:bg-accent/50">
             <Plus className="h-4 w-4" />
           </button>
         </div>
@@ -755,7 +869,7 @@ const ModuleItemEditor = ({ item, onSave, onDelete, onCancel }: ModuleItemEditor
 };
 
 interface SubmoduleSectionProps {
-  submodule: WorldSubmodule;
+  submodule: SubmoduleV2;
   moduleId: string;
   onItemUpdate: () => void;
   /** 展开态由视图持有，便于返回栈快照恢复（P2-T7） */
@@ -766,7 +880,7 @@ interface SubmoduleSectionProps {
 }
 
 const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onToggle, highlightId }: SubmoduleSectionProps) => {
-  const [editingItem, setEditingItem] = useState<WorldModuleItem | null>(null);
+  const [editingItem, setEditingItem] = useState<ModuleItemV2 | null>(null);
   const queryClient = useQueryClient();
 
   const { data: items = [] } = useQuery({
@@ -783,7 +897,7 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onTog
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ itemId, data }: { itemId: string; data: Partial<{ name: string; content: Record<string, string>; order_index: number; is_published: boolean }> }) =>
+    mutationFn: ({ itemId, data }: { itemId: string; data: { name: string; content: Record<string, string> } }) =>
       worldbuildingApi.updateItem(itemId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'submodule-items', submodule.id] });
@@ -793,18 +907,18 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onTog
   });
 
   return (
-    <div className="ml-4 border-l-2 border-border/30 pl-4 space-y-2">
+    <div className="ml-4 space-y-2 border-l-2 border-border/30 pl-4">
       <button
         onClick={onToggle}
-        className={`flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors w-full group rounded ${
+        className={`group flex w-full items-center gap-2 rounded text-sm font-medium transition-colors hover:text-primary ${
           highlightId === submodule.id ? 'ring-1 ring-primary/50' : ''
         }`}
         style={{ color: submodule.color || undefined }}
       >
         {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        <span>{submodule.icon && <span className="mr-1">{submodule.icon}</span>}{submodule.name}</span>
+        <span>{submodule.name}</span>
         <span className="text-xs text-muted-foreground">({submodule.item_count})</span>
-        <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 ml-auto transition-opacity" />
+        <Edit2 className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-50" />
       </button>
 
       {isExpanded && (
@@ -824,13 +938,13 @@ const SubmoduleSection = ({ submodule, moduleId, onItemUpdate, isExpanded, onTog
               ) : (
                 <button
                   onClick={() => setEditingItem(item)}
-                  className={`w-full text-left p-3 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors ${
+                  className={`w-full rounded-lg bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40 ${
                     highlightId === item.id ? 'ring-1 ring-primary/60' : ''
                   }`}
                 >
-                  <div className="font-medium text-sm">{item.name}</div>
-                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {Object.entries(item.content || {}).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(' | ')}
+                  <div className="text-sm font-medium">{item.name}</div>
+                  <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {Object.entries(item.content || {}).slice(0, 2).map(([key, value]) => `${key}: ${String(value)}`).join(' | ')}
                   </div>
                 </button>
               )}
@@ -864,7 +978,7 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
   const [isExpanded, setIsExpanded] = useState(true);
   const [showSubmoduleForm, setShowSubmoduleForm] = useState(false);
   const [showItemForm, setShowItemForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<WorldModuleItem | null>(null);
+  const [editingItem, setEditingItem] = useState<ModuleItemV2 | null>(null);
   const queryClient = useQueryClient();
 
   const { data: submodules = [] } = useQuery({
@@ -879,8 +993,7 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
   });
 
   const createSubmoduleMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string; color?: string }) =>
-      worldbuildingApi.createSubmodule(module.id, data),
+    mutationFn: (data: { name: string; description?: string; color?: string }) => worldbuildingApi.createSubmodule(module.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'submodules', module.id] });
       onModuleUpdate();
@@ -889,8 +1002,7 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
   });
 
   const createItemMutation = useMutation({
-    mutationFn: (data: { name: string; content: Record<string, string>; submodule_id?: string }) =>
-      worldbuildingApi.createItem(module.id, data),
+    mutationFn: (data: { name: string; content: Record<string, string>; submodule_id?: string }) => worldbuildingApi.createItem(module.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items', module.id] });
       onModuleUpdate();
@@ -908,7 +1020,7 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
   });
 
   const updateItemMutation = useMutation({
-    mutationFn: ({ itemId, data }: { itemId: string; data: Partial<{ name: string; content: Record<string, string>; order_index: number; is_published: boolean }> }) =>
+    mutationFn: ({ itemId, data }: { itemId: string; data: { name: string; content: Record<string, string> } }) =>
       worldbuildingApi.updateItem(itemId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items', module.id] });
@@ -918,42 +1030,33 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
   });
 
   return (
-    <div className="border border-border/50 rounded-lg bg-card/30 overflow-hidden">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-3 p-4 hover:bg-accent/20 transition-colors text-left"
-      >
-        {module.icon ? (
-          <span className="text-2xl">{module.icon}</span>
-        ) : (
-          <Package className="h-6 w-6 text-muted-foreground" />
-        )}
+    <div className="overflow-hidden rounded-lg border border-border/50 bg-card/30">
+      <button onClick={() => setIsExpanded(!isExpanded)} className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-accent/20">
+        {module.icon ? <Globe2 className="h-6 w-6 text-muted-foreground" /> : <Package className="h-6 w-6 text-muted-foreground" />}
         <div className="flex-1">
           <h3 className="font-semibold">{module.name}</h3>
-          {module.description && (
-            <p className="text-sm text-muted-foreground mt-0.5">{module.description}</p>
-          )}
+          {module.description && <p className="mt-0.5 text-sm text-muted-foreground">{module.description}</p>}
         </div>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="bg-accent/20 px-2 py-1 rounded">{module.submodule_count} 子模块</span>
-          <span className="bg-accent/20 px-2 py-1 rounded">{module.item_count} 条目</span>
+          <span className="rounded bg-accent/20 px-2 py-1">{module.submodule_count} 子模块</span>
+          <span className="rounded bg-accent/20 px-2 py-1">{module.item_count} 条目</span>
         </div>
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
       </button>
 
       {isExpanded && (
-        <div className="border-t border-border/30 p-4 space-y-4">
+        <div className="space-y-4 border-t border-border/30 p-4">
           <div className="flex gap-2">
             <button
               onClick={() => setShowSubmoduleForm(true)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
+              className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary/20"
             >
               <Plus className="h-3.5 w-3.5" />
               添加子模块
             </button>
             <button
               onClick={() => setShowItemForm(true)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-accent/10 hover:bg-accent/20 text-accent rounded-lg transition-colors"
+              className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1.5 text-sm text-accent transition-colors hover:bg-accent/20"
             >
               <Plus className="h-3.5 w-3.5" />
               添加条目
@@ -1002,20 +1105,22 @@ const ModuleSection = ({ module, onModuleUpdate, expandedIds, onToggleExpanded, 
           ))}
 
           <div className="grid gap-2">
-            {items.filter(item => !item.submodule_id).map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setEditingItem(item)}
-                className={`w-full text-left p-3 bg-muted/20 hover:bg-muted/40 rounded-lg transition-colors ${
-                  highlightId === item.id ? 'ring-1 ring-primary/60' : ''
-                }`}
-              >
-                <div className="font-medium text-sm">{item.name}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {Object.entries(item.content || {}).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(' | ')}
-                </div>
-              </button>
-            ))}
+            {items
+              .filter((item) => !item.submodule_id)
+              .map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setEditingItem(item)}
+                  className={`w-full rounded-lg bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40 ${
+                    highlightId === item.id ? 'ring-1 ring-primary/60' : ''
+                  }`}
+                >
+                  <div className="text-sm font-medium">{item.name}</div>
+                  <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {Object.entries(item.content || {}).slice(0, 3).map(([key, value]) => `${key}: ${String(value)}`).join(' | ')}
+                  </div>
+                </button>
+              ))}
           </div>
         </div>
       )}
@@ -1035,40 +1140,32 @@ const SubmoduleForm = ({ onSubmit, onCancel, isLoading }: SubmoduleFormProps) =>
   const [color, setColor] = useState('#6366f1');
 
   return (
-    <div className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-3">
+    <div className="space-y-3 rounded-lg border border-border/50 bg-muted/30 p-4">
       <input
         type="text"
         value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none"
+        onChange={(event) => setName(event.target.value)}
+        className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
         placeholder="子模块名称"
       />
       <input
         type="text"
         value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none"
+        onChange={(event) => setDescription(event.target.value)}
+        className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
         placeholder="描述（可选）"
       />
-      <div className="flex gap-2 items-center">
+      <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">颜色：</span>
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-          className="w-8 h-8 rounded cursor-pointer"
-        />
-        <div className="flex-1 flex gap-2 ml-auto">
-          <button
-            onClick={onCancel}
-            className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
+        <input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="h-8 w-8 cursor-pointer rounded" />
+        <div className="ml-auto flex flex-1 justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
             取消
           </button>
           <button
             onClick={() => name.trim() && onSubmit({ name: name.trim(), description: description.trim() || undefined, color })}
             disabled={!name.trim() || isLoading}
-            className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '创建'}
           </button>
@@ -1079,7 +1176,7 @@ const SubmoduleForm = ({ onSubmit, onCancel, isLoading }: SubmoduleFormProps) =>
 };
 
 interface ModuleItemFormProps {
-  submodules: WorldSubmodule[];
+  submodules: SubmoduleV2[];
   onSubmit: (data: { name: string; content: Record<string, string>; submodule_id?: string }) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -1090,7 +1187,7 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
   const [content, setContent] = useState<Record<string, string>>({});
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
-  const [submoduleId, setSubmoduleId] = useState<string>('');
+  const [submoduleId, setSubmoduleId] = useState('');
 
   const handleAddField = () => {
     if (newKey.trim()) {
@@ -1100,35 +1197,27 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
     }
   };
 
-  const handleSubmit = () => {
-    if (name.trim() && Object.keys(content).length > 0) {
-      onSubmit({
-        name: name.trim(),
-        content,
-        submodule_id: submoduleId || undefined,
-      });
-    }
-  };
-
   return (
-    <div className="bg-muted/30 border border-border/50 rounded-lg p-4 space-y-3">
+    <div className="space-y-3 rounded-lg border border-border/50 bg-muted/30 p-4">
       <input
         type="text"
         value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none"
+        onChange={(event) => setName(event.target.value)}
+        className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
         placeholder="条目名称"
       />
 
       {submodules.length > 0 && (
         <select
           value={submoduleId}
-          onChange={(e) => setSubmoduleId(e.target.value)}
-          className="w-full bg-background border border-border/50 px-3 py-2 rounded-md focus:border-primary focus:outline-none"
+          onChange={(event) => setSubmoduleId(event.target.value)}
+          className="w-full rounded-md border border-border/50 bg-background px-3 py-2 focus:border-primary focus:outline-none"
         >
           <option value="">不归属任何子模块</option>
-          {submodules.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+          {submodules.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
           ))}
         </select>
       )}
@@ -1136,65 +1225,59 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
       <div className="space-y-2">
         <span className="text-sm text-muted-foreground">属性（键值对）</span>
         {Object.entries(content).map(([key, value]) => (
-          <div key={key} className="flex gap-2 items-center">
-            <div className="flex-1 grid grid-cols-2 gap-2">
-              <input type="text" value={key} disabled className="bg-muted/30 px-3 py-2 rounded-md text-sm" />
+          <div key={key} className="flex items-center gap-2">
+            <div className="grid flex-1 grid-cols-2 gap-2">
+              <input type="text" value={key} disabled className="rounded-md bg-muted/30 px-3 py-2 text-sm" />
               <input
                 type="text"
                 value={value}
-                onChange={(e) => setContent({ ...content, [key]: e.target.value })}
-                className="bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none"
+                onChange={(event) => setContent({ ...content, [key]: event.target.value })}
+                className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </div>
             <button
               onClick={() => {
-                const newContent = { ...content };
-                delete newContent[key];
-                setContent(newContent);
+                const next = { ...content };
+                delete next[key];
+                setContent(next);
               }}
-              className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-destructive"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         ))}
-        <div className="flex gap-2 items-center">
-          <div className="flex-1 grid grid-cols-2 gap-2">
+        <div className="flex items-center gap-2">
+          <div className="grid flex-1 grid-cols-2 gap-2">
             <input
               type="text"
               value={newKey}
-              onChange={(e) => setNewKey(e.target.value)}
-              className="bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none"
+              onChange={(event) => setNewKey(event.target.value)}
+              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
               placeholder="属性名"
             />
             <input
               type="text"
               value={newValue}
-              onChange={(e) => setNewValue(e.target.value)}
-              className="bg-background border border-border/50 px-3 py-2 rounded-md text-sm focus:border-primary focus:outline-none"
+              onChange={(event) => setNewValue(event.target.value)}
+              className="rounded-md border border-border/50 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
               placeholder="属性值"
             />
           </div>
-          <button
-            onClick={handleAddField}
-            className="p-2 hover:bg-accent/50 rounded-lg text-primary transition-colors"
-          >
+          <button onClick={handleAddField} className="rounded-lg p-2 text-primary transition-colors hover:bg-accent/50">
             <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 justify-end">
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
+      <div className="flex justify-end gap-2">
+        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
           取消
         </button>
         <button
-          onClick={handleSubmit}
+          onClick={() => name.trim() && onSubmit({ name: name.trim(), content, submodule_id: submoduleId || undefined })}
           disabled={!name.trim() || Object.keys(content).length === 0 || isLoading}
-          className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '创建'}
         </button>
@@ -1203,15 +1286,109 @@ const ModuleItemForm = ({ submodules, onSubmit, onCancel, isLoading }: ModuleIte
   );
 };
 
+/** 世界切换下拉（ui_design §3.1）：封面占位、名称、一句话描述、模块/关联数、最近编辑 + 新建世界 */
+interface WorldSwitcherProps {
+  open: boolean;
+  onToggle: () => void;
+  worlds: { id: string; name: string; description: string; coverImage: string | null; moduleCount: number; linkCount: number; entityCount: number | null; updatedLabel: string }[];
+  currentWorldId: string | null;
+  onSelect: (worldId: string) => void;
+  onCreate: () => void;
+}
+
+const WorldSwitcher = ({ open, onToggle, worlds, currentWorldId, onSelect, onCreate }: WorldSwitcherProps) => (
+  <div className="relative">
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-haspopup="listbox"
+      aria-label="切换世界"
+      className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+    >
+      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open && (
+      <div role="listbox" aria-label="世界列表" className="absolute left-0 top-full z-40 mt-2 w-80 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
+        <ul className="max-h-80 overflow-y-auto">
+          {worlds.map((world) => (
+            <li key={world.id}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={world.id === currentWorldId}
+                onClick={() => onSelect(world.id)}
+                className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${
+                  world.id === currentWorldId ? 'bg-primary/10' : 'hover:bg-accent/20'
+                }`}
+              >
+                {world.coverImage ? (
+                  <img src={world.coverImage} alt="" className="h-9 w-9 flex-shrink-0 rounded object-cover" />
+                ) : (
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-primary/20 to-accent/20">
+                    <Globe2 className="h-4 w-4 text-primary/70" />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{world.name}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {world.description || '（无描述）'}
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground/80">
+                    {world.entityCount !== null ? `${world.entityCount} 实体 · ` : `${world.moduleCount} 模块 · `}
+                    {world.linkCount} 关联 · {world.updatedLabel}
+                  </span>
+                </span>
+                {world.id === currentWorldId && <Check className="h-4 w-4 flex-shrink-0 text-primary" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={onCreate}
+          className="flex w-full items-center gap-2 border-t border-border/60 px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
+        >
+          <Plus className="h-4 w-4" />
+          新建世界
+        </button>
+      </div>
+    )}
+  </div>
+);
+
 export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToCharacter?: (characterId: string) => void }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('map');
+  const [activeTab, setActiveTab] = useState<TabType>('history');
   const { currentProjectId } = useProjectStore();
   const queryClient = useQueryClient();
 
-  // 世界列表与当前世界：POST /worlds 由服务端按契约 §2.2 补齐七个模块，
-  // 前端不再手工建模块（phase2 §11.1 L1）
+  // 世界列表与当前世界：POST /worlds 由服务端按契约 §2.2 补齐七个模块
   const { data: worlds = [], isLoading: worldsLoading, isFetching: worldsFetching } = useWorlds(currentProjectId ?? undefined);
-  const currentWorld = worlds[0] ?? null;
+  const sortedWorlds = useMemo(() => sortWorlds(worlds), [worlds]);
+
+  const [currentWorldId, setCurrentWorldId] = useState<string | null>(null);
+  const currentWorld = useMemo(
+    () => sortedWorlds.find((world) => world.id === currentWorldId) ?? null,
+    [sortedWorlds, currentWorldId]
+  );
+
+  // 当前世界收敛：优先沿用记忆值，其次列表首位；被删除后自动回退（ui_design §3.1）
+  // pendingWorldIdRef：刚创建 / 刚恢复出来的世界在列表刷新回来之前必须保持选中，
+  // 否则这一步会用陈旧列表把选择覆盖回 sorted[0]（P6 复审修复）
+  const pendingWorldIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (worldsLoading) return;
+    const pending = pendingWorldIdRef.current;
+    if (pending && sortedWorlds.some((world) => world.id === pending)) {
+      pendingWorldIdRef.current = null;
+    }
+    const remembered = currentWorldId ?? readCurrentWorldId(currentProjectId);
+    const resolved = resolveCurrentWorldId(sortedWorlds, remembered, pendingWorldIdRef.current);
+    if (resolved !== currentWorldId) {
+      setCurrentWorldId(resolved);
+      writeCurrentWorldId(currentProjectId, resolved);
+    }
+  }, [sortedWorlds, currentProjectId, worldsLoading, currentWorldId]);
 
   // 模块与条目一次性从 /worlds/{id}?include_modules=true&include_items=true 取回
   const { data: worldDetail, isLoading: worldLoading } = useWorld(currentWorld?.id);
@@ -1222,22 +1399,27 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const { container, hasEntryPoint, linkCount: containerLinkCount } = useMigrationLinks(currentProjectId ?? undefined);
   const [migrationPanelWorldId, setMigrationPanelWorldId] = useState<string | null>(null);
 
-  const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
-  const [editingTemplateName, setEditingTemplateName] = useState('');
+  const [isEditingWorldName, setIsEditingWorldName] = useState(false);
+  const [editingWorldName, setEditingWorldName] = useState('');
 
-  // 弹窗状态
+  // 弹窗与面板状态
   const [showInitialChoice, setShowInitialChoice] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [webOpen, setWebOpen] = useState(false);
 
-  // 复杂度披露档：P2 只在会话内切换，不写回 World.settings（P6 负责持久化）
+  // 复杂度披露档：P6 起写回 World.settings.complexity（本地覆盖保证即时反馈）
   const [complexityOverride, setComplexityOverride] = useState<ComplexityLevel | null>(null);
 
   // 返回栈与列表状态快照（P2-T7）
   const [navStack, setNavStack] = useState<BackStackState>(() => createBackStack());
   const [expandedSubmoduleIds, setExpandedSubmoduleIds] = useState<string[]>([]);
   const [highlightedRef, setHighlightedRef] = useState<EntityRef | null>(null);
+  const [brokenRef, setBrokenRef] = useState<{ ref: EntityRef; label: string; fromModule: string | null } | null>(null);
   const contentScrollRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollTopRef = useRef<number | null>(null);
 
@@ -1246,7 +1428,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   const deleteWorldMutation = useDeleteWorld();
   const { restoreBackup, isImporting } = useWorldBackup();
 
-  // 模块缺失兜底（P3-T1）：复用 P1 的兼容转发路由，WorldModule.world_id 与 template_id 同列
+  // 模块缺失兜底（P3-T1）：P6 起走正式路由 POST /worlds/{id}/modules
   const createModuleMutation = useMutation({
     mutationFn: ({ worldId, tab }: { worldId: string; tab: TabType }) =>
       worldbuildingApi.createWorldModule(worldId, {
@@ -1263,27 +1445,31 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     onError: (error: Error) => toast.error(error.message || '创建模块失败'),
   });
 
-  // 检查是否需要显示初始选择弹窗（仅在首次加载且非获取中时检查）
+  // 检查是否需要显示欢迎弹窗（仅在首次加载且非获取中时检查）
   useEffect(() => {
     if (!worldsLoading && !worldsFetching && worlds.length === 0 && currentProjectId) {
       setShowInitialChoice(true);
     }
   }, [worldsLoading, worldsFetching, worlds.length, currentProjectId]);
 
+  // 切世界/切项目：保留当前模块标签，重置返回栈、展开态与定位（ui_design §3.1）
   useEffect(() => {
-    setActiveTab('map');
     setShowInitialChoice(false);
     setShowCreateModal(false);
-    setShowImportModal(false);
+    setShowRestoreModal(false);
     setShowDeleteModal(false);
     setMigrationPanelWorldId(null);
     setNavStack(createBackStack());
     setExpandedSubmoduleIds([]);
     setHighlightedRef(null);
+    setBrokenRef(null);
     setComplexityOverride(null);
+    setWebOpen(false);
+    setSettingsOpen(false);
+    setSearchOpen(false);
   }, [currentProjectId, currentWorld?.id]);
 
-  const currentModule = worldDetail?.modules?.find(m => m.module_type === activeTab);
+  const currentModule = worldDetail?.modules?.find((module) => module.module_type === activeTab);
 
   // 当前世界的实体名索引：数据来自 useWorld 详情，不额外请求
   const entityNames = useMemo(() => {
@@ -1296,8 +1482,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
   }, [worldDetail]);
 
   const entityLabel = useCallback(
-    (ref: EntityRef): string =>
-      entityNames.get(ref.id) ?? `${kindLabel(ref.kind)}·${ref.id.slice(0, 8)}`,
+    (ref: EntityRef): string => entityNames.get(ref.id) ?? `${kindLabel(ref.kind)}·${ref.id.slice(0, 8)}`,
     [entityNames]
   );
 
@@ -1308,10 +1493,11 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     return map;
   }, [linkCounts]);
 
-  const activeComplexity = complexityOverride ?? normalizeComplexity(
+  const activeComplexity = complexityOverride ?? normalizeWorldComplexity(
     typeof activeWorld?.settings?.complexity === 'string' ? activeWorld.settings.complexity : undefined
   );
   const isContainerWorld = !!activeWorld && isMigrationContainer(activeWorld);
+  const webEntry = webEntryDecision(activeComplexity);
 
   const breadcrumbs = useMemo(() => toBreadcrumbs(navStack, '世界观'), [navStack]);
 
@@ -1352,11 +1538,13 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
         onNavigateToCharacter?.(ref.id);
         return;
       }
-      // 端点不在当前世界（如迁移容器边的对端）：本视图无法跨世界定位
+      // 端点不在当前世界：按失效引用处理（可查看来源 / 清理引用），不假装能定位
       if (!entityNames.has(ref.id)) {
-        toast.info('该实体不在当前世界，请切换到对应世界查看');
+        setBrokenRef({ ref, label: `${kindLabel(ref.kind)}·${ref.id.slice(0, 8)}`, fromModule: activeTab });
+        toast.info('目标实体可能已被删除，已标记为失效引用');
         return;
       }
+      setBrokenRef(null);
       setNavStack((stack) => {
         if (sameRef(peekFrame(stack)?.ref, ref)) return stack;
         return pushFrame(stack, {
@@ -1370,7 +1558,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
       }
       setHighlightedRef(ref);
     },
-    [captureSnapshot, entityLabel, entityNames, onNavigateToCharacter]
+    [activeTab, captureSnapshot, entityLabel, entityNames, onNavigateToCharacter]
   );
 
   const handleNavigateBack = useCallback(() => {
@@ -1404,10 +1592,25 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     );
   }, []);
 
-  // Esc 回退：弹窗、世界改名与归位面板各自处理 Esc 时让位
+  // 复杂度切换：写入 World.settings.complexity（P2 只在会话内，P6 落库）
+  const handleComplexityChange = useCallback(
+    (level: ComplexityLevel) => {
+      setComplexityOverride(level);
+      if (!currentWorld) return;
+      updateWorldMutation.mutate(buildComplexityPatch(activeWorld, level));
+    },
+    [activeWorld, currentWorld, updateWorldMutation]
+  );
+
+  // Esc 回退：面板、世界改名与归位面板各自处理 Esc 时让位
   useEffect(() => {
     if (isAtRoot(navStack)) return;
-    if (showInitialChoice || showCreateModal || showImportModal || showDeleteModal || isEditingTemplateName || migrationPanelWorldId) return;
+    if (
+      showInitialChoice || showCreateModal || showRestoreModal || showDeleteModal ||
+      isEditingWorldName || migrationPanelWorldId || settingsOpen || searchOpen || webOpen
+    ) {
+      return;
+    }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
@@ -1415,17 +1618,47 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [navStack, isEditingTemplateName, showInitialChoice, showCreateModal, showImportModal, showDeleteModal, migrationPanelWorldId, handleNavigateBack]);
+  }, [
+    navStack,
+    isEditingWorldName,
+    showInitialChoice,
+    showCreateModal,
+    showRestoreModal,
+    showDeleteModal,
+    migrationPanelWorldId,
+    settingsOpen,
+    searchOpen,
+    webOpen,
+    handleNavigateBack,
+  ]);
 
-  // 处理初始选择弹窗关闭
-  const handleInitialChoiceClose = () => {
-    setShowInitialChoice(false);
-  };
+  // Ctrl/Cmd + K 打开全局搜索（ui_design §2.4）；输入控件内不抢焦点
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  // 处理创建新世界
-  const handleCreateNewWorld = () => {
-    setShowCreateModal(true);
-  };
+  // 世界切换：保持当前模块标签；目标世界没有该模块时走模块缺失空状态
+  const handleSwitchWorld = useCallback(
+    (worldId: string) => {
+      if (worldId === currentWorldId) {
+        setSwitcherOpen(false);
+        return;
+      }
+      setCurrentWorldId(worldId);
+      writeCurrentWorldId(currentProjectId, worldId);
+      setSwitcherOpen(false);
+    },
+    [currentProjectId, currentWorldId]
+  );
 
   // 创建缺失模块（P3-T1）：成功后模块详情由 worldRoot 失效后重新拉取
   const handleCreateModule = useCallback(
@@ -1437,120 +1670,185 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
     [createModuleMutation, currentWorld?.id, worldDetail?.id]
   );
 
-  // 处理导入世界备份
-  const handleImportWorld = () => {
-    setShowImportModal(true);
-  };
-
-  // 提交创建：服务端一次建好世界与七个模块
-  const handleCreateTemplateSubmit = (name: string) => {
-    createWorldMutation.mutate(
-      { name, project_id: currentProjectId ?? undefined },
-      {
-        onSuccess: () => {
+  // 空白创建：成功后切到新世界并打开默认模块（默认历史）
+  const handleCreateWorld = useCallback(
+    (input: WorldCreateInput) => {
+      const payload = buildWorldCreatePayload(input, currentProjectId ?? undefined);
+      createWorldMutation.mutate(payload, {
+        onSuccess: (world) => {
+          // 先登记待选中世界，列表刷新回来之前收敛 effect 不会覆盖这次选择
+          pendingWorldIdRef.current = world.id;
+          setCurrentWorldId(world.id);
+          writeCurrentWorldId(currentProjectId, world.id);
+          const defaultModule = (payload.settings as { defaultModule?: string } | null)?.defaultModule;
+          setActiveTab(((defaultModule as TabType) ?? 'history') as TabType);
           setShowCreateModal(false);
           setShowInitialChoice(false);
         },
-      }
-    );
-  };
+      });
+    },
+    [createWorldMutation, currentProjectId]
+  );
 
-  // 提交导入：只回传本应用导出的完整备份（phase2 §11.1 L4）
-  const handleImportTemplateSubmit = (name: string, file: File) => {
-    restoreBackup(file, currentProjectId ?? undefined)
-      .then(async (created) => {
-        if (created && name && created.name !== name) {
-          await worldbuildingApi.updateWorld(created.id, { name });
-          queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'worlds'] });
-          queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
-        }
-        setShowImportModal(false);
+  // 恢复备份：只接受本应用导出的完整备份；覆盖非空世界需显式确认（后端 409 会回错）
+  const handleRestore = useCallback(
+    async (
+      file: File,
+      options: { mode: WorldImportMode; targetWorldId?: string | null; confirmOverwrite: boolean; keepDangling: boolean }
+    ) => {
+      const report = await restoreBackup(file, {
+        mode: options.mode,
+        targetWorldId: options.targetWorldId,
+        confirmOverwrite: options.confirmOverwrite,
+        keepDangling: options.keepDangling,
+        projectId: currentProjectId ?? null,
+      });
+      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'worlds'] });
+      queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+      queryClient.invalidateQueries({ queryKey: worldbuildingKeys.migrationContainer(currentProjectId ?? undefined) });
+      if (options.mode === 'new') {
+        pendingWorldIdRef.current = report.world.id;
+        setCurrentWorldId(report.world.id);
+        writeCurrentWorldId(currentProjectId, report.world.id);
         setShowInitialChoice(false);
-        // 备份可能自带 migrationContainer 世界，入口条件需重新求值
-        queryClient.invalidateQueries({
-          queryKey: worldbuildingKeys.migrationContainer(currentProjectId ?? undefined),
-        });
-      })
-      .catch(() => undefined);
-  };
+      }
+      return summarizeImportReport(report, { keepDangling: options.keepDangling });
+    },
+    [currentProjectId, queryClient, restoreBackup]
+  );
 
-  const handleDeleteTemplate = () => {
+  const handleConfirmDelete = useCallback(() => {
     if (!currentWorld) return;
-    setShowDeleteModal(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!currentWorld) return;
-    deleteWorldMutation.mutate(currentWorld.id, {
+    const deletedWorldId = currentWorld.id;
+    deleteWorldMutation.mutate(deletedWorldId, {
       onSuccess: () => {
         setShowDeleteModal(false);
+        // 立刻从列表缓存摘掉该世界：否则收敛 effect 会拿陈旧列表把已删世界重新选中，
+        // 并对它发一次必然 404 的详情请求
+        queryClient.setQueryData<World[]>(
+          worldbuildingKeys.worlds(currentProjectId ?? undefined),
+          (previous) => (previous ?? []).filter((world) => world.id !== deletedWorldId)
+        );
+        // 删除后回到列表：收敛逻辑会把当前世界切到下一个
+        setCurrentWorldId(null);
+        writeCurrentWorldId(currentProjectId, null);
       },
     });
-  };
+  }, [currentProjectId, currentWorld, deleteWorldMutation, queryClient]);
 
-  const handleStartEditTemplateName = () => {
+  const handleStartEditWorldName = () => {
     if (currentWorld) {
-      setEditingTemplateName(currentWorld.name);
-      setIsEditingTemplateName(true);
+      setEditingWorldName(currentWorld.name);
+      setIsEditingWorldName(true);
     }
   };
 
-  const handleSaveTemplateName = () => {
-    if (currentWorld && editingTemplateName.trim()) {
+  const handleSaveWorldName = () => {
+    if (currentWorld && editingWorldName.trim()) {
       updateWorldMutation.mutate(
-        { name: editingTemplateName.trim() },
+        { name: editingWorldName.trim() },
         {
-          onSuccess: () => {
-            setIsEditingTemplateName(false);
-          },
+          onSuccess: () => setIsEditingWorldName(false),
         }
       );
     }
   };
 
-  const handleCancelEditTemplateName = () => {
-    setIsEditingTemplateName(false);
-    setEditingTemplateName('');
-  };
+  // 失效引用的两个动作：查看来源（跳回来源模块）与清理引用（删除悬挂端点上的关联）
+  const handleViewBrokenSource = useCallback(() => {
+    if (!brokenRef?.fromModule) return;
+    if ((TAB_ORDER as string[]).includes(brokenRef.fromModule)) {
+      setActiveTab(brokenRef.fromModule as TabType);
+    }
+    setBrokenRef(null);
+  }, [brokenRef]);
+
+  const handleCleanupBrokenRef = useCallback(async () => {
+    if (!brokenRef || !currentWorld) return;
+    try {
+      const links = await worldbuildingApi.getWorldLinks(currentWorld.id, {
+        module: brokenRef.ref.module,
+        entity_id: brokenRef.ref.id,
+      });
+      const dangling = links.filter(
+        (link) => !entityNames.has(link.source.id) || !entityNames.has(link.target.id)
+      );
+      for (const link of dangling) await worldbuildingApi.deleteWorldLink(link.id);
+      queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'links'] });
+      queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+      toast.success(dangling.length ? `已清理 ${dangling.length} 条失效引用` : '没有需要清理的关联');
+      setBrokenRef(null);
+    } catch (error) {
+      toast.error((error as Error).message || '清理引用失败');
+    }
+  }, [brokenRef, currentWorld, entityNames, queryClient]);
+
+  const switcherWorlds = useMemo(
+    () =>
+      sortedWorlds.map((world) => {
+        const isCurrent = world.id === currentWorldId;
+        return {
+          id: world.id,
+          name: world.name,
+          description: (world.description ?? '').trim(),
+          coverImage: world.cover_image ?? null,
+          moduleCount: world.module_count ?? 0,
+          linkCount: world.link_count ?? 0,
+          entityCount: isCurrent && worldDetail ? entityNames.size : null,
+          updatedLabel: formatWorldDate(world.updated_at),
+        };
+      }),
+    [currentWorldId, entityNames, sortedWorlds, worldDetail]
+  );
+
+  const moduleLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const module of worldDetail?.modules ?? []) map[module.module_type] = module.name;
+    return map;
+  }, [worldDetail]);
+
+  const universeEntityCount = entityNames.size;
 
   return (
-    <ComplexityProvider value={activeComplexity} onChange={setComplexityOverride}>
-      <div className="flex flex-col h-full bg-background">
-        <header className="h-16 border-b border-border/60 flex items-center justify-center px-6 bg-card/20 backdrop-blur-sm flex-shrink-0 relative group">
-          <h1 className="text-xl font-semibold text-foreground flex items-center gap-2 absolute left-6">
+    <ComplexityProvider value={activeComplexity} onChange={handleComplexityChange}>
+      <div className="flex h-full flex-col bg-background">
+        <header className="group relative flex h-16 flex-shrink-0 items-center justify-center border-b border-border/60 bg-card/20 px-6 backdrop-blur-sm">
+          <h1 className="absolute left-6 flex items-center gap-2 text-xl font-semibold text-foreground">
             <Globe2 className="h-5 w-5" />
             世界观设定
           </h1>
           {currentWorld && (
-            <>
-              {isEditingTemplateName ? (
+            <div className="flex items-center gap-2">
+              {isEditingWorldName ? (
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={editingTemplateName}
-                    onChange={(e) => setEditingTemplateName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveTemplateName();
-                      if (e.key === 'Escape') handleCancelEditTemplateName();
+                    value={editingWorldName}
+                    onChange={(event) => setEditingWorldName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') handleSaveWorldName();
+                      if (event.key === 'Escape') {
+                        setIsEditingWorldName(false);
+                        setEditingWorldName('');
+                      }
                     }}
-                    className="text-sm bg-background border border-border/50 px-2 py-1 rounded focus:border-primary focus:outline-none"
+                    className="rounded border border-border/50 bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
                     autoFocus
                   />
                   <button
-                    onClick={handleSaveTemplateName}
+                    onClick={handleSaveWorldName}
                     disabled={updateWorldMutation.isPending}
-                    className="p-1 hover:bg-accent/50 rounded text-emerald-600 transition-colors"
+                    className="rounded p-1 text-emerald-600 transition-colors hover:bg-accent/50"
                     title="保存"
                   >
-                    {updateWorldMutation.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
+                    {updateWorldMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                   </button>
                   <button
-                    onClick={handleCancelEditTemplateName}
-                    className="p-1 hover:bg-accent/50 rounded text-muted-foreground transition-colors"
+                    onClick={() => {
+                      setIsEditingWorldName(false);
+                      setEditingWorldName('');
+                    }}
+                    className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/50"
                     title="取消"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -1559,47 +1857,83 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
               ) : (
                 <span className="text-2xl font-semibold text-foreground">{worldDetail?.name ?? currentWorld.name}</span>
               )}
-            </>
+              <WorldSwitcher
+                open={switcherOpen}
+                onToggle={() => setSwitcherOpen((value) => !value)}
+                worlds={switcherWorlds}
+                currentWorldId={currentWorldId}
+                onSelect={handleSwitchWorld}
+                onCreate={() => {
+                  setSwitcherOpen(false);
+                  setShowCreateModal(true);
+                }}
+              />
+            </div>
           )}
-          <div className="flex items-center gap-2 absolute right-6">
+          <div className="absolute right-6 flex items-center gap-2">
             {activeWorld && (
-              <span className="rounded-full border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-                {activeWorld.module_count ?? 0} 模块 · {activeWorld.link_count ?? 0} 关联
+              <span className="hidden rounded-full border border-border/60 bg-card/40 px-2 py-0.5 text-[11px] text-muted-foreground sm:inline">
+                {universeEntityCount} 实体 · {activeWorld.link_count ?? 0} 关联
               </span>
             )}
-            {activeWorld && (
-              <ComplexitySwitcher value={activeComplexity} onChange={setComplexityOverride} />
+            {activeWorld && <ComplexitySwitcher value={activeComplexity} onChange={handleComplexityChange} />}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+              title="全局搜索（Ctrl/Cmd + K）"
+            >
+              <Search className="h-3.5 w-3.5" />
+              搜索
+            </button>
+            {activeWorld && webEntry.visible && (
+              <button
+                type="button"
+                onClick={() => setWebOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                title={`世界脉络（${webEntry.reason}）`}
+              >
+                <Network className="h-3.5 w-3.5" />
+                世界脉络
+              </button>
+            )}
+            {currentWorld && (
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent/20 hover:text-foreground"
+                title="世界设置"
+              >
+                <Settings className="h-3.5 w-3.5" />
+                设置
+              </button>
             )}
             {hasEntryPoint && container && (
               <button
                 onClick={() => setMigrationPanelWorldId(container.id)}
-                className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-500/20 transition-colors dark:text-amber-300"
+                className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-700 transition-colors hover:bg-amber-500/20 dark:text-amber-300"
                 title="打开关联归位面板"
               >
                 <GitBranch className="h-3.5 w-3.5" />
                 待归位 {containerLinkCount}
               </button>
             )}
-            {currentWorld && !isEditingTemplateName && (
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {currentWorld && !isEditingWorldName && (
+              <div className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                 <button
-                  onClick={handleStartEditTemplateName}
-                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleStartEditWorldName}
+                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
                   title="修改名称"
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  onClick={handleDeleteTemplate}
+                  onClick={() => setShowDeleteModal(true)}
                   disabled={deleteWorldMutation.isPending}
-                  className="p-1 hover:bg-accent/50 rounded text-muted-foreground hover:text-destructive transition-colors"
+                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-destructive"
                   title="删除世界"
                 >
-                  {deleteWorldMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
+                  {deleteWorldMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 </button>
               </div>
             )}
@@ -1626,11 +1960,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                     type="button"
                     onClick={() => handleBreadcrumbClick(index)}
                     disabled={isCurrent}
-                    className={
-                      isCurrent
-                        ? 'font-medium text-foreground'
-                        : 'text-muted-foreground hover:text-foreground transition-colors'
-                    }
+                    className={isCurrent ? 'font-medium text-foreground' : 'text-muted-foreground transition-colors hover:text-foreground'}
                   >
                     {item.label}
                   </button>
@@ -1640,7 +1970,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
             <button
               type="button"
               onClick={handleNavigateBack}
-              className="ml-auto flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/30 hover:text-foreground transition-colors"
+              className="ml-auto flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
               title="返回（Esc）"
             >
               <ChevronLeft className="h-3 w-3" />
@@ -1649,8 +1979,27 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
           </div>
         )}
 
+        {/* 失效引用（T7 缺口）：目标已删除时提供查看来源 / 清理引用 */}
+        {brokenRef && (
+          <div className="flex items-center gap-2 border-b border-destructive/40 bg-destructive/10 px-6 py-1.5 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>引用已失效：{brokenRef.label}（目标可能已被删除）</span>
+            {brokenRef.fromModule && (
+              <button type="button" onClick={handleViewBrokenSource} className="rounded border border-destructive/40 px-2 py-0.5 hover:bg-destructive/20">
+                查看来源
+              </button>
+            )}
+            <button type="button" onClick={() => void handleCleanupBrokenRef()} className="rounded border border-destructive/40 px-2 py-0.5 hover:bg-destructive/20">
+              清理引用
+            </button>
+            <button type="button" onClick={() => setBrokenRef(null)} className="ml-auto text-destructive/70 hover:text-destructive">
+              忽略
+            </button>
+          </div>
+        )}
+
         {/* 横向标签栏 */}
-        <div className="flex items-center gap-1 px-6 py-3 border-b border-border/60 bg-card/10 flex-shrink-0 overflow-x-auto">
+        <div className="flex flex-shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-card/10 px-6 py-3">
           {TAB_ORDER.map((tab) => {
             const config = TAB_CONFIG[tab];
             const Icon = config.icon;
@@ -1661,81 +2010,141 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
               <button
                 key={tab}
                 onClick={() => handleTabClick(tab)}
-                className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap
-                ${isActive
-                  ? 'bg-primary/20 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
-                }
-              `}
-                title={config.label}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 transition-all duration-200 ${
+                  isActive ? 'bg-primary/20 text-primary shadow-sm' : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
+                }`}
+                title={moduleLabels[tab] ?? config.label}
               >
                 <Icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{config.label}</span>
-                {linkTotal > 0 && (
-                  <span className="rounded-full bg-accent/30 px-1.5 text-[10px]">{linkTotal}</span>
-                )}
+                <span className="text-sm font-medium">{moduleLabels[tab] ?? config.label}</span>
+                {linkTotal > 0 && <span className="rounded-full bg-accent/30 px-1.5 text-[10px]">{linkTotal}</span>}
               </button>
             );
           })}
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {!worldDetail && !worldsLoading && worlds.length === 0 && (
-              <div className="px-6 py-4">
-                <div className="mt-4 flex flex-col items-center justify-center py-8 text-center">
-                  <Globe2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground mb-4">还没有创建世界模板</p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleCreateNewWorld}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                      创建世界模板
-                    </button>
-                    <button
-                      onClick={handleImportWorld}
-                      className="flex items-center gap-2 px-4 py-2 border border-border hover:bg-accent/20 rounded-lg transition-colors"
-                    >
-                      <FileUp className="h-4 w-4" />
-                      导入模板
-                    </button>
-                  </div>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {!currentWorld && !worldsLoading && (
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+                <Globe2 className="mb-3 h-12 w-12 text-muted-foreground/50" />
+                <p className="mb-1 text-foreground">还没有世界</p>
+                <p className="mb-4 text-sm text-muted-foreground">先新建一个空白世界，或恢复一份世界备份。</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    新建世界
+                  </button>
+                  <button
+                    onClick={() => setShowRestoreModal(true)}
+                    className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 transition-colors hover:bg-accent/20"
+                  >
+                    <FileUp className="h-4 w-4" />
+                    恢复世界备份
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* 弹窗组件 */}
-            <InitialChoiceModal
+            {/* 弹窗与面板 */}
+            <WorldWelcomeModal
               isOpen={showInitialChoice}
-              onClose={handleInitialChoiceClose}
-              onCreateNew={handleCreateNewWorld}
-              onImport={handleImportWorld}
+              onClose={() => setShowInitialChoice(false)}
+              onCreateNew={() => setShowCreateModal(true)}
+              onRestore={() => setShowRestoreModal(true)}
             />
 
-            <CreateTemplateModal
+            <BlankWorldModal
               isOpen={showCreateModal}
               onClose={() => setShowCreateModal(false)}
-              onSubmit={handleCreateTemplateSubmit}
+              onSubmit={handleCreateWorld}
               isLoading={createWorldMutation.isPending}
             />
 
-            <ImportTemplateModal
-              isOpen={showImportModal}
-              onClose={() => setShowImportModal(false)}
-              onSubmit={handleImportTemplateSubmit}
-              isLoading={isImporting}
+            <RestoreBackupModal
+              isOpen={showRestoreModal}
+              onClose={() => setShowRestoreModal(false)}
+              worlds={sortedWorlds.map((world) => ({
+                id: world.id,
+                name: world.name,
+                linkCount: world.link_count ?? 0,
+                // 实体数只有当前世界的详情拿得到；其余世界未知（null 时按非空保守处理）
+                entityCount:
+                  world.id === currentWorldId && worldDetail ? universeEntityCount : null,
+              }))}
+              currentWorldId={currentWorldId}
+              isImporting={isImporting}
+              onRestore={handleRestore}
             />
 
-            <DeleteConfirmModal
+            <DeleteWorldModal
               isOpen={showDeleteModal}
               onClose={() => setShowDeleteModal(false)}
               onConfirm={handleConfirmDelete}
-              templateName={worldDetail?.name ?? currentWorld?.name ?? ''}
+              worldName={worldDetail?.name ?? currentWorld?.name ?? ''}
+              entityCount={universeEntityCount}
+              linkCount={activeWorld?.link_count ?? 0}
+              updatedAt={activeWorld?.updated_at}
               isLoading={deleteWorldMutation.isPending}
             />
+
+            {currentWorld && settingsOpen && worldDetail && (
+              <WorldSettingsPanel
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                world={worldDetail}
+                modules={worldDetail.modules ?? []}
+                worlds={sortedWorlds}
+                projectId={currentProjectId}
+                onWorldUpdated={() => {
+                  queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'worlds'] });
+                  queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+                }}
+                onWorldDeleted={() => {
+                  setCurrentWorldId(null);
+                  writeCurrentWorldId(currentProjectId, null);
+                }}
+                onWorldCleared={() => {
+                  queryClient.invalidateQueries({ queryKey: worldbuildingKeys.worldRoot });
+                  queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'worlds'] });
+                  queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'links'] });
+                  queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'submodules'] });
+                  queryClient.invalidateQueries({ queryKey: ['worldbuilding', 'items'] });
+                }}
+                onRestoredWorld={(worldId) => {
+                  // 与 handleRestore 同口径：列表刷新回来之前不能被收敛 effect 覆盖
+                  pendingWorldIdRef.current = worldId;
+                  setCurrentWorldId(worldId);
+                  writeCurrentWorldId(currentProjectId, worldId);
+                }}
+              />
+            )}
+
+            {currentWorld && (
+              <GlobalSearch
+                open={searchOpen}
+                onClose={() => setSearchOpen(false)}
+                modules={worldDetail?.modules ?? []}
+                worldId={currentWorld.id}
+                projectId={currentProjectId}
+                moduleLabels={moduleLabels}
+                onNavigate={handleNavigateToEntity}
+              />
+            )}
+
+            {webOpen && currentWorld && worldDetail && (
+              <WorldWeb
+                open={webOpen}
+                onClose={() => setWebOpen(false)}
+                worldId={worldDetail.id}
+                modules={worldDetail.modules ?? []}
+                counts={linkCounts}
+                onNavigate={handleNavigateToEntity}
+              />
+            )}
 
             {/* 迁移容器归位面板（P2-T13）：入口满足后才可能打开 */}
             {migrationPanelWorldId && (
@@ -1749,12 +2158,10 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
 
             <div className="flex-1 overflow-hidden">
               {worldLoading ? (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex h-full items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : (activeTab === 'races' || activeTab === 'systems') &&
-                currentModule &&
-                worldDetail ? (
+              ) : !currentWorld ? null : (activeTab === 'races' || activeTab === 'systems') && currentModule && worldDetail ? (
                 activeTab === 'races' ? (
                   <RacesView
                     worldId={worldDetail.id}
@@ -1770,12 +2177,8 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                     highlightRef={highlightedRef}
                   />
                 )
-              ) : (activeTab === 'races' || activeTab === 'systems') ? (
-                <MissingModuleState
-                  tab={activeTab}
-                  isCreating={createModuleMutation.isPending}
-                  onCreate={() => handleCreateModule(activeTab)}
-                />
+              ) : activeTab === 'races' || activeTab === 'systems' ? (
+                <MissingModuleState tab={activeTab} isCreating={createModuleMutation.isPending} onCreate={() => handleCreateModule(activeTab)} />
               ) : activeTab === 'politics' && currentModule && worldDetail ? (
                 <PoliticsView
                   worldId={worldDetail.id}
@@ -1784,11 +2187,7 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                   highlightRef={highlightedRef}
                 />
               ) : activeTab === 'politics' ? (
-                <MissingModuleState
-                  tab={activeTab}
-                  isCreating={createModuleMutation.isPending}
-                  onCreate={() => handleCreateModule(activeTab)}
-                />
+                <MissingModuleState tab={activeTab} isCreating={createModuleMutation.isPending} onCreate={() => handleCreateModule(activeTab)} />
               ) : activeTab === 'history' && currentModule ? (
                 <HistoryView
                   moduleId={currentModule.id}
@@ -1799,20 +2198,15 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                   onNavigateToEntity={handleNavigateToEntity}
                 />
               ) : activeTab === 'economy' && currentModule ? (
-                // Phase 5 P5-T15：flag 关闭时完全走旧 EconomyView（P6 才删旧实现）
-                isEconomyViewV2Enabled() ? (
-                  <EconomyViewV2
-                    worldId={worldDetail?.id ?? ''}
-                    moduleId={currentModule.id}
-                    onNavigateToEntity={handleNavigateToEntity}
-                    highlightRef={highlightedRef}
-                  />
-                ) : (
-                  <EconomyView moduleId={currentModule.id} />
-                )
+                <EconomyView
+                  worldId={worldDetail?.id ?? ''}
+                  moduleId={currentModule.id}
+                  onNavigateToEntity={handleNavigateToEntity}
+                  highlightRef={highlightedRef}
+                />
               ) : currentModule ? (
                 <div ref={contentScrollRef} className="flex-1 overflow-y-auto p-6">
-                  <div className="max-w-4xl mx-auto">
+                  <div className="mx-auto max-w-4xl">
                     <ModuleSection
                       module={currentModule}
                       onModuleUpdate={() => {
@@ -1825,15 +2219,15 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center">
-                  <span className="h-12 w-12 text-muted-foreground/30 mb-3 flex items-center justify-center">
+                <div className="flex flex-1 flex-col items-center justify-center text-center">
+                  <span className="mb-3 flex h-12 w-12 items-center justify-center text-muted-foreground/30">
                     {(() => {
                       const Icon = TAB_CONFIG[activeTab].icon;
                       return <Icon className="h-12 w-12" />;
                     })()}
                   </span>
                   <p className="text-muted-foreground">该模块暂无内容</p>
-                  <p className="text-sm text-muted-foreground/70 mt-1">点击左侧"添加条目"开始添加设定</p>
+                  <p className="mt-1 text-sm text-muted-foreground/70">点击模块内的添加按钮开始添加设定</p>
                 </div>
               )}
             </div>

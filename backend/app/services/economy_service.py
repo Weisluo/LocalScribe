@@ -16,9 +16,8 @@
 - 多单位不换算：``meta.unit`` 不同的流量分别标注，统计面板只提示 ``multi_unit``。
 - sketch 档不返回实体明细与指标序列（分档加载），只回计数与速写卡。
 - 未知字段（meta / customFields / config）原样透传，不因降档或未识别而丢数据。
-- 旧数据投影（P5-T5）：kind 缺失时按 ``derive_submodule_kind`` 推导，``color = type:<old>:<level>``
-  的等级投影为 ``meta.level``，旧 ``relations`` 字符串条目、``customFields`` 条目、emoji 图标
-  在**读取侧**等价转换为新结构（不落库、不删除旧行）。
+- 只读新结构（P6-T10）：Phase 5 的回填已把旧编码写进 kind / meta / config，
+  读取侧不再做 legacy 投影（旧 ``moduleConfig`` / ``relations`` 条目与 emoji 图标不再参与聚合）。
 
 实现要求：所有聚合走批量查询（按 module / world 一次取回后内存聚合），禁止逐节点 N+1 查询；
 时间比较只在存在锚点（``meta.timeOrder`` 或时间文本前缀数字）时进行，无锚点排末尾并标未锚定。
@@ -40,10 +39,8 @@
    含被 kinds / stages / 时间窗筛掉的边），sketch / 降级时给出该总数、其余档位为 0；
    ``fold.metrics`` 是 ``economy.metrics`` 里存的采样条数（sandbox 前的档位折叠）；
    ``fold.fields`` 是 sketch 档未披露的可展示字段数（见 ``_DISPLAYABLE_META_KEYS``）。
-6. **旧编码投影**：``color = type:<old>:<level>`` 的六类旧经济类型映射
-   （currency / commodity / resource / industry / economic_zone / trade_route ->
-   currency / good / resource / industry / market / custom_route）在读取侧同样生效，
-   因此迁移前后的数据都能读到同一形状；emoji 图标投影为 Lucide 名并保留 ``meta.legacyIcon``。
+6. **无 legacy 投影**（P6-T10）：只读 ``WorldSubmodule.kind / meta``、``WorldModule.config``
+   与 ``WorldLink``；旧编码的等价转换由 P1/P5 迁移一次性完成，读取侧不再推导。
 """
 
 from __future__ import annotations
@@ -64,7 +61,6 @@ from app.models import (
     WorldModuleItem,
     WorldSubmodule,
 )
-from app.models.worldbuilding import derive_submodule_kind
 from app.schemas.economy import (
     CYCLE_KIND,
     DEFAULT_STAGES,
@@ -81,17 +77,17 @@ from app.schemas.economy import (
     EconomyGraphCounts,
     EconomyLinkCounts,
     EconomyMetricCoverage,
+    EconomyMetrics,
     EconomyMetricSample,
     EconomyMetricSeries,
-    EconomyMetrics,
     EconomyNode,
     EconomyOverview,
     EconomyStatBucket,
     EconomySummary,
     EconomySurplusCounts,
-    EconomyTimeRange,
     EconomyTimeline,
     EconomyTimelineMarker,
+    EconomyTimeRange,
     EconomyTotals,
     is_economy_stage,
     normalize_intensity,
@@ -99,49 +95,17 @@ from app.schemas.economy import (
     stage_of_kind,
 )
 from app.schemas.relation import EntityRef, LinkTimeRange
-from app.services.link_registry import get_link_type, validate_link_type
-from app.services.relation_service import (
-    GENERAL_DIRECTED_LINK_TYPE,
-    GENERAL_SYMMETRIC_LINK_TYPE,
-)
+from app.services.link_registry import get_link_type
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# 条目名与旧编码常量
+# 条目名常量
 # ---------------------------------------------------------------------------
 
 OVERVIEW_ITEM_NAME = "economy.overview"
 CYCLE_ITEM_NAME = "economy.cycle"
 METRICS_ITEM_NAME = "economy.metrics"
-LEGACY_CONFIG_ITEM_NAME = "moduleConfig"
-LEGACY_RELATIONS_ITEM_NAME = "relations"
-LEGACY_CUSTOM_FIELDS_ITEM_NAME = "customFields"
-
-# economy_ui_design §3.5 / §7.8：六类旧经济类型 -> 新 kind（其余 type:* 原值保留）
-LEGACY_ECONOMY_KIND_MAP: Dict[str, str] = {
-    "currency": "currency",
-    "commodity": "good",
-    "resource": "resource",
-    "industry": "industry",
-    "economic_zone": "market",
-    "trade_route": "custom_route",
-}
-
-# P1-MIG-05 已确立的旧经济关系类型 -> 契约 §4.4（命中且 kind 合法才使用，否则回落通用类型）
-LEGACY_ECONOMY_RELATION_MAP: Dict[str, str] = {
-    "supplier": "economy.supplies",
-    "consumer": "economy.consumes",
-    "dependency": "economy.requires",
-    "trade_partner": "economy.flows_to",
-}
-
-# 语义对称的旧经济关系类型（与 P1-MIG-05 的 SYMMETRIC_LEGACY_TYPES 同集合）：
-# 回落时用 core.related_to，其余有向类型回落 core.references
-SYMMETRIC_LEGACY_RELATION_TYPES = {"trade_partner", "competitor"}
-
-# 旧 relations 条目的值形状：<关系类型>:<目标ID>:<流量>:<开始>:<结束>
-LEGACY_RELATION_FIELDS = 5
 
 # §3.4 推荐 kind 的 Lucide 图标（config.entityTypes 提供图标时以用户配置为准）
 RECOMMENDED_KIND_ICONS: Dict[str, str] = {
@@ -176,57 +140,6 @@ _DISPLAYABLE_META_KEYS = (
     "timeOrder",
     "cyclePhaseId",
 )
-
-# 旧 emoji 图标 -> Lucide 名（economy_ui_design §11.6：无法识别时回退 shapes）
-EMOJI_ICON_MAP: Dict[str, str] = {
-    "💰": "coins",
-    "🪙": "coins",
-    "💵": "banknote",
-    "💴": "banknote",
-    "💶": "banknote",
-    "💷": "banknote",
-    "⚙": "settings",
-    "🏭": "factory",
-    "🔧": "wrench",
-    "⛏": "pickaxe",
-    "🪨": "mountain",
-    "💎": "gem",
-    "🌾": "wheat",
-    "🌽": "wheat",
-    "🐟": "fish",
-    "🐄": "beef",
-    "🐑": "sheep",
-    "🪵": "trees",
-    "🌲": "trees",
-    "🧵": "spool",
-    "🏪": "store",
-    "🏬": "store",
-    "🏦": "landmark",
-    "🏛": "landmark",
-    "🚚": "truck",
-    "🚛": "truck",
-    "🚢": "ship",
-    "⛵": "ship",
-    "🛶": "ship",
-    "⚖": "scale",
-    "📦": "package",
-    "📜": "scroll-text",
-    "🗺": "map",
-    "👤": "user",
-    "🧑": "user",
-    "👥": "users",
-    "🛡": "shield",
-    "🔑": "key-round",
-    "🌍": "globe",
-    "🔥": "flame",
-    "🏗": "construction",
-    "🧭": "compass",
-    "📊": "chart-column",
-    "📈": "chart-line",
-    "🪧": "signpost",
-    "🏕": "tent",
-}
-EMOJI_ICON_FALLBACK = "shapes"
 
 _LUCIDE_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _LEADING_NUMBER_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)")
@@ -383,87 +296,26 @@ def _range_from_points(points: List[Tuple[float, str]]) -> EconomyTimeRange:
 
 
 # ---------------------------------------------------------------------------
-# 旧编码投影（P5-T5 读取侧等价转换：不落库、不删旧行）
+# kind / 图标（P6-T10：只认新结构，不再投影旧编码）
 # ---------------------------------------------------------------------------
 
 
-def _level_from_color(color: Any) -> Optional[str]:
-    """``color = type:<old>:<level>[:<status>]`` 的等级分量（P1-MIG-04 同口径）。"""
+def _economy_kind(kind: Any) -> str:
+    """经济实体 kind：直接取 ``WorldSubmodule.kind``（P5 回填后必有值），缺失按 custom。"""
 
-    if not color or not str(color).startswith("type:"):
-        return None
-    parts = str(color).split(":")
-    if len(parts) < 3:
-        return None
-    return _as_str(parts[2])
-
-
-def _kind_from_color(color: Any) -> Optional[str]:
-    """``type:<old>:...`` -> 六类旧经济类型映射后的 kind；其余 ``type:*`` 原值保留。"""
-
-    if not color or not str(color).startswith("type:"):
-        return None
-    parts = str(color).split(":")
-    token = _as_str(parts[1]) if len(parts) > 1 else None
-    if not token:
-        return None
-    return LEGACY_ECONOMY_KIND_MAP.get(token, token)
-
-
-def _economy_kind(kind: Any, color: Any) -> Tuple[str, bool]:
-    """经济实体 kind：已有 kind 优先（旧类型名仍投影为新 kind），否则按 color 推导。
-
-    返回 (kind, 是否发生旧编码投影)。
-    """
-
-    current = _as_str(kind)
-    if current:
-        mapped = LEGACY_ECONOMY_KIND_MAP.get(current)
-        if mapped and mapped != current:
-            return mapped, True
-        return current, False
-    derived = _kind_from_color(color)
-    if derived:
-        return derived, True
-    return derive_submodule_kind(color, "economy"), True
-
-
-def _is_emoji(text: str) -> bool:
-    for char in text:
-        code = ord(char)
-        if char in _EMOJI_VARIATION_SELECTORS:
-            continue
-        if 0x1F000 <= code <= 0x1FAFF or 0x2600 <= code <= 0x27BF:
-            return True
-        if 0x2B00 <= code <= 0x2BFF or code in (0x203C, 0x2049, 0x2122):
-            return True
-    return False
+    return _as_str(kind) or "custom"
 
 
 def _lucide_icon(icon: Any) -> Optional[str]:
-    """图标 -> Lucide 名：已是 kebab-case 名则原样，emoji 查表，无法识别回退 shapes。"""
+    """图标 -> Lucide 名：kebab-case 原样返回，其余（emoji / 旧编码）一律 None。"""
 
-    text = _as_str(icon)
-    if not text:
+    cleaned = _as_str(icon)
+    if not cleaned:
         return None
-    cleaned = "".join(ch for ch in text if ch not in _EMOJI_VARIATION_SELECTORS)
+    cleaned = "".join(ch for ch in cleaned if ch not in _EMOJI_VARIATION_SELECTORS)
     if _LUCIDE_NAME_RE.match(cleaned):
         return cleaned
-    if _is_emoji(cleaned):
-        return EMOJI_ICON_MAP.get(cleaned, EMOJI_ICON_FALLBACK)
-    if ":" in cleaned:
-        # 旧 ``era:<start>:<end>`` / ``era:<theme>`` 编码不是图标名
-        return None
-    return EMOJI_ICON_FALLBACK
-
-
-def _legacy_note(meta: Dict[str, Any], icon: Any) -> Dict[str, Any]:
-    """emoji 图标投影时把原值保留进 ``meta.legacyIcon``。"""
-
-    text = _as_str(icon)
-    if text and _is_emoji(text) and not meta.get("legacyIcon"):
-        meta["legacyIcon"] = text
-    return meta
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -522,7 +374,7 @@ def _world_entity_index(
 
     index: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for sub in submodules:
-        kind, _legacy = _economy_kind(sub.kind, sub.color)
+        kind = _economy_kind(sub.kind)
         index[("economy", sub.id)] = {
             "name": sub.name,
             "kind": kind,
@@ -604,9 +456,9 @@ def _entity_name(index: Dict[Tuple[str, str], Dict[str, Any]], module: str, id_:
 
 
 def _config_of(db: Session, module: WorldModule) -> EconomyConfig:
-    """模块配置：读时合并旧 ``moduleConfig`` 条目（config 已有键优先），未知键透传。"""
+    """模块配置：直接读 ``WorldModule.config``（P5 回填后旧条目不再参与），未知键透传。"""
 
-    merged = EconomyService.project_legacy_config(db, module)
+    merged: Dict[str, Any] = dict(module.config or {})
     try:
         return EconomyConfig.model_validate(merged)
     except ValidationError as exc:
@@ -803,9 +655,9 @@ def _node_from_submodule(
     counts: Dict[str, Dict[str, int]],
     metrics_map: Dict[str, Dict[str, List[Any]]],
 ) -> EconomyNode:
-    kind, legacy_kind = _economy_kind(sub.kind, sub.color)
+    kind = _economy_kind(sub.kind)
     meta = dict(sub.meta or {})
-    level = _as_str(meta.get("level")) or _level_from_color(sub.color)
+    level = _as_str(meta.get("level"))
     icon = _lucide_icon(sub.icon)
     color = sub.color if not str(sub.color or "").startswith("type:") else None
     time_range = meta.get("time")
@@ -828,8 +680,8 @@ def _node_from_submodule(
     custom_fields = (
         dict(raw_custom_fields) if isinstance(raw_custom_fields, dict) else {}
     )
-    legacy = legacy_kind or (level is not None and not meta.get("level"))
-    legacy = bool(legacy or meta.get("legacyIcon"))
+    # 旧数据标记（P5 迁移写入 meta.legacyIcon / meta.legacy）只作为展示提示保留
+    legacy = bool(meta.get("legacyIcon") or meta.get("legacy"))
     return EconomyNode(
         id=sub.id,
         name=sub.name,
@@ -1124,7 +976,7 @@ class EconomyService:
         points: List[Tuple[float, str]] = []
         unanchored: List[EntityRef] = []
         for sub in submodules:
-            kind, _legacy = _economy_kind(sub.kind, sub.color)
+            kind = _economy_kind(sub.kind)
             meta = dict(sub.meta or {})
             kind_counts[kind] = kind_counts.get(kind, 0) + 1
             stage = _stage_of(kind, meta, config)
@@ -1426,7 +1278,7 @@ class EconomyService:
 
         for sub in submodules:
             meta = dict(sub.meta or {})
-            kind, _legacy = _economy_kind(sub.kind, sub.color)
+            kind = _economy_kind(sub.kind)
             start, end = _entity_anchors(meta)
             if windowed and not _range_in_window(start, end, w_start, w_end):
                 continue
@@ -1491,7 +1343,7 @@ class EconomyService:
         empty_entities: List[EntityRef] = []
         any_anchor = False
         for sub in submodules:
-            kind, _legacy = _economy_kind(sub.kind, sub.color)
+            kind = _economy_kind(sub.kind)
             entry = metrics_map.get(sub.id) or {}
             if requested:
                 metric_names = [metric for metric in requested if metric in entry]
@@ -1538,170 +1390,9 @@ class EconomyService:
             empty_entities=empty_entities,
         )
 
-    # ------------------------------------------------------------------
-    # 过渡期 legacy 投影（P5-T5）：读取侧等价转换，不写库、不删旧行
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def project_legacy_config(db: Session, module: WorldModule) -> Dict[str, Any]:
-        """旧 ``moduleConfig`` 条目 -> ``WorldModule.config``（读时合并，config 优先）。"""
-
-        merged: Dict[str, Any] = dict(module.config or {})
-        items = (
-            db.query(WorldModuleItem)
-            .filter(
-                WorldModuleItem.module_id == module.id,
-                WorldModuleItem.name == LEGACY_CONFIG_ITEM_NAME,
-            )
-            .order_by(WorldModuleItem.order_index, WorldModuleItem.id)
-            .all()
-        )
-        for item in items:
-            content = item.content if isinstance(item.content, dict) else {}
-            for key, value in content.items():
-                if key in merged:
-                    continue
-                merged[key] = value
-        return merged
-
-    @staticmethod
-    def project_legacy_submodule(submodule: Any, module_type: str) -> Dict[str, Any]:
-        """旧编码子模块 -> 新形状（kind / meta.level / meta.customFields / Lucide 图标）。"""
-
-        kind, legacy_kind = _economy_kind(
-            getattr(submodule, "kind", None), getattr(submodule, "color", None)
-        )
-        if module_type != "economy":
-            kind = getattr(submodule, "kind", None) or derive_submodule_kind(
-                getattr(submodule, "color", None), module_type
-            )
-            legacy_kind = kind != getattr(submodule, "kind", None)
-        meta = dict(getattr(submodule, "meta", None) or {})
-        level = _as_str(meta.get("level")) or _level_from_color(
-            getattr(submodule, "color", None)
-        )
-        if level and not meta.get("level"):
-            meta["level"] = level
-            legacy_kind = True
-        custom_fields = meta.get("customFields")
-        if not isinstance(custom_fields, dict):
-            meta["customFields"] = dict(custom_fields) if custom_fields else {}
-        icon = _lucide_icon(getattr(submodule, "icon", None))
-        _legacy_note(meta, getattr(submodule, "icon", None))
-        raw_color = getattr(submodule, "color", None)
-        color = raw_color if not str(raw_color or "").startswith("type:") else None
-        return {
-            "id": getattr(submodule, "id", None),
-            "name": getattr(submodule, "name", None),
-            "kind": kind,
-            "meta": meta,
-            "icon": icon,
-            "color": color,
-            "legacy": bool(legacy_kind or "legacyIcon" in meta),
-        }
-
-    @staticmethod
-    def project_legacy_links(
-        db: Session, module: WorldModule, submodule_ids: List[str]
-    ) -> List[Dict[str, Any]]:
-        """旧 ``relations`` 字符串条目 -> 只读边投影。
-
-        命中 registry 且 kind 合法时用 economy.*，否则回落 ``core.related_to`` 并把原名放 ``label``。
-        """
-
-        if not submodule_ids:
-            return []
-        wanted = set(submodule_ids)
-        items = (
-            db.query(WorldModuleItem)
-            .filter(
-                WorldModuleItem.module_id == module.id,
-                WorldModuleItem.name == LEGACY_RELATIONS_ITEM_NAME,
-            )
-            .order_by(WorldModuleItem.order_index, WorldModuleItem.id)
-            .all()
-        )
-        entities = _module_entity_kinds(db, module)
-        projected: List[Dict[str, Any]] = []
-        for item in items:
-            if not item.submodule_id or item.submodule_id not in wanted:
-                continue
-            content = item.content if isinstance(item.content, dict) else {}
-            source_kind = entities.get(item.submodule_id, {}).get("kind") or "custom"
-            source_ref = {
-                "module": module.module_type,
-                "kind": str(source_kind),
-                "id": item.submodule_id,
-            }
-            for key in sorted(content):
-                parsed = _parse_legacy_relation(str(content[key]))
-                if parsed is None:
-                    continue
-                relation_type, target_id, volume, start, end = parsed
-                target = entities.get(target_id)
-                target_module = target["module"] if target else module.module_type
-                target_kind = target["kind"] if target else "custom"
-                target_ref = {
-                    "module": target_module,
-                    "kind": str(target_kind),
-                    "id": target_id,
-                }
-                candidate = LEGACY_ECONOMY_RELATION_MAP.get(relation_type)
-                # 回落口径必须与 P1-MIG-05（SYMMETRIC_LEGACY_TYPES）一致：
-                # 对称旧类型 -> core.related_to（directed=False），其余有向 -> core.references
-                # （directed=True）；命中映射但 kind 校验不过时同样走这条回落。
-                symmetric = (
-                    relation_type in SYMMETRIC_LEGACY_RELATION_TYPES
-                    or candidate == GENERAL_SYMMETRIC_LINK_TYPE
-                )
-                link_type = (
-                    GENERAL_SYMMETRIC_LINK_TYPE
-                    if symmetric
-                    else GENERAL_DIRECTED_LINK_TYPE
-                )
-                label = relation_type
-                if candidate:
-                    ok, _error = validate_link_type(
-                        candidate,
-                        source_ref["module"],
-                        source_ref["kind"],
-                        target_ref["module"],
-                        target_ref["kind"],
-                    )
-                    if ok:
-                        link_type = candidate
-                        label = None
-                definition = get_link_type(link_type)
-                meta: Dict[str, Any] = {
-                    "legacyRelationType": relation_type,
-                    "legacyItemId": item.id,
-                    "legacyKey": key,
-                }
-                if volume is not None:
-                    meta["flow"] = volume
-                projected.append(
-                    {
-                        "id": item.id + ":" + key,
-                        "link_type": link_type,
-                        "label": label,
-                        "directed": (
-                            bool(definition.directed) if definition else not symmetric
-                        ),
-                        "source": source_ref,
-                        "target": target_ref,
-                        "meta": meta,
-                        "time": (
-                            {"start": start, "end": end} if (start or end) else None
-                        ),
-                        "external": target_module != module.module_type,
-                        "legacy": True,
-                    }
-                )
-        return projected
-
 
 # ---------------------------------------------------------------------------
-# 私有 helper（图 / 指标 / 旧关系解析）
+# 私有 helper（图 / 指标）
 # ---------------------------------------------------------------------------
 
 
@@ -1772,65 +1463,3 @@ def _sample_of(
         source_ref=source_ref,
         time_order=time_order,
     )
-
-
-def _parse_legacy_relation(
-    value: str,
-) -> Optional[Tuple[str, str, Optional[float], Optional[str], Optional[str]]]:
-    """``<关系类型>:<目标ID>:<流量>:<开始>:<结束>`` -> 元组；残缺返回 None。"""
-
-    parts = str(value).split(":")
-    if len(parts) < 2:
-        return None
-    relation_type = _as_str(parts[0])
-    target_id = _as_str(parts[1])
-    if not relation_type or not target_id:
-        return None
-    volume = _as_number(parts[2]) if len(parts) >= 3 and parts[2] else None
-    start = _as_str(parts[3]) if len(parts) >= 4 else None
-    end = _as_str(parts[4]) if len(parts) >= LEGACY_RELATION_FIELDS else None
-    return (relation_type, target_id, volume, start, end)
-
-
-def _module_entity_kinds(db: Session, module: WorldModule) -> Dict[str, Dict[str, str]]:
-    """{entity_id: {module, kind}}：本模块 + 同世界其它模块的实体一次取回（旧关系投影用）。"""
-
-    result: Dict[str, Dict[str, str]] = {}
-    for sub in (
-        db.query(WorldSubmodule).filter(WorldSubmodule.module_id == module.id).all()
-    ):
-        kind, _legacy = _economy_kind(sub.kind, sub.color)
-        result[sub.id] = {"module": module.module_type, "kind": kind}
-    for item in (
-        db.query(WorldModuleItem).filter(WorldModuleItem.module_id == module.id).all()
-    ):
-        result[item.id] = {"module": module.module_type, "kind": "entry"}
-    other_modules = {
-        row.id: row.module_type
-        for row in db.query(WorldModule)
-        .filter(
-            WorldModule.world_id == module.world_id,
-            WorldModule.module_type != module.module_type,
-        )
-        .all()
-    }
-    if other_modules:
-        for sub in (
-            db.query(WorldSubmodule)
-            .filter(WorldSubmodule.module_id.in_(list(other_modules)))
-            .all()
-        ):
-            result[sub.id] = {
-                "module": other_modules[sub.module_id],
-                "kind": sub.kind or "custom",
-            }
-        for item in (
-            db.query(WorldModuleItem)
-            .filter(WorldModuleItem.module_id.in_(list(other_modules)))
-            .all()
-        ):
-            result[item.id] = {
-                "module": other_modules[item.module_id],
-                "kind": "entry",
-            }
-    return result

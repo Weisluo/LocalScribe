@@ -1,5 +1,5 @@
 /**
- * EconomyViewV2 降级判定 / 推荐关联 / 时间锚点 / 筛选（Phase 5 P5-T14）
+ * EconomyView 降级判定 / 推荐关联 / 时间锚点 / 筛选（Phase 5 P5-T14）
  *
  * 依据：economy_ui_design §4.6.3（时间锚点与 unanchored）、§5.5（筛选与搜索）、§11.1（300 / 800 分档）、
  * §11.2（只保留两端都在结果集的边）、§8.4（退化形态）；cross_module_link_design §5.4（超阈值降级为

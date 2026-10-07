@@ -1119,168 +1119,68 @@ def test_graph_uses_only_contract_link_types(client, economy_world):
     assert used <= economy_ids
 
 
-# ------------------------------------------------- P5-T5 legacy 投影（只读）
+# ------------------------------------- 新结构直读（P6-T10：legacy 投影已删除）
 
 
-def test_legacy_projection_helpers(client, economy_world):
-    from app.core.database import SessionLocal
-    from app.models import WorldModule, WorldSubmodule
-    from app.services.economy_service import EconomyService
+def test_economy_reads_new_structure_without_legacy_projection(client, economy_world):
+    """P6-T10：读取侧只认新结构。
 
+    旧 ``moduleConfig`` / ``relations`` 条目与 emoji 图标不再参与聚合（P5 已把等价信息
+    回填进 kind / meta / config）；新结构写入的 kind / level / 图标 / 颜色直接可用。
+    """
+
+    world = economy_world["world"]
     economy = economy_world["modules"]["economy"]
     configure_module(client, economy["id"], {"displayMode": "lanes"})
+
+    good = add_submodule(
+        client,
+        economy["id"],
+        name="铁矿石",
+        kind="good",
+        meta={"level": "regional"},
+        icon="package",
+        color="#16a34a",
+    )
+    market = add_submodule(
+        client, economy["id"], name="集市", kind="market", meta={"level": "local"}
+    )
+
+    # 旧条目：moduleConfig 不得覆盖 config，relations 不得再投影成边
     add_item(
         client,
         economy["id"],
         "moduleConfig",
         {"displayMode": "ledger", "customKey": 7},
     )
-    # 旧编码：commodity -> good、emoji -> Lucide、等级进 meta
-    legacy = add_submodule(
-        client,
-        economy["id"],
-        name="旧商品",
-        color="type:commodity:regional",
-        icon="🌾",
-    )
-    source = add_submodule(
-        client, economy["id"], name="旧产业", color="type:industry:regional"
-    )
-    target = add_submodule(
-        client, economy["id"], name="旧集市", color="type:economic_zone:local"
-    )
-    relations = add_item(
-        client,
-        economy["id"],
-        "relations",
-        {
-            "r1": f"supplier:{target['id']}:100:100:200",
-            "r2": f"trade_partner:{target['id']}:",
-        },
-        submodule_id=source["id"],
-    )
-
-    db = SessionLocal()
-    try:
-        module = db.query(WorldModule).filter(WorldModule.id == economy["id"]).first()
-        assert module is not None
-
-        merged = EconomyService.project_legacy_config(db, module)
-        assert merged["displayMode"] == "lanes"  # config 已有键优先
-        assert merged["customKey"] == 7  # 旧条目补齐
-
-        legacy_row = (
-            db.query(WorldSubmodule).filter(WorldSubmodule.id == legacy["id"]).first()
-        )
-        projected = EconomyService.project_legacy_submodule(legacy_row, "economy")
-        assert projected["kind"] == "good"
-        assert projected["icon"] == "wheat"
-        assert projected["meta"]["legacyIcon"] == "🌾"
-        assert projected["meta"]["level"] == "regional"
-        assert projected["meta"]["customFields"] == {}
-        assert projected["legacy"] is True
-
-        edges = EconomyService.project_legacy_links(
-            db, module, [source["id"], target["id"]]
-        )
-    finally:
-        db.close()
-
-    assert len(edges) == 2
-    mapped, fallback = edges
-    assert mapped["id"] == f"{relations['id']}:r1"
-    assert mapped["link_type"] == "economy.supplies"  # 命中 registry 且 kind 合法
-    assert mapped["label"] is None
-    assert mapped["source"] == {
-        "module": "economy",
-        "kind": "industry",
-        "id": source["id"],
-    }
-    assert mapped["target"]["id"] == target["id"]
-    assert mapped["meta"]["flow"] == 100.0
-    assert mapped["meta"]["legacyRelationType"] == "supplier"
-    assert mapped["time"] == {"start": "100", "end": "200"}
-    assert mapped["legacy"] is True
-
-    assert fallback["link_type"] == "core.related_to"  # flows_to 需要 market -> market
-    assert fallback["label"] == "trade_partner"  # 原名保留在 label
-    assert fallback["meta"]["legacyRelationType"] == "trade_partner"
-    assert "flow" not in fallback["meta"]
-    assert fallback["time"] is None
-
-
-def test_legacy_link_fallback_directed_semantics_match_migration(client, economy_world):
-    """S5 回归：回落 link_type 的 directed 语义与 P1-MIG-05 一致。
-
-    对称旧类型（``trade_partner`` / ``competitor``）回落 ``core.related_to``；
-    有向旧类型（映射缺失或 kind 校验不过）回落 ``core.references``。
-    """
-
-    from app.core.database import SessionLocal
-    from app.models import WorldModule
-    from app.services.economy_service import EconomyService
-
-    economy = economy_world["modules"]["economy"]
-    market = add_submodule(
-        client, economy["id"], name="旧集市", color="type:economic_zone:local"
-    )
-    other_market = add_submodule(
-        client, economy["id"], name="旧集市乙", color="type:economic_zone:local"
-    )
-    good = add_submodule(
-        client, economy["id"], name="旧商品", color="type:commodity:local"
-    )
-    other_good = add_submodule(
-        client, economy["id"], name="旧商品乙", color="type:commodity:local"
-    )
-    # market -> good 的 trade_partner：economy.flows_to 需要 source/target 都是 market，
-    # 这里故意指向 good，让 candidate 校验不过，落进对称回落分支
     add_item(
         client,
         economy["id"],
         "relations",
-        {
-            "r1": f"trade_partner:{good['id']}:",
-            "r2": f"competitor:{other_market['id']}:",
-        },
-        submodule_id=market["id"],
-    )
-    # good -> good 的 supplier：economy.supplies 需要 (market/industry/actor) 源，校验不过，
-    # 落进有向回落分支
-    add_item(
-        client,
-        economy["id"],
-        "relations",
-        {"r3": f"supplier:{other_good['id']}:"},
+        {"r1": f"supplier:{market['id']}:100:100:200"},
         submodule_id=good["id"],
     )
 
-    db = SessionLocal()
-    try:
-        module = db.query(WorldModule).filter(WorldModule.id == economy["id"]).first()
-        assert module is not None
-        edges = EconomyService.project_legacy_links(
-            db,
-            module,
-            [market["id"], other_market["id"], good["id"], other_good["id"]],
-        )
-    finally:
-        db.close()
+    summary = summary_of(client, economy["id"])
+    assert summary["config"]["displayMode"] == "lanes"
+    assert "customKey" not in summary["config"]
 
-    assert len(edges) == 3
-    market_edges = [edge for edge in edges if edge["source"]["id"] == market["id"]]
-    by_relation = {edge["meta"]["legacyRelationType"]: edge for edge in market_edges}
+    graph = graph_of(client, economy["id"], complexity="structure", kinds="good,market")
+    node = node_by_id(graph, good["id"])
+    assert node["kind"] == "good"
+    assert node["level"] == "regional"
+    assert node["icon"] == "package"
+    assert node["color"] == "#16a34a"
+    assert node["legacy"] is False
+    assert graph["edges"] == []
 
-    # 对称集合内的旧类型：回落 core.related_to（directed=False），与 P1-MIG-05 一致
-    assert by_relation["trade_partner"]["link_type"] == "core.related_to"
-    assert by_relation["trade_partner"]["directed"] is False
-    assert by_relation["competitor"]["link_type"] == "core.related_to"
-    assert by_relation["competitor"]["directed"] is False
-
-    # 有向旧类型（映射命中但 kind 校验不过）：回落 core.references（directed=True）
-    directed = [edge for edge in edges if edge["source"]["id"] == good["id"]]
-    assert len(directed) == 1
-    assert directed[0]["meta"]["legacyRelationType"] == "supplier"
-    assert directed[0]["link_type"] == "core.references"
-    assert directed[0]["directed"] is True
-    assert directed[0]["label"] == "supplier"
+    # 新结构关联照常可读
+    add_link(
+        client,
+        world["id"],
+        ref("economy", "good", good["id"]),
+        ref("economy", "market", market["id"]),
+        "economy.traded_at",
+    )
+    graph = graph_of(client, economy["id"], complexity="structure")
+    assert [edge["linkType"] for edge in graph["edges"]] == ["economy.traded_at"]

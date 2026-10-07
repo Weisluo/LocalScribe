@@ -15,11 +15,10 @@ from typing import Dict, Iterator, Optional, Tuple
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.models import (
-    BidirectionalRelation,
     Project,
     World,
     WorldLink,
@@ -215,8 +214,16 @@ def test_create_relation_writes_world_link_only(
     assert link.meta["projectId"] == ids["project_id"]
     assert link.meta["confidence"] == 0.9
 
-    # 旧表只读：不新增、不双写
-    assert db_session.query(BidirectionalRelation).count() == 0
+    # 旧表已在 P6-T11 删除：写入只落 world_links（无旧表可写）
+    assert (
+        db_session.execute(
+            text(
+                "SELECT count(*) FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'bidirectional_relations'"
+            )
+        ).scalar()
+        == 0
+    )
 
     assert isinstance(response, RelationResponse)
     assert response.id == link.id

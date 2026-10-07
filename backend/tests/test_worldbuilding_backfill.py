@@ -17,6 +17,7 @@ from tests.conftest import (
     parse_json,
     read_rows,
     read_scalar,
+    table_names,
 )
 
 EXPECTED_LINK_TYPES = {
@@ -25,6 +26,10 @@ EXPECTED_LINK_TYPES = {
     "core.references",
     "character.appears_in",
 }
+
+# P5-T4 经济回填（P6-T11 的 down_revision，即 P6 之前的 head）；
+# 这几个用例故意停在这一修订：P6 删表后旧回填无法再重跑
+P5_HEAD_REVISION = "d4e8b1c7a206"
 
 
 def _links(db_path: Path):
@@ -149,10 +154,8 @@ def test_bidirectional_relations_backfilled(migrated_legacy_db: Path):
 
     # 孤儿 R3 不落库
     assert "R3" not in {_meta(link).get("legacyRelationId") for link in links}
-    assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM bidirectional_relations")
-        == 3
-    )
+    # P6-T11：旧表退场（回填结果只存在于 world_links）
+    assert "bidirectional_relations" not in table_names(migrated_legacy_db)
 
 
 def test_economy_relations_items_backfilled_with_time_and_volume(
@@ -228,7 +231,7 @@ def test_all_backfilled_link_types_are_in_contract_registry(migrated_legacy_db: 
 
 
 def test_row_reconciliation_against_phase0_baseline(migrated_legacy_db: Path):
-    """对账基线（phase0_inventory_report.md §7 同口径）：旧表行数不减，仅新增新结构。"""
+    """对账基线（phase0_inventory_report.md §7 同口径）：新结构行数与基线一致，旧表已退场。"""
 
     assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM worlds") == 1
     assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_modules") == 7
@@ -236,16 +239,12 @@ def test_row_reconciliation_against_phase0_baseline(migrated_legacy_db: Path):
     assert (
         read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_module_items") == 5
     )
-    assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM bidirectional_relations")
-        == 3
-    )
     assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_links") == 5
     assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM characters") == 1
-    assert read_scalar(migrated_legacy_db, "SELECT count(*) FROM world_instances") == 0
-    assert (
-        read_scalar(migrated_legacy_db, "SELECT count(*) FROM worldview_configs") == 0
-    )
+    # P6-T11：三张旧表在 head 已删除（不再对旧表行数对账）
+    tables = table_names(migrated_legacy_db)
+    for legacy in ("world_instances", "worldview_configs", "bidirectional_relations"):
+        assert legacy not in tables
 
 
 def test_legacy_world_settings_keep_template_fields(migrated_legacy_db: Path):
@@ -264,19 +263,22 @@ def test_legacy_world_settings_keep_template_fields(migrated_legacy_db: Path):
 # ---------------------------------------------- P1 审查修复的回归用例
 
 
-def _upgrade_with_extra_rows(legacy_db: Path, statements) -> None:
-    """在旧库里追加数据后再升级到 head（复用 legacy_db 夹具）。"""
+def _upgrade_with_extra_rows(legacy_db: Path, statements, target: str = "head") -> None:
+    """在旧库里追加数据后再升级（默认到 head；重跑回填的用例停在 P6 前的 head）。"""
 
     connection = sqlite3.connect(legacy_db)
     for statement, parameters in statements:
         connection.execute(statement, parameters)
     connection.commit()
     connection.close()
-    command.upgrade(alembic_config(legacy_db), "head")
+    command.upgrade(alembic_config(legacy_db), target)
 
 
 def test_container_world_gets_seven_modules(legacy_db: Path):
-    """多世界项目 -> 迁移容器世界同样满足契约 §2.2 的七模块。"""
+    """多世界项目 -> 迁移容器世界同样满足契约 §2.2 的七模块。
+
+    P6-T11 删掉旧表后不能再从 head 退回重跑 MIG-05/06，因此本用例停在 P6 前的 head。
+    """
 
     _upgrade_with_extra_rows(
         legacy_db,
@@ -293,6 +295,7 @@ def test_container_world_gets_seven_modules(legacy_db: Path):
                 (),
             )
         ],
+        P5_HEAD_REVISION,
     )
 
     containers = read_rows(
@@ -325,10 +328,11 @@ def test_container_world_gets_seven_modules(legacy_db: Path):
     )
 
     # 重跑 MIG-05/06：容器模块与关联都不得重复
+    # （P6-T11 删掉旧表后不能再从 head 退回重跑，这里停在 P6 前的 head 上验证）
     links_before = read_scalar(legacy_db, "SELECT count(*) FROM world_links")
     config = alembic_config(legacy_db)
     command.stamp(config, "cef4ae3ffe96")
-    command.upgrade(config, "head")
+    command.upgrade(config, P5_HEAD_REVISION)
 
     assert (
         read_scalar(

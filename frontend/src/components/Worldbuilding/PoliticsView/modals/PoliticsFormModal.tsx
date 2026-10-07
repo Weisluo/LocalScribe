@@ -27,7 +27,7 @@ import {
   type LevelDef,
   type StatusDef,
 } from '../../shared/moduleConfig';
-import { writeCustomField } from '../../shared/customFieldModel';
+import { missingRequiredFields, writeCustomField } from '../../shared/customFieldModel';
 import { useModuleConfig } from '../../shared/useModuleConfig';
 import type { UsePoliticsResult } from '../hooks';
 import {
@@ -490,6 +490,12 @@ export const PoliticsFormModal = ({
     const reason = validateForm(kind, form, selectedCharacter?.name);
     if (reason) {
       setError(reason);
+      return;
+    }
+    // 自定义字段的必填校验（P6-T4）
+    const missing = missingRequiredFields(customFields, form.customFields);
+    if (missing.length) {
+      setError(`必填字段未填写：${missing.join('、')}`);
       return;
     }
     setError(null);

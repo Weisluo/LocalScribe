@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Modal } from '@/components/Modals/Modal';
+import { lucideIcon } from '../../shared/lucideIcon';
 import { ConfigModalProps, EraThemeConfig, EventTypeConfig, EventLevelConfig } from '../types';
 
 type TabType = 'eraThemes' | 'eventTypes' | 'levels';
@@ -687,7 +688,7 @@ const EventTypeTab = ({
                 type="text"
                 value={formData.icon}
                 onChange={(e) => setFormData((p) => ({ ...p, icon: e.target.value }))}
-                placeholder="emoji 图标"
+                placeholder="Lucide 图标名，如 swords"
                 className="w-full bg-background border border-border/50 px-2 py-1.5 text-sm rounded-md focus:border-primary focus:outline-none"
               />
             </div>
@@ -736,7 +737,14 @@ const EventTypeTab = ({
             className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border/30"
           >
             <div className="flex items-center gap-3">
-              <span className="text-lg">{type.icon}</span>
+              {(() => {
+                const TypeIcon = lucideIcon(type.icon);
+                return TypeIcon ? (
+                  <TypeIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                ) : (
+                  <span className="h-4 w-4 rounded-sm border border-border/50" aria-hidden="true" />
+                );
+              })()}
               <div>
                 <div className="text-sm font-medium">{type.labelCn}</div>
                 <div className="text-xs text-muted-foreground">{type.description}</div>
@@ -875,7 +883,7 @@ const EventLevelTab = ({
                 type="text"
                 value={formData.icon}
                 onChange={(e) => setFormData((p) => ({ ...p, icon: e.target.value }))}
-                placeholder="如：★"
+                placeholder="Lucide 图标名，如 flame"
                 className="w-full bg-background border border-border/50 px-2 py-1.5 text-sm rounded-md focus:border-primary focus:outline-none"
               />
             </div>
@@ -914,7 +922,14 @@ const EventLevelTab = ({
             className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border/30"
           >
             <div className="flex items-center gap-3">
-              <span className="text-lg">{level.icon}</span>
+              {(() => {
+                const LevelIcon = lucideIcon(level.icon);
+                return LevelIcon ? (
+                  <LevelIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                ) : (
+                  <span className="h-4 w-4 rounded-sm border border-border/50" aria-hidden="true" />
+                );
+              })()}
               <div>
                 <div className="text-sm font-medium">{level.labelCn}</div>
                 <div className="text-xs text-muted-foreground">{level.label}</div>

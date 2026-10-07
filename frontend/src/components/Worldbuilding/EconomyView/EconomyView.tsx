@@ -1,5 +1,5 @@
 /**
- * 经济主视图 EconomyViewV2（Phase 5 P5-T8/P5-T9；economy_ui_design §4.2/§4.3/§5.6/§8.4/§9/§11.4）
+ * 经济主视图 EconomyView（Phase 5 P5-T8/P5-T9；economy_ui_design §4.2/§4.3/§5.6/§8.4/§9/§11.4）
  *
  * 结构（§4.2）：
  * - 顶栏：标题 + ComplexitySwitcher + 搜索 + 世界脉络入口占位 + 配置入口占位；
@@ -93,7 +93,7 @@ import type {
   EconomySurplus,
   EconomyVerbLink,
   EconomyVerbLinkRow,
-  EconomyViewV2Props,
+  EconomyViewProps,
 } from './types';
 
 /* ---------------- 纯函数小工具 ---------------- */
@@ -207,12 +207,12 @@ const SketchComplexitySwitch = ({
 
 /* ---------------- 主视图 ---------------- */
 
-export const EconomyViewV2 = ({
+export const EconomyView = ({
   worldId,
   moduleId,
   onNavigateToEntity,
   highlightRef,
-}: EconomyViewV2Props) => {
+}: EconomyViewProps) => {
   const { level, setLevel } = useComplexity();
   const refs = useEntityRefs(worldId);
   const configSeed = useEconomyConfigSeed(moduleId, level);
@@ -1585,4 +1585,4 @@ export const EconomyViewV2 = ({
   );
 };
 
-export default EconomyViewV2;
+export default EconomyView;

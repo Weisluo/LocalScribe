@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from sqlalchemy import (
     JSON,
     Boolean,
-    Column,
     DateTime,
     ForeignKey,
     Integer,
@@ -15,7 +14,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from . import Base
@@ -44,7 +43,7 @@ DEFAULT_MODULE_SPECS = (
 class World(Base):
     """世界 - 唯一的顶层容器，归属某个项目
 
-    由 world_templates 改名而来（P1-MIG-01）：
+    由旧模板表改名而来（P1-MIG-01）：
     - 新增 tone / settings（JSON 配置，见契约 §2.1、§2.8）
     - 原 tags / is_public / is_system_template / created_by 不再作为列，
       其旧值在迁移时降级进 settings["legacyTemplate"]，并保留同名只读属性以兼容旧接口。
@@ -140,10 +139,6 @@ class World(Base):
         return literal(False)
 
 
-# 旧类名兼容：旧接口（/templates）与旧导入路径继续可用，读写同一张 worlds 表
-WorldTemplate = World
-
-
 def derive_submodule_kind(color, module_type=None) -> str:
     """从旧 color 前缀编码推导 kind（契约 §2.3，P1-MIG-04 同口径）。
 
@@ -216,9 +211,6 @@ class WorldModule(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-
-    # 旧字段名兼容：旧代码/旧接口仍可用 template_id 读写 world_id
-    template_id = synonym("world_id")
 
     # 关系
     world: Mapped["World"] = relationship(back_populates="modules")
@@ -339,66 +331,3 @@ class WorldModuleItem(Base):
     # 关系
     module: Mapped["WorldModule"] = relationship(back_populates="items")
     submodule: Mapped[Optional["WorldSubmodule"]] = relationship(back_populates="items")
-
-
-class WorldInstance(Base):
-    """世界实例 - 基于模板创建的具体世界
-
-    概念已取消（契约 §8），仅保留旧数据只读兼容；写接口在兼容层返回迁移指引。
-    """
-
-    __tablename__ = "world_instances"
-
-    id = Column(String(36), primary_key=True, index=True)
-    template_id = Column(String(36), ForeignKey("worlds.id"), nullable=False)
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False)
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-
-    # 自定义配置
-    custom_data = Column(JSON)  # 自定义数据覆盖
-
-    # 元数据
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-
-    # 关系
-    template = relationship("World")
-    project = relationship("Project", back_populates="world_instances")
-
-
-class CustomWorldviewConfig(Base):
-    """自定义世界观配置（旧表，Phase 6 下线）"""
-
-    __tablename__ = "worldview_configs"
-
-    id = Column(String(36), primary_key=True, index=True)
-    name = Column(String(255), nullable=False, unique=True, index=True)
-    description = Column(Text)
-
-    # 世界观类型 (使用 WorldviewType 枚举值)
-    type = Column(String(50), nullable=False, index=True)
-
-    # 基础配置
-    time_scale = Column(String(50), nullable=False)
-    tech_level = Column(String(50), nullable=False)
-    magic_level = Column(String(50), nullable=False)
-    political_complexity = Column(String(50), nullable=False)
-    economic_system = Column(String(50), nullable=False)
-
-    # 详细配置 (JSON 格式存储复杂对象)
-    module_configs = Column(JSON)
-    theme = Column(JSON)
-    relation_rules = Column(JSON)
-    presets = Column(JSON)
-
-    # 元数据
-    is_system = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-    created_by = Column(String(36), nullable=True)

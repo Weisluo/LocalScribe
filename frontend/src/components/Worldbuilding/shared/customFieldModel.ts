@@ -5,8 +5,8 @@
  * entityRef 字段值为 `module:kind:id` 字符串，与行内引用 token 同构。
  */
 
-import type { EntityRef } from '@/services/worldbuildingApi';
-import type { CustomFieldDef, CustomFieldValue } from './moduleConfig';
+import type { ComplexityLevel, EntityRef } from '@/services/worldbuildingApi';
+import { fieldVisibleAt, type CustomFieldDef, type CustomFieldValue } from './moduleConfig';
 
 export type CustomFieldValues = Record<string, CustomFieldValue>;
 
@@ -50,4 +50,29 @@ export const groupCustomFields = (
     }
   }
   return groups;
+};
+
+/** 空值判定：'' / 空白串 / 空数组 / null / undefined 都算未填写 */
+export const isCustomFieldEmpty = (value: CustomFieldValue): boolean => {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return !value.trim();
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+};
+
+/**
+ * 必填校验（P6-T4 的 field.required 的执行口）：返回「必填但为空」的字段展示名。
+ *
+ * 复杂度同口径：被当前档位隐藏的字段不参与校验（降档只隐藏数据、不要求补填）。
+ * 无缺失返回空数组，调用方直接 `if (missing.length)` 即可阻断提交。
+ */
+export const missingRequiredFields = (
+  fields: CustomFieldDef[],
+  values: CustomFieldValues | null | undefined,
+  complexity?: ComplexityLevel | null
+): string[] => {
+  const visible = complexity ? fields.filter((field) => fieldVisibleAt(field, complexity)) : fields;
+  return visible
+    .filter((field) => field.required && isCustomFieldEmpty(readCustomField(values, field.id)))
+    .map((field) => field.label || field.id);
 };

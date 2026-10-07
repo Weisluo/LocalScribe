@@ -659,6 +659,7 @@ export const PoliticsView = ({
           open={configOpen}
           onClose={() => setConfigOpen(false)}
           config={politics.config}
+          rawConfig={moduleConfig.raw ?? undefined}
           onSave={moduleConfig.save}
         />
       )}

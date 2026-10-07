@@ -19,6 +19,7 @@ import {
   type EntityTypeDef,
   type ModuleConfig,
 } from '../../shared/moduleConfig';
+import { missingRequiredFields } from '../../shared/customFieldModel';
 import { SYSTEM_KIND, type SystemEntity } from '../types';
 import type { SystemFormValues } from '../hooks/useSystems';
 import { colorDot, lucideIcon } from '../components/systemsSupport';
@@ -80,6 +81,12 @@ export const SystemFormModal = ({
   const handleSubmit = async () => {
     if (!name.trim()) {
       setError('体系名不能为空');
+      return;
+    }
+    // 自定义字段的必填校验（P6-T4）：字段定义来自 config.fieldSchema
+    const missing = missingRequiredFields(fields, customFields);
+    if (missing.length) {
+      setError(`必填字段未填写：${missing.join('、')}`);
       return;
     }
     setError(null);

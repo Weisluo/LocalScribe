@@ -107,7 +107,7 @@ export const HistoryView = ({ moduleId, projectId, worldId, highlightRef, onNavi
   const STANDALONE_ERA_ID = '__standalone_era__';
 
   const baseEras: Era[] = (submodules || [])
-    .filter(isEra)
+    .filter((sub) => isEra({ color: sub.color ?? undefined, parent_id: sub.parent_id ?? undefined }))
     .map((sub) => {
       const iconValue = sub.icon || '';
       const isEraIcon = iconValue.startsWith('era:');
@@ -115,21 +115,21 @@ export const HistoryView = ({ moduleId, projectId, worldId, highlightRef, onNavi
       return {
         id: sub.id,
         name: sub.name,
-        description: sub.description,
+        description: sub.description ?? undefined,
         startDate,
         endDate,
         order_index: sub.order_index,
-        theme: parseEraTheme(sub.color),
+        theme: parseEraTheme(sub.color ?? undefined),
       };
     })
     .sort((a, b) => compareTimes(a.startDate, b.startDate));
 
   const events: Event[] = (submodules || [])
-    .filter((sub) => !isEra(sub))
+    .filter((sub) => !isEra({ color: sub.color ?? undefined, parent_id: sub.parent_id ?? undefined }))
     .map((sub) => {
       const iconValue = sub.icon || '';
       const isDateIcon = iconValue.startsWith('date:');
-      const eventType = parseEventType(sub.color);
+      const eventType = parseEventType(sub.color ?? undefined);
       
       let eventDate: string | undefined;
       let eventEndDate: string | undefined;
@@ -147,8 +147,8 @@ export const HistoryView = ({ moduleId, projectId, worldId, highlightRef, onNavi
       return {
         id: sub.id,
         name: sub.name,
-        description: sub.description,
-        level: parseEventLevel(sub.color),
+        description: sub.description ?? undefined,
+        level: parseEventLevel(sub.color ?? undefined),
         eventDate,
         eventEndDate,
         icon,
@@ -157,7 +157,7 @@ export const HistoryView = ({ moduleId, projectId, worldId, highlightRef, onNavi
         items: (items || []).filter((item) => item.submodule_id === sub.id).map((item) => ({
           id: item.id,
           name: item.name,
-          content: item.content,
+          content: item.content as Record<string, string>,
           order_index: item.order_index,
         })),
         eventType,

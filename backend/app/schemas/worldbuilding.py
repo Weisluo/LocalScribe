@@ -4,62 +4,10 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-# 世界观类型枚举
-class WorldviewType(str, Enum):
-    XIANXIA = "xianxia"
-    HISTORICAL = "historical"
-    WESTERN = "western"
-    MODERN = "modern"
-    SCIFI = "scifi"
-    APOCALYPSE = "apocalypse"
-    CUSTOM = "custom"
-
-
-# 时间尺度
-class TimeScale(str, Enum):
-    ANCIENT = "ancient"
-    MEDIEVAL = "medieval"
-    RENAISSANCE = "renaissance"
-    INDUSTRIAL = "industrial"
-    MODERN = "modern"
-    FUTURE = "future"
-
-
-# 科技水平
-class TechLevel(str, Enum):
-    PRIMITIVE = "primitive"
-    MEDIEVAL = "medieval"
-    INDUSTRIAL = "industrial"
-    INFORMATION = "information"
-    ADVANCED = "advanced"
-    TRANSCENDENT = "transcendent"
-
-
-# 魔法水平
-class MagicLevel(str, Enum):
-    NONE = "none"
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    DIVINE = "divine"
-
-
-# 复杂度等级
-class ComplexityLevel(str, Enum):
-    SIMPLE = "simple"
-    COMPLEX = "complex"
-    HIGHLY_COMPLEX = "highly_complex"
-
-
-# 经济系统类型
-class EconomicSystemType(str, Enum):
-    BARTER = "barter"
-    FEUDAL = "feudal"
-    MERCANTILE = "mercantile"
-    CAPITALIST = "capitalist"
-    SOCIALIST = "socialist"
-    POST_SCARCITY = "post_scarcity"
+# 世界备份格式版本（P6-T11；worldview_configuration_system §7）。
+# 1 = World/WorldModule/WorldSubmodule/WorldModuleItem/WorldLink 的新结构（P1 之后），
+# 升版时在 import_world 里按版本先迁移再加载；未知字段一律保留。
+WORLD_SCHEMA_VERSION = 1
 
 
 # 枚举定义
@@ -71,54 +19,6 @@ class ModuleType(str, Enum):
     RACES = "races"
     SYSTEMS = "systems"
     SPECIAL = "special"
-
-
-# 基础 Schema
-class WorldBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255, description="世界名称")
-    description: Optional[str] = Field(None, description="世界描述")
-    cover_image: Optional[str] = Field(None, max_length=500, description="封面图片 URL")
-    tags: Optional[List[str]] = Field(None, max_length=10, description="标签列表")
-
-    @field_validator("tags")
-    @classmethod
-    def validate_tags(cls, v):
-        if v:
-            for tag in v:
-                if tag and len(tag) > 20:
-                    raise ValueError("每个标签长度不能超过 20 个字符")
-        return v
-
-
-# 世界模板 Schema
-class WorldTemplateCreate(WorldBase):
-    is_public: bool = False
-    is_system_template: bool = False
-    project_id: Optional[str] = None
-
-
-class WorldTemplateUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    cover_image: Optional[str] = None
-    tags: Optional[List[str]] = None
-    is_public: Optional[bool] = None
-    is_system_template: Optional[bool] = None
-    project_id: Optional[str] = None
-
-
-class WorldTemplateResponse(WorldBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: str
-    is_public: bool
-    is_system_template: bool
-    project_id: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    created_by: Optional[str] = None
-    module_count: int = 0
-    instance_count: int = 0
 
 
 # 世界模块 Schema
@@ -157,7 +57,7 @@ class WorldModuleResponse(WorldModuleBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    template_id: str
+    world_id: str
     created_at: datetime
     updated_at: datetime
     submodule_count: int = 0
@@ -263,7 +163,13 @@ class WorldModuleItemResponse(WorldModuleItemBase):
 
 
 class WorldTone(BaseModel):
-    """世界视觉基调（契约 §2.8）"""
+    """世界视觉基调（契约 §2.8）
+
+    extra="allow"：与 WorldSettings 同口径，未识别的基调键不能被静默丢弃
+    （worldview_configuration_system §7「未知字段保留不丢弃」）。
+    """
+
+    model_config = ConfigDict(extra="allow")
 
     palette: Optional[str] = Field(None, description="parchment/ink/slate/custom")
     accent: Optional[str] = Field(None, max_length=50)
@@ -345,9 +251,25 @@ class WorldLinkExportEntry(BaseModel):
     time: Optional[Dict[str, Any]] = None
 
 
-class WorldExport(BaseModel):
-    """世界备份（契约 §2.1：世界 JSON 备份 / 恢复，不是模板分发）"""
+class WorldImportMode(str, Enum):
+    """世界备份恢复模式（worldbuilding_ui_design §3.4）"""
 
+    NEW = "new"
+    OVERWRITE = "overwrite"
+
+
+class WorldExport(BaseModel):
+    """世界备份（契约 §2.1：世界 JSON 备份 / 恢复，不是模板分发）
+
+    extra="allow"：备份是用户个人数据的迁移手段，顶层未知键不能被静默丢弃
+    （worldview_configuration_system §7「未知字段保留不丢弃」）。
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    schema_version: int = Field(
+        WORLD_SCHEMA_VERSION, description="备份格式版本（P6-T11）"
+    )
     world: WorldResponse
     modules: List[WorldModuleWithItemsV2]
     links: List[WorldLinkExportEntry] = []
@@ -356,284 +278,52 @@ class WorldExport(BaseModel):
 class WorldImport(BaseModel):
     """世界恢复请求"""
 
+    model_config = ConfigDict(extra="allow")
+
     world: WorldResponse
     modules: List[WorldModuleWithItemsV2] = []
     links: List[WorldLinkExportEntry] = []
     project_id: Optional[str] = None
     name: Optional[str] = None
-
-
-# 世界实例 Schema
-class WorldInstanceBase(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255, description="实例名称")
-    description: Optional[str] = Field(None, description="实例描述")
-    custom_data: Optional[Dict[str, Any]] = Field(None, description="自定义数据")
-
-    @field_validator("custom_data")
-    @classmethod
-    def validate_custom_data(cls, v):
-        if v and len(v) > 100:
-            raise ValueError("自定义数据字段数量不能超过 100 个")
-        return v
-
-
-class WorldInstanceCreate(WorldInstanceBase):
-    template_id: str = Field(..., description="模板ID")
-    project_id: str = Field(..., description="项目ID")
-
-
-class WorldInstanceUpdate(BaseModel):
-    name: Optional[str] = Field(
-        None, min_length=1, max_length=255, description="实例名称"
+    # 备份格式版本：缺省视为最新（旧备份里本来没有这个键）
+    schema_version: Optional[int] = Field(None, description="备份格式版本")
+    # 两种恢复模式（worldbuilding_ui_design §3.4）
+    mode: WorldImportMode = Field(
+        WorldImportMode.NEW, description="new=恢复为新世界；overwrite=覆盖已有世界"
     )
-    description: Optional[str] = Field(None, description="实例描述")
-    custom_data: Optional[Dict[str, Any]] = Field(None, description="自定义数据")
-
-
-class WorldInstanceResponse(WorldInstanceBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: str
-    template_id: str
-    project_id: str
-    created_at: datetime
-    updated_at: datetime
-
-
-# 嵌套响应 Schema
-class WorldModuleWithItems(WorldModuleResponse):
-    submodules: List[WorldSubmoduleResponse] = []
-    items: List[WorldModuleItemResponse] = []
-
-
-class WorldSubmoduleWithItems(WorldSubmoduleResponse):
-    items: List[WorldModuleItemResponse] = []
-
-
-class WorldTemplateWithModules(WorldTemplateResponse):
-    modules: List[WorldModuleWithItems] = []
-
-
-# 导入/导出 Schema
-class WorldTemplateExport(BaseModel):
-    template: WorldTemplateResponse
-    modules: List[WorldModuleWithItems]
-
-
-class WorldTemplateImport(BaseModel):
-    name: str
-    description: Optional[str] = None
-    project_id: Optional[str] = None
-    modules: List[WorldModuleWithItems]
-
-
-# 批量操作 Schema
-class BatchDeleteRequest(BaseModel):
-    ids: List[str] = Field(
-        ..., min_length=1, max_length=100, description="要删除的 ID 列表"
+    target_world_id: Optional[str] = Field(
+        None, description="mode=overwrite 时的目标世界 id"
+    )
+    confirm_overwrite: bool = Field(
+        False, description="覆盖非空世界必须显式确认（重数据保护）"
+    )
+    keep_dangling: bool = Field(
+        True, description="端点无法解析时保留为失效引用，而不是丢弃该关联"
     )
 
-    @field_validator("ids")
-    @classmethod
-    def validate_ids(cls, v):
-        if len(v) > 100:
-            raise ValueError("批量删除数量不能超过 100 个")
-        return v
 
+class DanglingRefEntry(BaseModel):
+    """导入时无法归属的关联端点（worldbuilding_ui_design §3.4：失效引用单独列出）"""
 
-class BatchUpdateOrderRequest(BaseModel):
-    items: List[Dict[str, Any]] = Field(
-        ..., min_length=1, max_length=100, description="排序项列表"
-    )
-
-    @field_validator("items")
-    @classmethod
-    def validate_items(cls, v):
-        if len(v) > 100:
-            raise ValueError("批量排序数量不能超过 100 个")
-        for item in v:
-            if (
-                not isinstance(item, dict)
-                or "id" not in item
-                or "order_index" not in item
-            ):
-                raise ValueError("每个排序项必须包含 id 和 order_index 字段")
-            if not isinstance(item["order_index"], int) or item["order_index"] < 0:
-                raise ValueError("order_index 必须是大于等于 0 的整数")
-        return v
-
-
-# 搜索和筛选 Schema
-class WorldTemplateFilter(BaseModel):
-    name: Optional[str] = None
-    tags: Optional[List[str]] = None
-    is_public: Optional[bool] = None
-    is_system_template: Optional[bool] = None
-    created_by: Optional[str] = None
-    project_id: Optional[str] = None
-
-
-# ============= 世界观配置 Schema =============
-
-
-class WorldviewEventType(BaseModel):
-    type: str
-    label: str
-    icon: str
-    color: str
-
-
-class WorldviewEraTheme(BaseModel):
-    theme: str
-    label: str
-    color: str
-
-
-class WorldviewPoliticalEntityType(BaseModel):
-    type: str
-    label: str
-    icon: str
-    color: str
-
-
-class WorldviewGovernmentType(BaseModel):
-    type: str
-    label: str
-
-
-class WorldviewEconomicEntityType(BaseModel):
-    type: str
-    label: str
-    icon: str
-    color: str
-
-
-class WorldviewCurrencyType(BaseModel):
-    type: str
-    label: str
-
-
-class WorldviewResourceType(BaseModel):
-    type: str
-    label: str
-
-
-class WorldviewTradeMethod(BaseModel):
-    type: str
-    label: str
-
-
-class HistoryModuleConfig(BaseModel):
-    timeUnit: str = "year"
-    eventTypes: List[WorldviewEventType] = []
-    eraThemes: List[WorldviewEraTheme] = []
-    timelineStyle: str = "linear"
-    recordingMethod: str = "chronicle"
-
-
-class PoliticsModuleConfig(BaseModel):
-    entityTypes: List[WorldviewPoliticalEntityType] = []
-    governmentTypes: List[WorldviewGovernmentType] = []
-    alignmentSystem: str = "modern"
-    powerStructure: str = "centralized"
-
-
-class EconomyModuleConfig(BaseModel):
-    entityTypes: List[WorldviewEconomicEntityType] = []
-    currencyTypes: List[WorldviewCurrencyType] = []
-    resourceTypes: List[WorldviewResourceType] = []
-    tradeMethods: List[WorldviewTradeMethod] = []
-
-
-class MapModuleConfig(BaseModel):
-    mapTypes: List[str] = []
-    projectionStyles: List[str] = []
-
-
-class RacesModuleConfig(BaseModel):
-    raceTypes: List[Dict[str, Any]] = []
-    traitSystems: List[str] = []
-
-
-class SystemsModuleConfig(BaseModel):
-    systemTypes: List[Dict[str, Any]] = []
-    customRules: List[str] = []
-
-
-class ModuleConfigs(BaseModel):
-    history: HistoryModuleConfig = HistoryModuleConfig()
-    politics: PoliticsModuleConfig = PoliticsModuleConfig()
-    economy: EconomyModuleConfig = EconomyModuleConfig()
-    map: MapModuleConfig = MapModuleConfig()
-    races: RacesModuleConfig = RacesModuleConfig()
-    systems: SystemsModuleConfig = SystemsModuleConfig()
-
-
-class WorldviewTheme(BaseModel):
-    primaryColor: str = "#6366f1"
-    secondaryColor: str = "#8b5cf6"
-    accentColor: str = "#f59e0b"
-    backgroundGradient: str = "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)"
-    fontFamily: str = "system-ui, sans-serif"
-
-
-class WorldviewAdaptationRule(BaseModel):
-    sourceModule: str
-    targetModule: str
-    relationType: str
-    description: str
-    confidence: float = 0.8
-
-
-class WorldviewPreset(BaseModel):
+    role: str = Field(..., description="source / target")
+    module: str
+    kind: str
     id: str
-    name: str
-    description: str
-    icon: str
+    link_type: str
 
 
-class WorldviewConfigBase(BaseModel):
-    type: WorldviewType
-    name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = Field(None)
-    timeScale: TimeScale = TimeScale.MEDIEVAL
-    techLevel: TechLevel = TechLevel.MEDIEVAL
-    magicLevel: MagicLevel = MagicLevel.NONE
-    politicalComplexity: ComplexityLevel = ComplexityLevel.COMPLEX
-    economicSystem: EconomicSystemType = EconomicSystemType.FEUDAL
-    moduleConfigs: ModuleConfigs = ModuleConfigs()
-    theme: WorldviewTheme = WorldviewTheme()
-    adaptationRules: List[WorldviewAdaptationRule] = []
-    presets: List[WorldviewPreset] = []
+class WorldImportReport(BaseModel):
+    """世界备份恢复结果（P6-T2：id 映射、失效引用与降级项报告）"""
 
-
-class WorldviewConfigCreate(WorldviewConfigBase):
-    pass
-
-
-class WorldviewConfigUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = Field(None)
-    timeScale: Optional[TimeScale] = None
-    techLevel: Optional[TechLevel] = None
-    magicLevel: Optional[MagicLevel] = None
-    politicalComplexity: Optional[ComplexityLevel] = None
-    economicSystem: Optional[EconomicSystemType] = None
-    moduleConfigs: Optional[ModuleConfigs] = None
-    theme: Optional[WorldviewTheme] = None
-    adaptationRules: Optional[List[WorldviewAdaptationRule]] = None
-    presets: Optional[List[WorldviewPreset]] = None
-
-
-class WorldviewConfigResponse(WorldviewConfigBase):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    is_system: bool = False
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-
-class WorldviewAdaptationsResponse(BaseModel):
-    worldview_type: WorldviewType
-    module_configs: ModuleConfigs
-    adaptation_rules: List[WorldviewAdaptationRule]
+    world: WorldResponse
+    mode: str = WorldImportMode.NEW.value
+    schema_version: int = WORLD_SCHEMA_VERSION
+    entity_count: int = 0
+    link_count: int = 0
+    merged_duplicates: int = 0
+    skipped_links: int = 0
+    id_map: Dict[str, str] = {}
+    dangling_refs: List[DanglingRefEntry] = []
+    unknown_kinds: List[str] = []
+    unknown_link_types: List[str] = []
+    warnings: List[str] = []
