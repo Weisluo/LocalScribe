@@ -140,6 +140,8 @@ class WorldModuleCreate(WorldModuleBase):
 
 
 class WorldModuleUpdate(BaseModel):
+    # 端点会先比较 module_type 再逐字段 setattr，缺这个字段会直接 AttributeError（500）
+    module_type: Optional[ModuleType] = Field(None, description="模块类型")
     name: Optional[str] = Field(
         None, min_length=1, max_length=255, description="模块名称"
     )

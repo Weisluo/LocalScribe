@@ -206,6 +206,40 @@ def test_worlds_crud_creates_seven_modules(client, world_fixture):
     assert client.get(f"{WORLD}/worlds/{world['id']}").status_code == 404
 
 
+def test_module_update_accepts_partial_payloads(client, world_fixture):
+    """PUT /modules/{id} 只带 config / name 时必须能用（旧实现直接读 module_type → 500）。"""
+
+    economy = world_fixture["modules"]["economy"]
+    history = world_fixture["modules"]["history"]
+
+    # 只带 config：经济模块懒创建配置走的就是这条路径
+    config = {"defaultComplexity": "structure", "metrics": []}
+    updated = client.put(
+        f"{WORLD}/modules/{economy['id']}", json={"config": config}
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["config"] == config
+    assert updated.json()["module_type"] == "economy"
+    assert updated.json()["name"] == economy["name"]
+
+    # 只带 name：其余字段不受影响
+    renamed = client.put(f"{WORLD}/modules/{economy['id']}", json={"name": "营生"})
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["name"] == "营生"
+    assert renamed.json()["config"] == config
+
+    # module_type 仍参与重复校验：改成已存在的类型要被拒
+    duplicate = client.put(
+        f"{WORLD}/modules/{economy['id']}", json={"module_type": "history"}
+    )
+    assert duplicate.status_code == 400
+    assert history["module_type"] == "history"
+
+    detail = client.get(f"{WORLD}/worlds/{world_fixture['world']['id']}").json()
+    still_economy = next(m for m in detail["modules"] if m["id"] == economy["id"])
+    assert still_economy["module_type"] == "economy"
+
+
 def test_link_registry_exposes_contract_types(client):
     response = client.get(f"{WORLD}/link-registry")
     assert response.status_code == 200

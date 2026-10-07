@@ -192,6 +192,26 @@ Phase 4 结论（2026-10-06，修复轮 2026-10-07 复核）：P4-T1..T12 全部
 版图指针捕获不再吞掉节点点击、组织归属沿 `subordinate_to` 链上溯并阻断成环、旧 `treaty_between` 读取侧等价转换接线、
 迁移 downgrade 按「本次写入值」精确回滚；画布拖拽建边与命令面板仍未实现，已登记进 §7.2。
 
+Phase 5 结论（2026-10-07，复核修复轮 2026-10-08）：P5-T1..T15 全部落地，DoD 通过；验收实测与明确未实现项见
+`phase5_economy.md` §7.1/§7.2，复核修复轮逐条见同文 §7.3，P6 交接与删除清单见同文 §9。经济模块迁移 head 由
+`c1f7a4b9e2d3` 前进到 `d4e8b1c7a206`（`wbl_p5_01_backfill_economy`，无 DDL、只回填）。要点：经济只读视图 4 个
+GET（graph / summary / timeline / metrics）按 sketch / structure / sandbox 分档加载，写入一律复用 P1 通用接口；
+前端 `EconomyViewV2/`（24 文件）三档共用一套数据，800 节点自动降级账册矩阵（矩阵走 `counts.byKindStage`，
+降级载荷不回节点明细）+ 推荐关联；feature flag 默认关闭、旧 `EconomyView` 保留到 P6。
+验收：pytest 213 passed、tsc 0 error、eslint 0 error（15 warning，其中 3 条为 P5 新增的 react-refresh 提示）、
+`vite build` 成功、Playwright 29 passed（含 phase5 8 条）、harness 131 条检查全过、
+重生成的 `src/types/api.ts` 与提交文件逐字节相同。
+复核修复轮修掉的缺陷：800 节点降级端到端不可达（前端按节点数重算降级 + 空状态分支抢先返回）、
+`PUT /modules/{id}` 恒 500（`WorldModuleUpdate` 缺 `module_type`，而 P5 的 `saveConfig` 正走它）、
+graph 两条 500 崩溃路径（`meta.time` / `windowStart` 超 `LinkTimeRange` 100 字符）、meta 形状未防御
+（`customFields` 非 dict 崩、`tags` 字符串被拆成字符）、筛选后残留孤儿外站节点、沙盘窗口参数未下发、
+全局键盘双重处理、领域色用 emerald 而非契约绿、窗口 CSV 未按窗口过滤、`[`/`]` 微调丢精度、
+视图 URL 状态跨世界泄漏，以及迁移侧 7 项回滚精度问题（无条件删边、levels / customFields / legacyIcon
+不可还原、非法 JSON 让 downgrade 失败、回落 link_type 与 P1 口径不一致、kind 词表未同步）。
+另修掉一个既有隐患：`backend/tests/conftest.py` 的会话库在 `from tests.conftest import ...` 重复导入时会指向
+第二个空库，P5 新增测试文件的字母序把它顶到前面才暴露，已改为带进程号的 `LOCALSCRIBE_TEST_DB_<pid>` 幂等复用
+（同时避免并行进程与外部预设变量串库）。
+
 ---
 
 阶段 plan 文件：

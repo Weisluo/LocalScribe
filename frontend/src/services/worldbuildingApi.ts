@@ -33,6 +33,14 @@ export type WorldLinkMoveResult = components['schemas']['LinksMoveResponse'];
 /** POST /links/{id}/move 单条归位 body（P2-T12，取自 OpenAPI 生成类型） */
 export type WorldLinkMovePayload = components['schemas']['LinkMoveRequest'];
 
+// 经济模块只读视图（Phase 5 P5-T7；economy_ui_design §11.1 分档加载）。
+// 三档共用一套数据：sketch 只请求 summary，structure 加 graph，sandbox 再加 timeline / metrics。
+export type EconomyConfig = components['schemas']['EconomyConfig'];
+export type EconomyGraph = components['schemas']['EconomyGraph'];
+export type EconomySummary = components['schemas']['EconomySummary'];
+export type EconomyTimeline = components['schemas']['EconomyTimeline'];
+export type EconomyMetrics = components['schemas']['EconomyMetrics'];
+
 export interface WorldTemplate {
   id: string;
   name: string;
@@ -381,5 +389,39 @@ export const worldbuildingApi = {
       `/worldbuilding/worlds/${worldId}/links/move`,
       data
     );
+  },
+
+  // ---- 经济模块只读视图（Phase 5 P5-T3/P5-T7）：写入复用上面的通用接口 ----
+
+  getEconomySummary: (moduleId: string, params?: { complexity?: ComplexityLevel }) => {
+    return api.get<EconomySummary>(`/worldbuilding/modules/${moduleId}/economy/summary`, {
+      params,
+    });
+  },
+
+  getEconomyGraph: (
+    moduleId: string,
+    params?: {
+      complexity?: ComplexityLevel;
+      kinds?: string;
+      stages?: string;
+      windowStart?: string;
+      windowEnd?: string;
+    }
+  ) => {
+    return api.get<EconomyGraph>(`/worldbuilding/modules/${moduleId}/economy/graph`, { params });
+  },
+
+  getEconomyTimeline: (moduleId: string, params?: { windowStart?: string; windowEnd?: string }) => {
+    return api.get<EconomyTimeline>(`/worldbuilding/modules/${moduleId}/economy/timeline`, {
+      params,
+    });
+  },
+
+  getEconomyMetrics: (
+    moduleId: string,
+    params?: { windowStart?: string; windowEnd?: string; metricIds?: string }
+  ) => {
+    return api.get<EconomyMetrics>(`/worldbuilding/modules/${moduleId}/economy/metrics`, { params });
   },
 };

@@ -19,6 +19,10 @@ export const PHASE4_HARNESS_PATH = path.resolve(
   FRONTEND_ROOT,
   'node_modules/.cache/phase4-harness/harness.js'
 );
+export const PHASE5_HARNESS_PATH = path.resolve(
+  FRONTEND_ROOT,
+  'node_modules/.cache/phase5-harness/harness.js'
+);
 
 const buildHarnessFile = async ({ entry, outFile, name }) => {
   const { build } = await import('vite');
@@ -73,4 +77,11 @@ export const buildPhase4Harness = async () =>
     entry: 'tests/worldbuilding/harness4.tsx',
     outFile: PHASE4_HARNESS_PATH,
     name: 'Phase4Harness',
+  });
+
+export const buildPhase5Harness = async () =>
+  buildHarnessFile({
+    entry: 'tests/worldbuilding/harness5.tsx',
+    outFile: PHASE5_HARNESS_PATH,
+    name: 'Phase5Harness',
   });

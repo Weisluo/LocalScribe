@@ -6,6 +6,8 @@ import { useProjectStore } from '@/stores/projectStore';
 import { Loader2, Plus, ChevronDown, ChevronRight, ChevronLeft, Edit2, Trash2, X, Save, Globe2, Map as MapIcon, History, Landmark, Coins, Users, Cpu, Sparkles, LucideIcon, FileUp, FilePlus, Upload, GitBranch, AlertTriangle, Package } from 'lucide-react';
 import { HistoryView } from './HistoryView';
 import { EconomyView } from './EconomyView';
+import { EconomyViewV2 } from './EconomyViewV2';
+import { isEconomyViewV2Enabled } from '@/utils/featureFlags';
 import { RacesView } from './RacesView';
 import { SystemsView } from './SystemsView';
 import { PoliticsView } from './PoliticsView';
@@ -1797,7 +1799,17 @@ export const WorldbuildingView = ({ onNavigateToCharacter }: { onNavigateToChara
                   onNavigateToEntity={handleNavigateToEntity}
                 />
               ) : activeTab === 'economy' && currentModule ? (
-                <EconomyView moduleId={currentModule.id} />
+                // Phase 5 P5-T15：flag 关闭时完全走旧 EconomyView（P6 才删旧实现）
+                isEconomyViewV2Enabled() ? (
+                  <EconomyViewV2
+                    worldId={worldDetail?.id ?? ''}
+                    moduleId={currentModule.id}
+                    onNavigateToEntity={handleNavigateToEntity}
+                    highlightRef={highlightedRef}
+                  />
+                ) : (
+                  <EconomyView moduleId={currentModule.id} />
+                )
               ) : currentModule ? (
                 <div ref={contentScrollRef} className="flex-1 overflow-y-auto p-6">
                   <div className="max-w-4xl mx-auto">

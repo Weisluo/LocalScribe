@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from .ai import router as ai_router
 from .analysis import router as analysis_router
 from .characters import router as characters_router
+from .economy import router as economy_router
 from .export import router as export_router
 from .folders import router as folders_router
 from .notes import router as notes_router
@@ -30,6 +31,8 @@ api_router.include_router(worlds_router, prefix="/worldbuilding", tags=["Worlds"
 api_router.include_router(
     world_links_router, prefix="/worldbuilding", tags=["World Links"]
 )
+# 经济模块只读视图（契约 §3.2；写入复用 P1 通用接口）
+api_router.include_router(economy_router, prefix="/worldbuilding", tags=["Economy"])
 api_router.include_router(upload_router, prefix="/upload", tags=["File Upload"])
 api_router.include_router(
     relations_router, prefix="/relations", tags=["Cross-Module Relations"]

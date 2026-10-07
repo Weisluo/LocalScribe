@@ -3,6 +3,9 @@
 约定：
 - `app.core.database` 在导入时就把 DATABASE_URL 绑成引擎，所以必须在导入 app 之前
   指向测试库；本文件在导入阶段设置环境变量，API 测试全程使用同一个会话级临时库。
+- 会话库路径写入带进程号的 `LOCALSCRIBE_TEST_DB_<pid>`，重复导入（`conftest` /
+  `tests.conftest`）时复用，保证 env 与 pytest 夹具升级的是同一个文件；
+  键名带进程号，并行跑 pytest 不会共用同一个 SQLite 文件，外部预设的旧变量也不会被误用。
 - 迁移/回填测试使用独立临时库与 alembic API，不经过 FastAPI，避免互相污染。
 """
 
@@ -23,9 +26,18 @@ from alembic.config import Config
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 PRE_PHASE1_REVISION = "a8f3e9c2b1d4"
 
-# 必须在导入 app.* 之前设置
-_SESSION_DB = Path(tempfile.mkdtemp(prefix="localscribe-wbl-")) / "app.db"
+# 必须在导入 app.* 之前设置。
+# conftest 可能被导入两次（pytest 注册的 `conftest` 与测试模块里的 `tests.conftest`），
+# 模块级代码会整体重跑：会话库路径与环境变量必须在本进程内幂等，第二次导入复用同一路径，
+# 否则 app 引擎会连到另一个还没建表的空库（表现为大批 no such table: projects）。
+# 键名带 pid：并行 pytest 进程各拿各的临时库，外部预设 / 历史残留的同名变量也不会被复用。
+_SESSION_DB_ENV = f"LOCALSCRIBE_TEST_DB_{os.getpid()}"
+_SESSION_DB = Path(
+    os.environ.get(_SESSION_DB_ENV)
+    or (tempfile.mkdtemp(prefix="localscribe-wbl-") + "/app.db")
+)
 os.environ["DATABASE_URL"] = f"sqlite:///{_SESSION_DB.as_posix()}"
+os.environ[_SESSION_DB_ENV] = str(_SESSION_DB)
 
 
 def alembic_config(db_path: Path) -> Config:

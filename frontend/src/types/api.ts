@@ -1160,6 +1160,74 @@ export interface paths {
         patch: operations["update_world_link_api_v1_worldbuilding_links__link_id__patch"];
         trace?: never;
     };
+    "/api/v1/worldbuilding/modules/{module_id}/economy/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Economy Graph */
+        get: operations["get_economy_graph_api_v1_worldbuilding_modules__module_id__economy_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/modules/{module_id}/economy/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Economy Summary */
+        get: operations["get_economy_summary_api_v1_worldbuilding_modules__module_id__economy_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/modules/{module_id}/economy/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Economy Timeline */
+        get: operations["get_economy_timeline_api_v1_worldbuilding_modules__module_id__economy_timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/worldbuilding/modules/{module_id}/economy/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Economy Metrics */
+        get: operations["get_economy_metrics_api_v1_worldbuilding_modules__module_id__economy_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/upload/images": {
         parameters: {
             query?: never;
@@ -3286,6 +3354,382 @@ export interface components {
          * @enum {string}
          */
         EconomicSystemType: "barter" | "feudal" | "mercantile" | "capitalist" | "socialist" | "post_scarcity";
+        /**
+         * EconomyChip
+         * @description 速写关键词 chip；展开后 chip.id 与新实体 id 相同。
+         */
+        EconomyChip: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Kind */
+            kind: string;
+            entityRef?: components["schemas"]["EntityRef"] | null;
+        };
+        /**
+         * EconomyConfig
+         * @description 经济模块配置（契约 ModuleConfig 的经济扩展）。
+         *
+         *     ``levels`` / ``statuses`` / ``fieldSchema`` / ``terminology`` 等契约字段以自由字典透传，
+         *     未识别的键不丢；``stages`` / ``sketchFields`` / ``metrics`` / ``layers`` 只声明经济专属外形。
+         */
+        EconomyConfig: {
+            /**
+             * Defaultcomplexity
+             * @default sketch
+             * @enum {string}
+             */
+            defaultComplexity: "sketch" | "structure" | "sandbox";
+            /**
+             * Displaymode
+             * @default lanes
+             */
+            displayMode: string;
+            /** Entitytypes */
+            entityTypes?: {
+                [key: string]: unknown;
+            }[];
+            /** Levels */
+            levels?: {
+                [key: string]: unknown;
+            }[];
+            /** Statuses */
+            statuses?: {
+                [key: string]: unknown;
+            }[];
+            /** Stages */
+            stages?: components["schemas"]["EconomyStageDef"][];
+            /** Sketchfields */
+            sketchFields?: components["schemas"]["EconomySketchFieldDef"][];
+            /** Metrics */
+            metrics?: components["schemas"]["EconomyMetricDef"][];
+            /** Layers */
+            layers?: components["schemas"]["EconomyLayerConfig"][];
+            /** Defaultflowunit */
+            defaultFlowUnit?: string | null;
+            /** Fieldschema */
+            fieldSchema?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                }[];
+            };
+            /** Terminology */
+            terminology?: {
+                [key: string]: string;
+            };
+            /** Palette */
+            palette?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * EconomyCycle
+         * @description 经济周期：模块级 item（一条一个周期，kind 为 ``custom_cycle``，可被 WorldLink 寻址）。
+         */
+        EconomyCycle: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Phases */
+            phases?: components["schemas"]["EconomyCyclePhase"][];
+            /** Note */
+            note?: string | null;
+            eraRef?: components["schemas"]["EntityRef"] | null;
+        };
+        /** EconomyCycleBand */
+        EconomyCycleBand: {
+            /** Cycleid */
+            cycleId: string;
+            /** Label */
+            label: string;
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /** Phases */
+            phases?: components["schemas"]["EconomyCyclePhase"][];
+        };
+        /** EconomyCyclePhase */
+        EconomyCyclePhase: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+        };
+        /**
+         * EconomyEdge
+         * @description 经济关联边；流量 / 盈余 / 价格区间全部来自 WorldLink.meta。
+         */
+        EconomyEdge: {
+            /** Id */
+            id: string;
+            /** Linktype */
+            linkType: string;
+            /** Label */
+            label?: string | null;
+            /** Reverselabel */
+            reverseLabel?: string | null;
+            /**
+             * Directed
+             * @default true
+             */
+            directed: boolean;
+            /** Note */
+            note?: string | null;
+            source: components["schemas"]["EntityRef"];
+            target: components["schemas"]["EntityRef"];
+            time?: components["schemas"]["LinkTimeRange"] | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            };
+            /** Flow */
+            flow?: number | null;
+            /** Unit */
+            unit?: string | null;
+            /** Flowseries */
+            flowSeries?: {
+                [key: string]: unknown;
+            }[];
+            /** Intensity */
+            intensity?: number | null;
+            /** Surplus */
+            surplus?: string | null;
+            /**
+             * Surplusderived
+             * @default false
+             */
+            surplusDerived: boolean;
+            /** Priceband */
+            priceBand?: number[] | null;
+            /** Confidence */
+            confidence?: string | null;
+            /** Routenote */
+            routeNote?: string | null;
+            /**
+             * External
+             * @default false
+             */
+            external: boolean;
+        };
+        /**
+         * EconomyFoldCounts
+         * @description 降档提示条：已折叠的往来 / 数值 / 字段（数据未删除）。
+         */
+        EconomyFoldCounts: {
+            /**
+             * Links
+             * @default 0
+             */
+            links: number;
+            /**
+             * Metrics
+             * @default 0
+             */
+            metrics: number;
+            /**
+             * Fields
+             * @default 0
+             */
+            fields: number;
+        };
+        /** EconomyGraph */
+        EconomyGraph: {
+            /** Moduleid */
+            moduleId: string;
+            /** Worldid */
+            worldId: string;
+            /**
+             * Complexity
+             * @enum {string}
+             */
+            complexity: "sketch" | "structure" | "sandbox";
+            /** Nodes */
+            nodes?: components["schemas"]["EconomyNode"][];
+            /** Edges */
+            edges?: components["schemas"]["EconomyEdge"][];
+            counts?: components["schemas"]["EconomyGraphCounts"];
+            /**
+             * Degraded
+             * @default false
+             */
+            degraded: boolean;
+            /** Degradereason */
+            degradeReason?: string | null;
+            /**
+             * Nodelimit
+             * @default 800
+             */
+            nodeLimit: number;
+            /**
+             * Skippededges
+             * @default 0
+             */
+            skippedEdges: number;
+            /** Appliedkinds */
+            appliedKinds?: string[];
+            /** Appliedstages */
+            appliedStages?: string[];
+            appliedWindow?: components["schemas"]["LinkTimeRange"] | null;
+        };
+        /** EconomyGraphCounts */
+        EconomyGraphCounts: {
+            /**
+             * Nodes
+             * @default 0
+             */
+            nodes: number;
+            /**
+             * Edges
+             * @default 0
+             */
+            edges: number;
+            /** Bykind */
+            byKind?: {
+                [key: string]: number;
+            };
+            /** Bystage */
+            byStage?: {
+                [key: string]: number;
+            };
+            /** Bykindstage */
+            byKindStage?: {
+                [key: string]: number;
+            };
+            /** Bylinktype */
+            byLinkType?: {
+                [key: string]: number;
+            };
+            /**
+             * Externalnodes
+             * @default 0
+             */
+            externalNodes: number;
+            /**
+             * Stubnodes
+             * @default 0
+             */
+            stubNodes: number;
+            folded?: components["schemas"]["EconomyFoldCounts"];
+        };
+        /** EconomyLayerConfig */
+        EconomyLayerConfig: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Icon */
+            icon: string;
+            /**
+             * Mincomplexity
+             * @enum {string}
+             */
+            minComplexity: "sketch" | "structure" | "sandbox";
+            /** Defaulton */
+            defaultOn: boolean;
+        };
+        /** EconomyLinkCounts */
+        EconomyLinkCounts: {
+            /**
+             * Outgoing
+             * @default 0
+             */
+            outgoing: number;
+            /**
+             * Incoming
+             * @default 0
+             */
+            incoming: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /** EconomyMetricCoverage */
+        EconomyMetricCoverage: {
+            /**
+             * Entitieswithmetrics
+             * @default 0
+             */
+            entitiesWithMetrics: number;
+            /**
+             * Totalentities
+             * @default 0
+             */
+            totalEntities: number;
+            /**
+             * Coverage
+             * @default 0
+             */
+            coverage: number;
+        };
+        /**
+         * EconomyMetricDef
+         * @description 指标定义：默认空数组，用户添加后才有值。
+         */
+        EconomyMetricDef: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Unit */
+            unit?: string | null;
+            /**
+             * Valuetype
+             * @default number
+             * @enum {string}
+             */
+            valueType: "number" | "band";
+            /** Polarity */
+            polarity?: ("higher-better" | "neutral" | "lower-better") | null;
+            /** Stagefilter */
+            stageFilter?: string[];
+            /** Kindfilter */
+            kindFilter?: string[];
+        };
+        /** EconomyMetricSample */
+        EconomyMetricSample: {
+            /** T */
+            t: string;
+            /** Value */
+            value: number | number[];
+            /** Note */
+            note?: string | null;
+            sourceRef?: components["schemas"]["EntityRef"] | null;
+            /** Timeorder */
+            timeOrder?: number | null;
+        };
+        /** EconomyMetricSeries */
+        EconomyMetricSeries: {
+            /** Metricid */
+            metricId: string;
+            entity: components["schemas"]["EntityRef"];
+            /** Samples */
+            samples?: components["schemas"]["EconomyMetricSample"][];
+        };
+        /** EconomyMetrics */
+        EconomyMetrics: {
+            /** Moduleid */
+            moduleId: string;
+            /** Worldid */
+            worldId: string;
+            /** Metrics */
+            metrics?: components["schemas"]["EconomyMetricDef"][];
+            /** Series */
+            series?: components["schemas"]["EconomyMetricSeries"][];
+            window?: components["schemas"]["EconomyTimeRange"];
+            /** Emptyentities */
+            emptyEntities?: components["schemas"]["EntityRef"][];
+        };
         /** EconomyModuleConfig */
         EconomyModuleConfig: {
             /**
@@ -3308,6 +3752,283 @@ export interface components {
              * @default []
              */
             tradeMethods: components["schemas"]["WorldviewTradeMethod"][];
+        };
+        /**
+         * EconomyNode
+         * @description 画布节点 / 账册行的统一外形（经济实体或跨模块外站）。
+         */
+        EconomyNode: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Stage */
+            stage: string;
+            /** Description */
+            description?: string | null;
+            /** Icon */
+            icon?: string | null;
+            /** Color */
+            color?: string | null;
+            /**
+             * Orderindex
+             * @default 0
+             */
+            orderIndex: number;
+            /** Level */
+            level?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Scale */
+            scale?: number | null;
+            time?: components["schemas"]["LinkTimeRange"] | null;
+            /** Timeorder */
+            timeOrder?: number | null;
+            /** Cyclephaseid */
+            cyclePhaseId?: string | null;
+            /**
+             * Stub
+             * @default false
+             */
+            stub: boolean;
+            /** Tags */
+            tags?: string[];
+            /** Customfields */
+            customFields?: {
+                [key: string]: unknown;
+            };
+            counts?: components["schemas"]["EconomyLinkCounts"];
+            /**
+             * Hasmetrics
+             * @default false
+             */
+            hasMetrics: boolean;
+            /** Metricids */
+            metricIds?: string[];
+            /**
+             * External
+             * @default false
+             */
+            external: boolean;
+            /**
+             * Legacy
+             * @default false
+             */
+            legacy: boolean;
+            ref: components["schemas"]["EntityRef"];
+        };
+        /**
+         * EconomyOverview
+         * @description 速写卡：模块级唯一一条 item（名称以 ``economy`` 前缀加 ``overview`` 构成）。
+         */
+        EconomyOverview: {
+            /** Form */
+            form?: string | null;
+            currency?: components["schemas"]["EconomyChip"] | null;
+            /** Resources */
+            resources?: components["schemas"]["EconomyChip"][];
+            /** Industries */
+            industries?: components["schemas"]["EconomyChip"][];
+            /** Distribution */
+            distribution?: string | null;
+        };
+        /**
+         * EconomySketchFieldDef
+         * @description 速写字段定义：3-5 项，chips 类型绑定 chipKind。
+         */
+        EconomySketchFieldDef: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "text" | "select" | "chips";
+            /** Chipkind */
+            chipKind?: string | null;
+            /** Options */
+            options?: string[];
+            /** Maxitems */
+            maxItems?: number | null;
+        };
+        /** EconomyStageDef */
+        EconomyStageDef: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Order */
+            order: number;
+            /** Defaultkinds */
+            defaultKinds?: string[];
+        };
+        /** EconomyStatBucket */
+        EconomyStatBucket: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /** Icon */
+            icon?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Stage */
+            stage?: string | null;
+        };
+        /**
+         * EconomySummary
+         * @description sketch 档的单请求载荷：配置 + 速写卡 + 折叠计数 + 聚合计数 + 时间范围。
+         */
+        EconomySummary: {
+            /** Moduleid */
+            moduleId: string;
+            /** Worldid */
+            worldId: string;
+            /** Modulename */
+            moduleName: string;
+            /**
+             * Complexity
+             * @enum {string}
+             */
+            complexity: "sketch" | "structure" | "sandbox";
+            config: components["schemas"]["EconomyConfig"];
+            totals?: components["schemas"]["EconomyTotals"];
+            /** Stages */
+            stages?: components["schemas"]["EconomyStatBucket"][];
+            /** Kinds */
+            kinds?: components["schemas"]["EconomyStatBucket"][];
+            /** Levels */
+            levels?: {
+                [key: string]: unknown;
+            }[];
+            /** Statuses */
+            statuses?: {
+                [key: string]: unknown;
+            }[];
+            fold?: components["schemas"]["EconomyFoldCounts"];
+            overview?: components["schemas"]["EconomyOverview"] | null;
+            /** Cycles */
+            cycles?: components["schemas"]["EconomyCycle"][];
+            /** Metrics */
+            metrics?: components["schemas"]["EconomyMetricDef"][];
+            timeRange?: components["schemas"]["EconomyTimeRange"];
+            /** Unanchored */
+            unanchored?: components["schemas"]["EntityRef"][];
+            /**
+             * Useritems
+             * @default 0
+             */
+            userItems: number;
+        };
+        /** EconomySurplusCounts */
+        EconomySurplusCounts: {
+            /**
+             * Surplus
+             * @default 0
+             */
+            surplus: number;
+            /**
+             * Balanced
+             * @default 0
+             */
+            balanced: number;
+            /**
+             * Deficit
+             * @default 0
+             */
+            deficit: number;
+            /**
+             * Unknown
+             * @default 0
+             */
+            unknown: number;
+        };
+        /** EconomyTimeRange */
+        EconomyTimeRange: {
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /**
+             * Anchored
+             * @default false
+             */
+            anchored: boolean;
+        };
+        /** EconomyTimeline */
+        EconomyTimeline: {
+            /** Moduleid */
+            moduleId: string;
+            /** Worldid */
+            worldId: string;
+            /** Cycles */
+            cycles?: components["schemas"]["EconomyCycleBand"][];
+            /** Markers */
+            markers?: components["schemas"]["EconomyTimelineMarker"][];
+            range?: components["schemas"]["EconomyTimeRange"];
+            /** Unanchored */
+            unanchored?: components["schemas"]["EntityRef"][];
+            /** Units */
+            units?: string[];
+            /**
+             * Multiunit
+             * @default false
+             */
+            multiUnit: boolean;
+        };
+        /** EconomyTimelineMarker */
+        EconomyTimelineMarker: {
+            ref: components["schemas"]["EntityRef"];
+            /** Label */
+            label: string;
+            /** At */
+            at?: string | null;
+            /** Order */
+            order?: number | null;
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /** Source */
+            source: string;
+        };
+        /** EconomyTotals */
+        EconomyTotals: {
+            /**
+             * Entities
+             * @default 0
+             */
+            entities: number;
+            /**
+             * Links
+             * @default 0
+             */
+            links: number;
+            /**
+             * Totalflow
+             * @default 0
+             */
+            totalFlow: number;
+            /** Flowunits */
+            flowUnits?: string[];
+            /**
+             * Multiunit
+             * @default false
+             */
+            multiUnit: boolean;
+            surplus?: components["schemas"]["EconomySurplusCounts"];
+            metricCoverage?: components["schemas"]["EconomyMetricCoverage"];
         };
         /**
          * EntityRef
@@ -5028,6 +5749,8 @@ export interface components {
         };
         /** WorldModuleUpdate */
         WorldModuleUpdate: {
+            /** @description 模块类型 */
+            module_type?: components["schemas"]["app__schemas__worldbuilding__ModuleType"] | null;
             /**
              * Name
              * @description 模块名称
@@ -8693,6 +9416,151 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorldLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_economy_graph_api_v1_worldbuilding_modules__module_id__economy_graph_get: {
+        parameters: {
+            query?: {
+                /** @description 披露档位：sketch 只回计数，structure 回节点与边，sandbox 再含指标摘要 */
+                complexity?: ("sketch" | "structure" | "sandbox") | null;
+                /** @description 逗号分隔的 kind 筛选 */
+                kinds?: string | null;
+                /** @description 逗号分隔的 stage 筛选 */
+                stages?: string | null;
+                /** @description 时间窗起点（自由文本，按锚点比较） */
+                windowStart?: string | null;
+                /** @description 时间窗终点 */
+                windowEnd?: string | null;
+            };
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EconomyGraph"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_economy_summary_api_v1_worldbuilding_modules__module_id__economy_summary_get: {
+        parameters: {
+            query?: {
+                complexity?: ("sketch" | "structure" | "sandbox") | null;
+            };
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EconomySummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_economy_timeline_api_v1_worldbuilding_modules__module_id__economy_timeline_get: {
+        parameters: {
+            query?: {
+                windowStart?: string | null;
+                windowEnd?: string | null;
+            };
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EconomyTimeline"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_economy_metrics_api_v1_worldbuilding_modules__module_id__economy_metrics_get: {
+        parameters: {
+            query?: {
+                windowStart?: string | null;
+                windowEnd?: string | null;
+                /** @description 逗号分隔的指标 id 筛选 */
+                metricIds?: string | null;
+            };
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EconomyMetrics"];
                 };
             };
             /** @description Validation Error */

@@ -11,6 +11,18 @@ from .analysis import (
     KeywordExtractRequest, KeywordExtractResponse, KeywordItem,
     TextSimilarityRequest, TextSimilarityResponse
 )
+from .economy import (
+    CYCLE_KIND, DEFAULT_KIND_STAGE, DEFAULT_STAGES, DEGRADE_NODE_THRESHOLD,
+    RECOMMENDED_ECONOMY_KINDS,
+    EconomyChip, EconomyCycle, EconomyCycleBand, EconomyCyclePhase, EconomyEdge,
+    EconomyFoldCounts, EconomyGraph, EconomyGraphCounts, EconomyLayerConfig,
+    EconomyLinkCounts, EconomyMetricCoverage, EconomyMetricDef, EconomyMetricSample,
+    EconomyMetricSeries, EconomyMetrics, EconomyConfig, EconomyNode,
+    EconomyOverview, EconomySketchFieldDef, EconomyStageDef, EconomyStatBucket,
+    EconomySummary, EconomySurplusCounts, EconomyTimeline, EconomyTimelineMarker,
+    EconomyTimeRange, EconomyTotals,
+    is_economy_stage, normalize_intensity, normalize_metric_value, stage_of_kind,
+)
 from .worldbuilding import (
     WorldTemplateCreate, WorldTemplateUpdate, WorldTemplateResponse, WorldTemplateWithModules,
     WorldModuleCreate, WorldModuleUpdate, WorldModuleResponse, WorldModuleWithItems,
@@ -38,5 +50,13 @@ __all__ = [
     "WorldModuleItemCreate", "WorldModuleItemUpdate", "WorldModuleItemResponse",
     "WorldInstanceCreate", "WorldInstanceUpdate", "WorldInstanceResponse",
     "WorldTemplateExport", "WorldTemplateImport", "BatchDeleteRequest", "BatchUpdateOrderRequest",
-    "WorldTemplateFilter", "ModuleType"
+    "WorldTemplateFilter", "ModuleType",
+    # Phase 5 经济模块只读视图（P5-T1）
+    "EconomyGraph", "EconomySummary", "EconomyTimeline", "EconomyMetrics",
+    "EconomyConfig", "EconomyNode", "EconomyEdge", "EconomyOverview",
+    "EconomyCycle", "EconomyMetricDef", "EconomyMetricSample", "EconomyMetricSeries",
+    "EconomyChip", "EconomyFoldCounts", "EconomyTotals", "EconomyTimeRange",
+    "RECOMMENDED_ECONOMY_KINDS", "CYCLE_KIND", "DEFAULT_KIND_STAGE", "DEFAULT_STAGES",
+    "DEGRADE_NODE_THRESHOLD", "stage_of_kind", "is_economy_stage",
+    "normalize_metric_value", "normalize_intensity"
 ]

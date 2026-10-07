@@ -49,7 +49,16 @@ def test_module_config_items_backfilled_into_config(migrated_legacy_db: Path):
         )
     }
     assert modules["history"] == {"timeUnit": "era", "timelineStyle": "linear"}
-    assert modules["economy"] == {"entityTypes": [{"id": "industry"}]}
+    # economy：P1 把旧条目键写进 config；P5-T4 再补四个等级定义与记账键（旧键原样保留）
+    economy = modules["economy"]
+    assert economy["entityTypes"] == [{"id": "industry"}]
+    assert {level["id"] for level in economy["levels"]} == {
+        "global",
+        "national",
+        "regional",
+        "local",
+    }
+    assert "_p5Legacy" in economy
     assert modules["politics"] is None
 
     config_items = read_scalar(
@@ -86,7 +95,9 @@ def test_submodule_kind_and_meta_backfilled(migrated_legacy_db: Path):
     assert parse_json(industry["meta"])["level"] == "global"
 
     commodity = submodules["EN2"]
-    assert commodity["kind"] == "commodity"
+    # P5-T4 的六类旧经济类型语义映射：commodity -> good；color 与 meta.level 保留
+    assert commodity["kind"] == "good"
+    assert commodity["color"] == "type:commodity:regional"
     assert parse_json(commodity["meta"])["level"] == "regional"
 
     polity = submodules["POL1"]
@@ -158,14 +169,19 @@ def test_economy_relations_items_backfilled_with_time_and_volume(
 
     link = links[0]
     assert link["source_id"] == "EN1" and link["target_id"] == "EN2"
-    assert link["source_kind"] == "industry" and link["target_kind"] == "commodity"
+    # P5-T4 把 EN2 的 kind 归一化成 good，并把这条边（P1 时代因旧词表判非法而写的）端点词表
+    # 一并同步 —— 同库内 world_submodules.kind 与 world_links.*_kind 必须一致
+    assert link["source_kind"] == "industry" and link["target_kind"] == "good"
     assert parse_json(link["time"]) == {"start": "10", "end": "20"}
     meta = _meta(link)
     assert meta["legacyKey"] == "rel-1"
     assert meta["legacyRelationType"] == "supplier"
     assert meta["volume"] == "100"
-    # supplier 映射 economy.supplies 时目标 kind 为 commodity，不匹配契约 §4.4 -> 降级通用类型
+    assert meta["_p5TargetKind"] == {"from": "commodity", "to": "good"}
+    # supplier 的候选 economy.supplies 需要 market/organization 等目标，新 kind（good）仍不匹配；
+    # 但 P1-MIG-05 口径：有向旧类型校验不通过 -> core.references（不是 core.related_to）
     assert link["link_type"] == "core.references"
+    assert link["directed"] == 1
 
 
 def test_character_refs_backfilled_as_appears_in(migrated_legacy_db: Path):
